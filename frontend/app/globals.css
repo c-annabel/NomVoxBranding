@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/700.css";
+
+/* ── NomVox brand tokens ─────────────────────────────────────────── */
+:root {
+  /* Core palette */
+  --color-void:      #05070f;   /* deeper black than before — matches photo */
+  --color-nebula:    #0e1220;   /* card surface */
+  --color-nebula-hi: #161c2e;   /* hover/focus surface */
+  --color-pulse:     #8B5CF6;   /* purple — NOM + V glyph */
+  --color-pulse-lo:  #6d3fc0;   /* darker purple for gradients */
+  --color-signal:    #22d3ee;   /* cyan — OX glyph, links */
+  --color-signal-lo: #0891b2;   /* darker cyan */
+
+  /* Text — high contrast, AI-futuristic palette */
+  --color-text-primary:   #EDEFFE;   /* bright white-blue — sharp on dark */
+  --color-text-secondary: #C4CBEA;   /* clearly readable, cool-toned */
+  --color-text-hint:      #8892B8;   /* hint/placeholder — comfortably visible */
+
+  /* Input fields — illuminated borders */
+  --color-input-bg:           #0a0e1c;
+  --color-input-border:       rgba(99,210,255,0.55);  /* sky-blue resting border */
+  --color-input-border-hover: rgba(99,210,255,0.85);
+  --color-input-border-focus: #63d2ff;                /* solid sky-blue on focus */
+  --color-input-text:         #EDEFFE;
+  --color-input-placeholder:  #8892B8;
+}
+
+@theme inline {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ── Base ────────────────────────────────────────────────────────── */
+html, body {
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  min-height: 100%;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; }
+::-webkit-scrollbar-track { background: var(--color-void); }
+::-webkit-scrollbar-thumb { background: #2a2f4a; border-radius: 3px; }
+
+/* ── Input base styles ───────────────────────────────────────────── */
+.nv-input {
+  width: 100%;
+  background: var(--color-input-bg);
+  color: var(--color-input-text);
+  border: 1px solid var(--color-input-border);
+  border-radius: 7px;
+  padding: 11px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  outline: none;
+  /* Subtle inner glow so the field "exists" even when unfocused */
+  box-shadow: 0 0 0 1px rgba(139,92,246,0.08) inset;
+}
+.nv-input::placeholder {
+  color: var(--color-input-placeholder);
+  opacity: 1;
+}
+.nv-input:hover:not(:disabled) {
+  border-color: var(--color-input-border-hover);
+  background: var(--color-nebula-hi);
+  box-shadow: 0 0 8px rgba(139,92,246,0.20) inset;
+}
+.nv-input:focus {
+  border-color: var(--color-input-border-focus);
+  background: var(--color-nebula-hi);
+  /* Outer glow in sky-blue to match border */
+  box-shadow:
+    0 0 0 3px rgba(99,210,255,0.20),
+    0 0 16px rgba(99,210,255,0.14);
+}
+.nv-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.nv-input.nv-input-error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248,113,113,0.18), 0 0 12px rgba(248,113,113,0.12);
+}
+
+/* ── Gradient rule (decorative — used under logo) ────────────────── */
+.nv-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-pulse), var(--color-signal), transparent);
+}

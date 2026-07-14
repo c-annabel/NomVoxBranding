@@ -1,0 +1,579 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NomVox SDLC Plan v3</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #1f2328; background: #ffffff; }
+  .page { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  /* ── Hero ── */
+  .hero { background: #0B0F19; border-radius: 8px; padding: 28px 32px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%); pointer-events: none; }
+  .hero::after  { content: ''; position: absolute; bottom: -30px; left: 60px; width: 160px; height: 160px; background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%); pointer-events: none; }
+  .hero-logo { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .hero-logo .nom { color: #E6E8F0; }
+  .hero-logo .v   { color: #8B5CF6; }
+  .hero-logo .ox  { color: #06B6D4; }
+  .hero-tagline { font-size: 11px; letter-spacing: 3px; color: #8B5CF6; text-transform: uppercase; margin-bottom: 12px; }
+  .hero-sub { font-size: 13px; color: #9ca3af; margin-bottom: 16px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 12px; }
+  .b-go     { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
+  .b-purple { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+  .b-cyan   { background: rgba(6,182,212,0.12); color: #22d3ee; border: 1px solid rgba(6,182,212,0.3); }
+  .b-green  { background: #e6f4ea; color: #1a7f37; border: 1px solid #b3d9be; }
+  .b-white  { background: rgba(230,232,240,0.1); color: #E6E8F0; border: 1px solid rgba(230,232,240,0.2); }
+
+  /* ── Typography ── */
+  h2 { font-size: 15px; font-weight: 700; color: #1f2328; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #8B5CF6; }
+  h3 { font-size: 13px; font-weight: 700; color: #1f2328; margin: 18px 0 6px; }
+  h4 { font-size: 11px; font-weight: 700; color: #57606a; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
+  p  { margin-bottom: 10px; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; font-size: 13px; }
+  code { font-family: "Cascadia Code","Consolas",monospace; font-size: 12px; background: #f0f2f5; padding: 1px 5px; border-radius: 3px; border: 1px solid #e5e7eb; }
+  pre  { font-family: "Cascadia Code","Consolas",monospace; font-size: 12px; background: #0B0F19; color: #E6E8F0; border: 1px solid #141824; border-radius: 6px; padding: 16px; overflow-x: auto; margin-bottom: 12px; line-height: 1.6; }
+  pre .c-purple { color: #a78bfa; }
+  pre .c-cyan   { color: #22d3ee; }
+  pre .c-green  { color: #86efac; }
+  pre .c-muted  { color: #6b7280; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
+  th { background: #f7f8fa; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #57606a; padding: 8px 10px; text-align: left; border: 1px solid #e5e7eb; }
+  td { padding: 8px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+
+  /* ── Pills ── */
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .pill-mvp    { background: #e6f4ea; color: #1a7f37; }
+  .pill-str    { background: #ede9f9; color: #7c5cd8; }
+  .pill-go     { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
+  .pill-next   { background: #e8f0fe; color: #3b82d4; }
+  .pill-risk   { background: #fff3cd; color: #9a5700; }
+  .pill-new    { background: rgba(139,92,246,0.12); color: #7c5cd8; border: 1px solid rgba(139,92,246,0.25); }
+  .pill-done   { background: #e6f4ea; color: #1a7f37; }
+
+  /* ── Brand Identity Section ── */
+  .palette-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .swatch { width: 90px; border-radius: 4px; overflow: hidden; border: 1px solid #e5e7eb; }
+  .swatch-color { height: 44px; }
+  .swatch-info  { background: #f7f8fa; padding: 5px 7px; }
+  .swatch-hex   { font-family: "Cascadia Code","Consolas",monospace; font-size: 11px; font-weight: 700; color: #1f2328; }
+  .swatch-name  { font-size: 10px; color: #57606a; }
+
+  .logo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .logo-card { background: #0B0F19; border: 1px solid #141824; border-radius: 6px; padding: 16px 12px; text-align: center; }
+  .logo-card .lc-type  { font-size: 11px; font-weight: 700; color: #8B5CF6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .logo-card .lc-demo  { font-size: 22px; font-weight: 900; color: #E6E8F0; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .logo-card .lc-demo .nom { color: #E6E8F0; }
+  .logo-card .lc-demo .v   { color: #8B5CF6; font-size: 28px; }
+  .logo-card .lc-demo .ox  { color: #06B6D4; }
+  .logo-card .lc-desc  { font-size: 11px; color: #6b7280; }
+
+  /* ── Tagline Cards ── */
+  .tagline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .tagline-card { background: #0B0F19; border: 1px solid #141824; border-radius: 6px; padding: 14px 16px; }
+  .tagline-card .tg-text { font-size: 14px; font-weight: 700; color: #E6E8F0; margin-bottom: 4px; line-height: 1.4; }
+  .tagline-card .tg-why  { font-size: 11px; color: #6b7280; }
+  .tagline-card.rec { border-color: #8B5CF6; }
+  .tagline-card.rec .tg-text { color: #a78bfa; }
+  .rec-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; background: rgba(139,92,246,0.2); color: #a78bfa; margin-left: 6px; vertical-align: middle; }
+
+  /* ── State Machine Flow ── */
+  .flow { display: flex; flex-direction: column; gap: 0; margin-bottom: 14px; }
+  .flow-step { display: grid; grid-template-columns: 32px 1fr; gap: 12px; padding: 10px 0; border-left: 2px solid #e5e7eb; margin-left: 15px; padding-left: 20px; position: relative; }
+  .flow-step::before { content: attr(data-n); position: absolute; left: -16px; top: 8px; width: 30px; height: 30px; border-radius: 50%; background: #8B5CF6; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .flow-step:last-child { border-left-color: transparent; }
+  .flow-step .fs-title { font-size: 13px; font-weight: 700; color: #1f2328; margin-bottom: 3px; }
+  .flow-step .fs-body  { font-size: 12px; color: #57606a; }
+  .flow-branch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 0 0; }
+  .flow-opt { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px 10px; font-size: 12px; }
+  .flow-opt .fo-label { font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .fo-select { color: #1a7f37; }
+  .fo-reject { color: #cf222e; }
+  .fo-repro  { color: #9a5700; }
+
+  /* ── Feature Table ── */
+  .ft-new { background: rgba(139,92,246,0.04); }
+
+  /* ── Sprint Table ── */
+  .sprint-day { font-weight: 700; color: #8B5CF6; white-space: nowrap; }
+
+  /* ── Phase Blocks ── */
+  .phases { display: grid; gap: 0; }
+  .phase { display: grid; grid-template-columns: 100px 1fr; border: 1px solid #e5e7eb; border-bottom: none; }
+  .phase:last-child { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 4px 4px; }
+  .phase:first-child { border-radius: 4px 4px 0 0; }
+  .ph-label { background: #0B0F19; border-right: 1px solid #141824; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .ph-label .ph-days { font-size: 11px; font-weight: 700; color: #8B5CF6; }
+  .ph-label .ph-name { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  .ph-label .ph-icon { font-size: 18px; margin-bottom: 3px; }
+  .ph-body { padding: 12px 16px; }
+  .ph-body .ph-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+
+  /* ── Judging Alignment ── */
+  .score-bar { display: flex; gap: 2px; }
+  .seg { height: 8px; width: 14px; border-radius: 2px; background: #8B5CF6; }
+  .seg.e { background: #e5e7eb; }
+
+  /* ── Gap Cards ── */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .gap-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
+  .gap-card .gc-title { font-size: 12px; font-weight: 700; color: #9a5700; margin-bottom: 4px; }
+  .gap-card .gc-sol   { font-size: 12px; color: #1f2328; }
+  .gap-card .gc-sol strong { color: #1a7f37; }
+
+  /* ── Avail Demo ── */
+  .avail-demo { background: #0B0F19; border: 1px solid #141824; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; overflow-x: auto; }
+  .avail-row { display: grid; grid-template-columns: 130px 52px 52px 52px 52px 52px 60px 70px; gap: 4px; align-items: center; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #141824; }
+  .avail-row:last-child { border-bottom: none; }
+  .avail-row.hdr { font-weight: 700; font-size: 10px; color: #6b7280; text-transform: uppercase; }
+  .av-y { color: #86efac; font-weight: 700; }
+  .av-n { color: #f87171; font-weight: 700; }
+  .av-u { color: #fbbf24; }
+  .av-score.pass { color: #86efac; font-weight: 700; }
+  .av-score.fail { color: #f87171; font-weight: 700; }
+  .av-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px; }
+  .av-show { background: rgba(134,239,172,0.15); color: #86efac; }
+  .av-hide { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  /* ── Video Script ── */
+  .script-row td:first-child { font-weight: 700; color: #8B5CF6; white-space: nowrap; }
+
+  /* ── Stack Grid ── */
+  .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stack-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 10px 12px; }
+  .stack-card .sl { font-size: 11px; font-weight: 700; color: #57606a; text-transform: uppercase; margin-bottom: 4px; }
+  .stack-card .si { font-size: 12px; line-height: 1.8; }
+
+  /* ── Innovation Features ── */
+  .inno-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .inno-card { background: #f7f8fa; border-left: 3px solid #8B5CF6; border-radius: 0 4px 4px 0; padding: 12px 14px; }
+  .inno-card.cyan { border-left-color: #06B6D4; }
+  .inno-card .ic-title { font-size: 12px; font-weight: 700; color: #1f2328; margin-bottom: 4px; }
+  .inno-card .ic-body  { font-size: 12px; color: #57606a; }
+  .inno-card .ic-why   { font-size: 11px; color: #8B5CF6; margin-top: 4px; font-style: italic; }
+  .inno-card.cyan .ic-why { color: #06B6D4; }
+
+  .divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  
+  <div class="hero">
+    <div class="hero-logo">
+      <span class="nom">NOM</span><span class="v">V</span><span class="ox">OX</span>
+    </div>
+    <div class="hero-tagline">Signal Sent. Brand Received.</div>
+    <div class="hero-sub">SDLC Plan v3 · 15-Day Sprint · IBM AI Builders Challenge · Creative Industries</div>
+    <div class="badge-row">
+      <span class="badge b-go">Go Backend</span>
+      <span class="badge b-purple">IBM Granite</span>
+      <span class="badge b-cyan">watsonx.ai</span>
+      <span class="badge b-purple">80% Availability Gate</span>
+      <span class="badge b-cyan">Session Memory</span>
+      <span class="badge b-purple">Anti-Name Reasoning</span>
+      <span class="badge b-cyan">Brand Persona</span>
+      <span class="badge b-purple">Vision Image Upload</span>
+      <span class="badge b-green">5/5 Innovation Score</span>
+    </div>
+  </div>
+
+  
+  <h2>1 · Brand Identity (Locked from Moodboard)</h2>
+
+  <h4>Etymology</h4>
+  <table>
+    <thead><tr><th>Root</th><th>Meaning</th><th>Role in the brand</th></tr></thead>
+    <tbody>
+      <tr><td><strong>NOM</strong></td><td>Latin/French <em>nomen</em> — name, law, system</td><td>The foundation: structure, identity, registration</td></tr>
+      <tr><td><strong>VOX</strong></td><td>Latin: voice. Also Alpha Vulpeculae (Anser) — brightest star in Vulpecula constellation</td><td>The expression: giving a cosmic voice to an unformed idea</td></tr>
+    </tbody>
+  </table>
+  <p><strong>The Hook:</strong> NomVox is the cosmic engine that takes a silent, unformed business concept and synthesises a complete, launch-ready brand universe — validated domains, logos, and landing-page mockups — out of the ether.</p>
+
+  <h4>Elevated Taglines</h4>
+  <div class="tagline-grid">
+    <div class="tagline-card rec">
+      <div class="tg-text">Signal Sent. Brand Received.<span class="rec-badge">RECOMMENDED</span></div>
+      <div class="tg-why">Short, cosmic, punchy. Works as hero subheading and demo close.</div>
+    </div>
+    <div class="tagline-card rec">
+      <div class="tg-text">Your idea has a name. The universe just hasn't heard it yet.<span class="rec-badge">PITCH VIDEO</span></div>
+      <div class="tg-why">Opens the demo video with emotional resonance before showing the product.</div>
+    </div>
+    <div class="tagline-card">
+      <div class="tg-text">From void to voice — your brand, synthesized.</div>
+      <div class="tg-why">Highlights both etymology roots (void/cosmos + voice). Good for README hero.</div>
+    </div>
+    <div class="tagline-card">
+      <div class="tg-text">The cosmos names things. Now so do you.</div>
+      <div class="tg-why">Leans hardest into the astronomical narrative. Good for social copy.</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#57606a">Note: "NAME IT. CLAIM IT. LAUNCH IT." from the moodboard is retained as the <strong>functional tagline</strong> displayed under the wordmark logo.</p>
+
+  <h4>Color Palette</h4>
+  <div class="palette-row">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0B0F19"></div>
+      <div class="swatch-info"><div class="swatch-hex">#0B0F19</div><div class="swatch-name">--color-void</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#141824"></div>
+      <div class="swatch-info"><div class="swatch-hex">#141824</div><div class="swatch-name">--color-nebula</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#8B5CF6"></div>
+      <div class="swatch-info"><div class="swatch-hex">#8B5CF6</div><div class="swatch-name">--color-pulse</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#06B6D4"></div>
+      <div class="swatch-info"><div class="swatch-hex">#06B6D4</div><div class="swatch-name">--color-signal</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#E6E8F0;border:1px solid #e5e7eb"></div>
+      <div class="swatch-info"><div class="swatch-hex">#E6E8F0</div><div class="swatch-name">--color-lunar</div></div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#57606a"><strong>Typography:</strong> Space Grotesk — Wide / Modern / Technical (Google Fonts, free). Monospace labels: JetBrains Mono.</p>
+
+  <h4>Logo System</h4>
+  <div class="logo-grid">
+    <div class="logo-card">
+      <div class="lc-type">Primary Wordmark</div>
+      <div class="lc-demo"><span class="nom">NOM</span><span class="v">V</span><span class="ox">OX</span></div>
+      <div class="lc-desc">White NOM + purple chevron V + cyan OX gradient. Vulpecula constellation arc above. Hero, README, landing page.</div>
+    </div>
+    <div class="logo-card">
+      <div class="lc-type">Icon Mark / Profile</div>
+      <div class="lc-demo" style="font-size:28px;color:#8B5CF6">NVK</div>
+      <div class="lc-desc">Geometric NVK ligature. N+V in purple, K-arm in cyan. Social avatar, favicon, profile logo.</div>
+    </div>
+    <div class="logo-card">
+      <div class="lc-type">App Icon</div>
+      <div class="lc-demo" style="font-size:22px;background:#141824;border-radius:8px;padding:4px 8px;display:inline-block;color:#8B5CF6">NVK</div>
+      <div class="lc-desc">NVK mark on rounded-square dark bg with purple-cyan corner glow. iOS/Android icon, browser tab.</div>
+    </div>
+  </div>
+
+  
+  <h2>2 · Interaction State Machine</h2>
+
+  <div class="flow">
+    <div class="flow-step" data-n="1">
+      <div>
+        <div class="fs-title">Keyword Intake Form — 8 structured fields</div>
+        <div class="fs-body">Core idea (required) + 7 optional fields with inline hints. Prompt richness meter turns green at 5+ fields. "Inspire me" auto-fills with an example scenario. Go handler validates and assembles a deterministic LLM prompt — no thin prompts, no wasted regeneration loops.</div>
+      </div>
+    </div>
+    <div class="flow-step" data-n="2">
+      <div>
+        <div class="fs-title">AI Generation — IBM Granite via watsonx.ai</div>
+        <div class="fs-body">Produces 8–12 enriched NameCards (streamed). Each card: name, tagline, tone reasoning, origin story, brand score, brand voice samples, short + long descriptions.</div>
+      </div>
+    </div>
+    <div class="flow-step" data-n="A">
+      <div>
+        <div class="fs-title">80% Availability Gate — Go engine (automatic, invisible to user)</div>
+        <div class="fs-body">Domain (RDAP) + 5 social handle probes run in parallel. Weighted score applied. Names below 80% silently discarded. Zero-pass → auto-retry Granite up to 3 cycles → closest-match fallback.</div>
+      </div>
+    </div>
+    <div class="flow-step" data-n="B">
+      <div>
+        <div class="fs-title">User Reaction — three paths</div>
+        <div class="fs-body">Filtered results shown with score badges and availability matrix.</div>
+        <div class="flow-branch">
+          <div class="flow-opt">
+            <div class="fo-label fo-select">✓ OPTION 1 — SELECT</div>
+            Accept a name → move to Visual Identity (Step 3)
+          </div>
+          <div class="flow-opt">
+            <div class="fo-label fo-reject">✗ OPTION 2 — REJECT</div>
+            Reject with optional note → AI explains what it heard + asks 1 clarifying Q → session updated → regenerate
+          </div>
+          <div class="flow-opt">
+            <div class="fo-label fo-repro">↻ OPTION 3 — REPRODUCE</div>
+            Fresh batch using all accumulated session memory (liked, rejected, direction notes)
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step" data-n="3">
+      <div>
+        <div class="fs-title">Visual Identity — after SELECT</div>
+        <div class="fs-body">Optional vision image upload seeds all visuals. Mood board (4-panel) · Logo concepts (Profile / App / Business, all regenerable) · Hero landing-page mockup (Granite HTML/CSS) · Brand Persona Card · Brand Voice Samples. Each asset independently regenerable with feedback notes stored in session.</div>
+      </div>
+    </div>
+    <div class="flow-step" data-n="C">
+      <div>
+        <div class="fs-title">Export Pack — ZIP download</div>
+        <div class="fs-body">Go <code>archive/zip</code> bundles all assets: names, taglines, brand brief PDF, persona card, voice samples, mood board, 3 logo types (SVG+PNG), hero HTML, color palette JSON.</div>
+      </div>
+    </div>
+  </div>
+
+  
+  <h2>3 · Innovation Features (Full Set)</h2>
+  <div class="inno-grid">
+    <div class="inno-card">
+      <div class="ic-title">Name Origin Story</div>
+      <div class="ic-body">Each card includes 1–2 sentences on linguistic roots, sound symbolism, and cultural associations. Makes the AI's reasoning visible — exactly what a human naming consultant delivers.</div>
+      <div class="ic-why">Build cost: zero new infra — one extra Granite instruction per card.</div>
+    </div>
+    <div class="inno-card">
+      <div class="ic-title">Brand Score Card</div>
+      <div class="ic-body">Per-name structured score: Memorability (1–10), Spellability (1–10), Global Safety (1–10), Domain Squatter Risk (Low/Med/High). Answers "why this name over that one?" — no tool on the market does this.</div>
+      <div class="ic-why">Build cost: one structured Granite call per name — no new infra.</div>
+    </div>
+    <div class="inno-card">
+      <div class="ic-title">Anti-Name Reasoning</div>
+      <div class="ic-body">On rejection, the AI explains what it heard and asks one clarifying question before regenerating. Transforms the refine loop from a blind spin into a visible conversation. The clearest possible demo of "partner, not generator."</div>
+      <div class="ic-why">Build cost: one conditional Granite call on reject — modifies existing refine loop.</div>
+    </div>
+    <div class="inno-card">
+      <div class="ic-title">Brand Persona Card</div>
+      <div class="ic-body">"Verdara is 28, reads Monocle, uses em-dashes, would never say 'synergy'." After name selection, Granite generates a brand-as-person character card. Goes beyond naming into brand strategy — nothing in this category does this.</div>
+      <div class="ic-why">Build cost: one Granite call post-selection — zero new infra, maximum judge impact.</div>
+    </div>
+    <div class="inno-card cyan">
+      <div class="ic-title">Style DNA Slider</div>
+      <div class="ic-body">Two-axis slider (Playful↔Premium · Abstract↔Descriptive). As the user drags, tonal instructions append to session and next Reproduce reflects them live. Judges will want to play with this in the demo.</div>
+      <div class="ic-why">Build cost: frontend slider + prompt injection into session — no new API calls.</div>
+    </div>
+    <div class="inno-card cyan">
+      <div class="ic-title">Brand Voice Samples</div>
+      <div class="ic-body">For the selected name: an Instagram caption, a welcome email subject line, and a 404 page message — all written in the brand's voice. Proves the AI understands the brand deeply enough to write <em>in</em> it, not just name it.</div>
+      <div class="ic-why">Build cost: one structured Granite call — included in name-gen call to save a round-trip.</div>
+    </div>
+    <div class="inno-card cyan">
+      <div class="ic-title">Vision Image Upload</div>
+      <div class="ic-body">After name selection, user uploads any reference image (photo, screenshot, Pinterest board). Vision model extracts dominant colours, mood adjectives, style keywords, and texture notes. These seed every subsequent image-gen call. Multimodal — shows don't tell.</div>
+      <div class="ic-why">Build cost: one new Go handler + vision model call. Highest differentiation per build hour.</div>
+    </div>
+    <div class="inno-card cyan">
+      <div class="ic-title">Competitor Name Radar</div>
+      <div class="ic-body">After the availability gate, a second Granite pass flags semantic overlap with known brands in the same industry. Shows a "too close to…" warning badge. Saves founders from expensive rebrands — no naming tool currently offers this.</div>
+      <div class="ic-why">Build cost: one Granite call per batch — added to availability handler response.</div>
+    </div>
+  </div>
+
+  
+  <h2>4 · Availability Scoring &amp; 80% Gate</h2>
+  <table>
+    <thead><tr><th>Platform</th><th>Weight</th><th>Rationale</th><th>Toggleable?</th></tr></thead>
+    <tbody>
+      <tr><td>.com domain (RDAP)</td><td><strong>2 pts</strong></td><td>Highest priority — domain unavailable = max 67% = auto-fail</td><td>No</td></tr>
+      <tr><td>Instagram</td><td>1 pt</td><td>Tier-1 social</td><td>Yes</td></tr>
+      <tr><td>X (Twitter)</td><td>1 pt</td><td>Tier-1 social</td><td>Yes</td></tr>
+      <tr><td>TikTok</td><td>1 pt</td><td>Tier-1 for consumer brands</td><td>Yes</td></tr>
+      <tr><td>Threads</td><td>0.5 pt</td><td>Tier-2, growing</td><td>Yes</td></tr>
+      <tr><td>YouTube</td><td>0.5 pt</td><td>Tier-2</td><td>Yes</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>6 pts</strong></td><td>Threshold: ≥ 4.8 pts = 80% = PASS</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>User can toggle Tier-2 and Tier-1 socials off; toggling updates denominator in real time. Domain is always double-weighted and non-toggleable — if .com is taken, no combination of social handles can reach 80%.</p>
+
+  <h4>Live Availability Matrix (what the user sees)</h4>
+  <div class="avail-demo">
+    <div class="avail-row hdr"><div>Name</div><div>.com</div><div>IG</div><div>X</div><div>TikTok</div><div>Threads</div><div>Score</div><div>Status</div></div>
+    <div class="avail-row"><div style="color:#E6E8F0;font-weight:700">Verdara</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-score pass">100%</div><div><span class="av-tag av-show">SHOW</span></div></div>
+    <div class="avail-row"><div style="color:#E6E8F0;font-weight:700">Foliaro</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-n">✗</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-score pass">83%</div><div><span class="av-tag av-show">SHOW</span></div></div>
+    <div class="avail-row"><div style="color:#6b7280">Leafora</div><div class="av-y">✓</div><div class="av-n">✗</div><div class="av-n">✗</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-score fail">67%</div><div><span class="av-tag av-hide">FILTERED</span></div></div>
+    <div class="avail-row"><div style="color:#6b7280">Bruverde</div><div class="av-n">✗</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-y">✓</div><div class="av-score fail">50%</div><div><span class="av-tag av-hide">FILTERED</span></div></div>
+  </div>
+
+  
+  <h2>5 · Full Feature List</h2>
+  <table>
+    <thead><tr><th>#</th><th>Feature</th><th>MVP / Stretch</th><th>New in v3?</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Keyword Intake Form (8 fields + richness meter + "Inspire me")</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr class="ft-new"><td>2</td><td>Name Origin Story (etymology + sound symbolism per card)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr class="ft-new"><td>3</td><td>Brand Score Card (Memorability, Spellability, Global Safety, Squatter Risk)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr class="ft-new"><td>4</td><td>Brand Voice Samples (Instagram caption, email subject, 404 message)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr><td>5</td><td>80% Availability Gate (Go weighted scoring, parallel probes, auto-filter)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr class="ft-new"><td>6</td><td>Competitor Name Radar (Granite semantic overlap warning)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr><td>7</td><td>Session Memory (liked/rejected/notes → Redis, injected every Granite call)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr class="ft-new"><td>8</td><td>Anti-Name Reasoning (AI explains rejection + asks 1 clarifying Q)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr><td>9</td><td>Select / Reject / Reproduce state machine (Step B UI)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr class="ft-new"><td>10</td><td>Style DNA Slider (Playful↔Premium · Abstract↔Descriptive)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr class="ft-new"><td>11</td><td>Brand Persona Card (brand as a person — age, voice, reads, never says)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr class="ft-new"><td>12</td><td>Vision Image Upload (optional, post-selection, seeds all visuals)</td><td><span class="pill pill-mvp">MVP</span></td><td><span class="pill pill-new">New</span></td></tr>
+      <tr><td>13</td><td>Mood Board (4-panel image-gen, visual feedback → session, per-panel regen)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr><td>14</td><td>Logo Concepts — Profile / App / Business (3 types, per-type regen)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr><td>15</td><td>Hero Landing-Page Mockup (Granite HTML/CSS, sandboxed iframe)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr><td>16</td><td>Short + Long Brand Descriptions (editable, per-field regen)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr><td>17</td><td>Export ZIP (Go archive/zip — all assets)</td><td><span class="pill pill-mvp">MVP</span></td><td></td></tr>
+      <tr><td>18</td><td>Screenshot of taken handles (Puppeteer → Vercel Blob)</td><td><span class="pill pill-str">Stretch</span></td><td></td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>6 · System Architecture</h2>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="sl">Frontend</div>
+      <div class="si">Next.js 14 App Router<br />React + Tailwind CSS<br />Space Grotesk (Google Fonts)<br />shadcn/ui + Framer Motion<br />Fetch → Go REST API</div>
+    </div>
+    <div class="stack-card">
+      <div class="sl">Go Backend</div>
+      <div class="si">Go 1.22+<br />chi router<br />net/http (parallel probes)<br />go-redis (session store)<br />archive/zip (export)<br />sync.WaitGroup (availability)</div>
+    </div>
+    <div class="stack-card">
+      <div class="sl">AI &amp; Services</div>
+      <div class="si">IBM Granite (watsonx.ai)<br />DALL-E 3 / SD XL (images)<br />GPT-4o Vision (image upload)<br />RDAP API (domain checks)<br />Puppeteer (handle screenshots)<br />Vercel Blob (asset storage)</div>
+    </div>
+  </div>
+
+  <h4>Go project structure</h4>
+  <pre><span class="c-cyan">nomvox/</span>
+├── cmd/server/main.go          <span class="c-muted"># Entry point, chi router</span>
+├── internal/
+│   ├── handlers/
+│   │   ├── <span class="c-purple">generate.go</span>         <span class="c-muted"># POST /api/generate</span>
+│   │   ├── <span class="c-purple">availability.go</span>     <span class="c-muted"># POST /api/availability + 80% gate</span>
+│   │   ├── <span class="c-purple">visuals.go</span>          <span class="c-muted"># POST /api/visuals</span>
+│   │   ├── <span class="c-purple">vision.go</span>           <span class="c-muted"># POST /api/vision-context (image upload)</span>
+│   │   ├── <span class="c-purple">mockup.go</span>           <span class="c-muted"># POST /api/mockup</span>
+│   │   ├── <span class="c-purple">persona.go</span>          <span class="c-muted"># POST /api/persona</span>
+│   │   ├── <span class="c-purple">export.go</span>           <span class="c-muted"># POST /api/export (ZIP stream)</span>
+│   │   └── <span class="c-purple">session.go</span>          <span class="c-muted"># PATCH /api/session/react</span>
+│   ├── ai/
+│   │   ├── granite.go          <span class="c-muted"># IBM Granite API client (streaming)</span>
+│   │   └── imagegen.go         <span class="c-muted"># Image generation client</span>
+│   ├── availability/
+│   │   ├── checker.go          <span class="c-muted"># sync.WaitGroup parallel probes</span>
+│   │   ├── domain.go           <span class="c-muted"># RDAP lookup</span>
+│   │   ├── social.go           <span class="c-muted"># HTTP HEAD probes × 5 platforms</span>
+│   │   └── <span class="c-green">scorer.go</span>           <span class="c-muted"># Weighted 80% gate logic</span>
+│   ├── session/store.go        <span class="c-muted"># Redis CRUD (BrandSession)</span>
+│   └── models/types.go         <span class="c-muted"># All shared structs</span>
+├── frontend/                   <span class="c-muted"># Next.js app</span>
+├── .gitignore                  <span class="c-muted"># Go .gitignore (committed Day 1)</span>
+├── go.mod / go.sum
+└── README.md</pre>
+
+  
+  <h2>7 · 15-Day Sprint Plan</h2>
+  <table>
+    <thead><tr><th>Day(s)</th><th>Sub-task</th><th>Deliverables</th><th>Gate</th></tr></thead>
+    <tbody>
+      <tr><td class="sprint-day">1</td><td>ST-01: Env &amp; Scaffold</td><td>Go module, Next.js, CI, Redis, brand CSS tokens (all 5 colour vars + Space Grotesk), Go .gitignore, .env.example, shared types</td><td>Go /api/ping live; Next.js builds</td></tr>
+      <tr><td class="sprint-day">2</td><td>ST-02: Intake Form</td><td>8-field form, prompt richness meter, "Inspire me", Go payload validation, LLM prompt assembly</td><td>Form submits valid IntakePayload to Go</td></tr>
+      <tr><td class="sprint-day">3–4</td><td>ST-03: LLM Core</td><td>Granite streaming client, NameCard with origin story + brand score + voice samples + short/long desc, streamed card render, Zod validation</td><td>Enriched NameCards stream into UI</td></tr>
+      <tr><td class="sprint-day">5</td><td>ST-04: Session Memory + Anti-Name Reasoning</td><td>Redis BrandSession CRUD, system prompt injection, Anti-Name Reasoning clarifying Q flow, RejectionDialog UI, localStorage backup</td><td>Reject → AI asks Q → session updated → regen</td></tr>
+      <tr><td class="sprint-day">6–7</td><td>ST-05: Availability Engine + 80% Gate</td><td>RDAP domain check, parallel social HEAD probes, scorer.go (weighted 80%), auto-retry loop (3 cycles), closest-match fallback, competitor radar, availability matrix UI, platform toggle</td><td>Matrix renders; sub-80% names filtered; zero-pass retry works</td></tr>
+      <tr><td class="sprint-day">8</td><td>ST-06 + ST-07: State Machine UI + Brand Persona</td><td>NameCardGrid with Select/Reject/Reproduce, Style DNA Slider (2 axes), SessionSidebar (conversation log), BrandPersonaCard (post-selection Granite call)</td><td>All 3 options work; persona card renders after select</td></tr>
+      <tr><td class="sprint-day">9–10</td><td>ST-08: Vision Upload + Visual Identity</td><td>VisionUpload component, Go vision handler (GPT-4o / watsonx), VisionContext → Redis, mood board (4-panel), logo concepts (Profile/App/Business × per-type regen), colour palette display, visual feedback notes in session</td><td>All 3 logo types + mood board render; per-asset regen works</td></tr>
+      <tr><td class="sprint-day">11</td><td>ST-09: Hero Landing Mockup</td><td>Go mockup handler (Granite HTML/CSS), HTML sanitiser, sandboxed iframe preview, copy + download buttons, regen with note</td><td>Hero section renders in iframe; download works</td></tr>
+      <tr><td class="sprint-day">12</td><td>ST-10: Export Pack</td><td>Go archive/zip handler, all asset types bundled, brand-brief PDF (chromedp), colour-palette.json, streaming ZIP download</td><td>ZIP downloads with all expected files</td></tr>
+      <tr><td class="sprint-day">13</td><td>ST-11: QA &amp; Unit Tests</td><td>scorer_test.go, checker_test.go (mock HTTP), session_test.go (miniredis), skeleton loading states, mobile pass (375/768/1280px), error states, WCAG AA contrast check</td><td>All tests pass; no blank states; mobile correct</td></tr>
+      <tr><td class="sprint-day">14</td><td>ST-12a: Deploy + Demo</td><td>Go → Fly.io (Dockerfile), Next.js → Vercel, seed demo ("eco coffee brand"), record 3-min video, edit to ≤3:00, upload to YouTube</td><td>Production URL live; video uploaded</td></tr>
+      <tr><td class="sprint-day">15</td><td>ST-12b: README + Submission</td><td>Final README (all required sections), tag v1.0.0, submission platform page, verify public links (incognito), upload SkillsBuild certificates</td><td>Submission complete by deadline</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>8 · Judging Criteria Alignment</h2>
+  <table>
+    <thead><tr><th>Criterion</th><th>Score</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Technical Execution</strong></td>
+        <td><div class="score-bar"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div> 5/5</td>
+        <td>Go concurrent availability engine (sync.WaitGroup), IBM Granite streaming LLM, watsonx.ai, image-gen API, GPT-4o Vision (multimodal), Redis session, ZIP export, Next.js streaming UI — multi-layer, well-integrated stack using IBM technologies as core.</td>
+      </tr>
+      <tr>
+        <td><strong>Innovation</strong></td>
+        <td><div class="score-bar"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div> 5/5</td>
+        <td>7 features with no direct equivalent: 80% auto-filter gate, Anti-Name Reasoning (AI explains what it heard), Brand Persona Card, Origin Story, Brand Score Card, Vision Image Upload (multimodal), Competitor Name Radar. The combination has no market equivalent.</td>
+      </tr>
+      <tr>
+        <td><strong>Challenge Fit</strong></td>
+        <td><div class="score-bar"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div> 5/5</td>
+        <td>All 5 judging sub-questions answered by named features. Spans 3 solution areas: AI Creative Partner, Creative Ideation Platform, AI-powered Design &amp; Visual Concepts.</td>
+      </tr>
+      <tr>
+        <td><strong>Feasibility</strong></td>
+        <td><div class="score-bar"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg e"></div></div> 4.5/5</td>
+        <td>All APIs production-ready. Vision model dependency requires pre-verification (GPT-4o Vision or watsonx multimodal); graceful fallback to colour picker if unavailable. 15-day plan has clear daily scope and explicit stretch items.</td>
+      </tr>
+      <tr>
+        <td><strong>Real-World Impact</strong></td>
+        <td><div class="score-bar"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div> 5/5</td>
+        <td>Universal need — every new business needs this. Removes the $5K–$20K naming consultant barrier. 80% gate prevents wasted domain registrations (concrete, measurable value). Brand Score Card and Competitor Radar prevent costly rebrands at scale. Export ZIP is immediately usable.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>9 · 3-Minute Demo Video Script</h2>
+  <table class="script-row">
+    <thead><tr><th>Time</th><th>Segment</th><th>On screen</th><th>Voiceover</th></tr></thead>
+    <tbody>
+      <tr><td>0:00–0:18</td><td>Hook</td><td>NomVox hero — galaxy vortex, wordmark fades in</td><td>"Your idea has a name. The universe just hasn't heard it yet."</td></tr>
+      <tr><td>0:18–0:50</td><td>Intake Form</td><td>Fill all 8 fields live; richness meter turns green</td><td>"Eight fields. That's all the engine needs. Watch the richness meter fill — the more you give it, the sharper the first pass."</td></tr>
+      <tr><td>0:50–1:20</td><td>Results + Gate</td><td>8 name cards stream in; 2 auto-filtered (show score badges 67%, 50%); zoom on 100% and 83% badges</td><td>"Three names were filtered automatically — they didn't clear the 80% availability threshold. These two did. Every one you see is ready to register."</td></tr>
+      <tr><td>1:20–1:40</td><td>Anti-Name Reasoning</td><td>Reject 'Foliaro' with note 'too corporate'; AI response appears with clarifying question; user answers</td><td>"When I reject a name, NomVox doesn't just spin again. It asks what I actually meant."</td></tr>
+      <tr><td>1:40–2:10</td><td>Select + Visuals</td><td>Select 'Verdara'; upload vision image; mood board appears; 3 logo types render; hero mockup in iframe</td><td>"I upload a reference image. The engine reads its palette and mood — and builds the whole visual identity from it."</td></tr>
+      <tr><td>2:10–2:30</td><td>Persona + Voice</td><td>Brand persona card; voice samples panel with Instagram caption and 404 message</td><td>"'Verdara is 28, reads Monocle, would never say synergy.' This is the brand's voice — and here it is writing a 404 page."</td></tr>
+      <tr><td>2:30–2:48</td><td>Export</td><td>Click Export Pack; ZIP downloads; briefly show file tree</td><td>"One ZIP. Everything a founder needs to hand off to a developer, a printer, or a registrar."</td></tr>
+      <tr><td>2:48–3:00</td><td>Architecture + Close</td><td>Architecture diagram; IBM Granite + watsonx.ai + Go logos</td><td>"Built with IBM Granite, watsonx.ai, and IBM Bob. NomVox — signal sent, brand received."</td></tr>
+    </tbody>
+  </table>
+
+  <h4>AI Presenter &amp; Voice Tools for Pitch Video Production</h4>
+  <table>
+    <thead><tr><th>Tool</th><th>Role</th><th>Use in NomVox video</th></tr></thead>
+    <tbody>
+      <tr><td><strong>ElevenLabs</strong></td><td>AI voice synthesis</td><td>Generate a consistent cosmic/confident AI narrator voice for the full voiceover. Custom voice cloned from a reference or chosen from library. Eliminates re-recording.</td></tr>
+      <tr><td><strong>HeyGen</strong></td><td>AI video presenter avatar</td><td>AI presenter avatar for intro/outro if no human on camera. Can lip-sync to ElevenLabs audio output. Looks professional for a 3-min pitch.</td></tr>
+      <tr><td><strong>Runway ML</strong></td><td>AI video generation</td><td>Generate the galaxy/vortex background animation for the hero segment (0:00–0:18). Can also generate b-roll transitions between segments.</td></tr>
+      <tr><td><strong>Descript</strong></td><td>Video editing + overdub</td><td>Auto-transcript of screen recording; Overdub to fix voiceover mistakes without re-recording; script-based cut to hit exact 3:00 target.</td></tr>
+      <tr><td><strong>CapCut / DaVinci Resolve</strong></td><td>Final cut + motion graphics</td><td>Architecture diagram transition, lower-thirds (feature labels), colour grade to match NomVox palette (#0B0F19 base tone).</td></tr>
+      <tr><td><strong>Loom / OBS</strong></td><td>Screen recording</td><td>Record the live demo segments (Steps 1–C) in one take on the production URL.</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>10 · Risk Register</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Likelihood</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Vision model (GPT-4o / watsonx multimodal) unavailable or over budget</td><td><span class="pill pill-risk">Medium</span></td><td>Fallback: colour picker + 5 mood adjective chips. All downstream visual-gen still works. Feature degrades gracefully, never crashes.</td></tr>
+      <tr><td>Image-gen cost overrun (7 calls per session)</td><td><span class="pill pill-risk">Medium</span></td><td>Cap at 7 image-gen calls per session; lazy-load on explicit user click; cache all generated images in Vercel Blob with 24-hr TTL.</td></tr>
+      <tr><td>Social handle probes blocked (429)</td><td><span class="pill pill-risk">Medium</span></td><td>Go probes with 1s stagger + randomised user-agent. 429 = "unknown" amber badge + direct "check manually" link. Does not affect scoring denominator.</td></tr>
+      <tr><td>Granite returns malformed JSON</td><td><span class="pill pill-risk">Low</span></td><td>Go strict decode + Zod client validation. Retry once with stricter format instruction. On second failure: return partial results, never crash.</td></tr>
+      <tr><td>Zero names pass 80% gate after 3 retries</td><td><span class="pill pill-risk">Low</span></td><td>Closest-match fallback card with per-platform breakdown + platform toggle to adjust denominator.</td></tr>
+      <tr><td>Demo video exceeds 3 minutes</td><td><span class="pill pill-risk">Medium</span></td><td>Pre-script with timestamps above. Record dry-run on Day 13. Hard-cut at 2:58 using Descript.</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>11 · Submission Checklist</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Status</th><th>Due</th></tr></thead>
+    <tbody>
+      <tr><td>Working prototype deployed (Vercel + Fly.io)</td><td><span class="pill pill-mvp">Build</span></td><td>Day 14</td></tr>
+      <tr><td>Go .gitignore committed to repo root</td><td><span class="pill pill-done">Day 1</span></td><td>Day 1</td></tr>
+      <tr><td>IBM SkillsBuild certificate per team member</td><td><span class="pill pill-mvp">Build</span></td><td>Day 7</td></tr>
+      <tr><td>Public GitHub repo with complete README</td><td><span class="pill pill-mvp">Build</span></td><td>Day 15</td></tr>
+      <tr><td>Demo video ≤ 3 min (YouTube / Loom)</td><td><span class="pill pill-mvp">Build</span></td><td>Day 14</td></tr>
+      <tr><td>Submission platform page complete</td><td><span class="pill pill-mvp">Build</span></td><td>Day 15</td></tr>
+      <tr><td>Repo + video publicly accessible (incognito verified)</td><td><span class="pill pill-mvp">Build</span></td><td>Day 15</td></tr>
+      <tr><td><strong>Deadline: July 31, 2026 — 11:59 PM ET</strong></td><td><span class="pill pill-risk">Hard deadline</span></td><td>July 31</td></tr>
+    </tbody>
+  </table>
+
+  <footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>

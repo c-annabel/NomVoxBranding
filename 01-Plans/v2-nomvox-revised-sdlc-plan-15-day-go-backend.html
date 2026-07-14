@@ -1,0 +1,813 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NomVox — SDLC Plan v2</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #1f2328; background: #ffffff; }
+  .page { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  .hero { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 24px 28px; margin-bottom: 32px; }
+  .hero h1 { font-size: 22px; font-weight: 700; color: #1f2328; letter-spacing: -0.3px; }
+  .hero .sub { font-size: 13px; color: #57606a; margin-top: 4px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 12px; background: #e8f0fe; color: #3b82d4; border: 1px solid #c3d6f7; }
+  .badge.purple { background: #ede9f9; color: #7c5cd8; border-color: #d0c6f5; }
+  .badge.green { background: #e6f4ea; color: #1a7f37; border-color: #b3d9be; }
+  .badge.orange { background: #fff3cd; color: #9a5700; border-color: #f0c060; }
+
+  h2 { font-size: 15px; font-weight: 700; color: #1f2328; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #3b82d4; }
+  h3 { font-size: 13px; font-weight: 700; color: #1f2328; margin: 18px 0 6px; }
+  h4 { font-size: 12px; font-weight: 700; color: #57606a; text-transform: uppercase; letter-spacing: 0.4px; margin: 14px 0 5px; }
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+  code { font-family: "Cascadia Code", "Consolas", monospace; font-size: 12px; background: #f0f2f5; padding: 1px 5px; border-radius: 3px; border: 1px solid #e5e7eb; }
+  pre { font-family: "Cascadia Code", "Consolas", monospace; font-size: 12px; background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 16px; overflow-x: auto; margin-bottom: 12px; line-height: 1.5; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
+  th { background: #f7f8fa; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #57606a; padding: 8px 10px; text-align: left; border: 1px solid #e5e7eb; }
+  td { padding: 8px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .pill-done  { background: #e6f4ea; color: #1a7f37; }
+  .pill-build { background: #e8f0fe; color: #3b82d4; }
+  .pill-risk  { background: #fff3cd; color: #9a5700; }
+  .pill-scope { background: #ede9f9; color: #7c5cd8; }
+  .pill-go    { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
+  .pill-next  { background: #e8f0fe; color: #3b82d4; }
+
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .gap-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
+  .gap-card .gap-title { font-size: 12px; font-weight: 700; color: #9a5700; margin-bottom: 4px; }
+  .gap-card .gap-sol { font-size: 12px; color: #1f2328; }
+  .gap-card .gap-sol strong { color: #1a7f37; }
+
+  .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stack-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 10px 12px; }
+  .stack-card .st-layer { font-size: 11px; font-weight: 700; color: #57606a; text-transform: uppercase; margin-bottom: 4px; }
+  .stack-card .st-items { font-size: 12px; color: #1f2328; line-height: 1.7; }
+
+  .timeline { display: grid; gap: 0; }
+  .phase { display: grid; grid-template-columns: 110px 1fr; border: 1px solid #e5e7eb; border-bottom: none; }
+  .phase:last-child { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 4px 4px; }
+  .phase:first-child { border-radius: 4px 4px 0 0; }
+  .phase-label { background: #f7f8fa; border-right: 1px solid #e5e7eb; padding: 12px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .phase-label .days { font-size: 11px; font-weight: 700; color: #3b82d4; }
+  .phase-label .name { font-size: 11px; color: #57606a; margin-top: 2px; }
+  .phase-label .icon { font-size: 18px; margin-bottom: 4px; }
+  .phase-body { padding: 12px 16px; }
+  .phase-body .title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .phase-body ul { margin: 0; }
+  .phase-body li { font-size: 13px; }
+
+  .score-bar { display: flex; gap: 2px; align-items: center; }
+  .score-seg { height: 8px; width: 14px; border-radius: 2px; background: #3b82d4; }
+  .score-seg.empty { background: #e5e7eb; }
+
+  .flow-box { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin-bottom: 14px; }
+  .flow-step { background: #f7f8fa; border: 1px solid #e5e7eb; border-right: none; padding: 10px 8px; text-align: center; font-size: 11px; }
+  .flow-step:last-child { border-right: 1px solid #e5e7eb; border-radius: 0 4px 4px 0; }
+  .flow-step:first-child { border-radius: 4px 0 0 4px; }
+  .flow-step .fs-num { font-weight: 700; color: #3b82d4; font-size: 13px; margin-bottom: 3px; }
+  .flow-step.hl { background: #e8f0fe; border-color: #c3d6f7; }
+  .flow-step.hl2 { background: #e6f4ea; border-color: #b3d9be; }
+
+  .avail-demo { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 16px; margin-bottom: 14px; }
+  .avail-demo h4 { margin-top: 0; }
+  .avail-row { display: grid; grid-template-columns: 160px 60px 60px 60px 60px 60px 70px 70px; gap: 4px; align-items: center; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
+  .avail-row:last-child { border-bottom: none; }
+  .avail-row.header { font-weight: 700; font-size: 11px; color: #57606a; text-transform: uppercase; }
+  .av-yes { color: #1a7f37; font-weight: 700; }
+  .av-no  { color: #cf222e; font-weight: 700; }
+  .av-unk { color: #9a5700; }
+  .av-score { font-weight: 700; }
+  .av-score.pass { color: #1a7f37; }
+  .av-score.fail { color: #cf222e; }
+  .av-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px; }
+  .av-tag.show { background: #e6f4ea; color: #1a7f37; }
+  .av-tag.hide { background: #ffd7d7; color: #cf222e; }
+
+  .intake-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .intake-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
+  .intake-card .ic-field { font-size: 12px; font-weight: 700; color: #3b82d4; margin-bottom: 3px; }
+  .intake-card .ic-why { font-size: 11px; color: #57606a; margin-bottom: 4px; font-style: italic; }
+  .intake-card .ic-hint { font-size: 12px; color: #1f2328; }
+
+  .divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  
+  <div class="hero">
+    <h1>NomVox — AI Brand Identity Platform</h1>
+    <div class="sub">SDLC Plan v2 · 15-Day Sprint · Go Backend · IBM AI Builders Challenge · Creative Industries Theme</div>
+    <div class="badge-row">
+      <span class="badge green">15-Day Build</span>
+      <span class="badge orange">Go API Server</span>
+      <span class="badge">Next.js Frontend</span>
+      <span class="badge">IBM Granite LLM</span>
+      <span class="badge purple">80% Availability Gate</span>
+      <span class="badge purple">Keyword Intake Form</span>
+      <span class="badge green">AI Creative Partner</span>
+    </div>
+  </div>
+
+  
+  <h2>What Changed from v1</h2>
+  <table>
+    <thead><tr><th>Change</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Sprint compressed to 15 days</strong></td><td>Stretch features (screenshot thumbnails, color extractor, direction slider) promoted or dropped; daily scope is tighter. Gate dates moved accordingly.</td></tr>
+      <tr><td><strong>Go backend</strong></td><td>All API routes (<code>/generate</code>, <code>/availability</code>, <code>/visuals</code>, <code>/export</code>) are Go HTTP handlers using <code>net/http</code> + <code>chi</code> router. Next.js frontend calls Go over REST. Go <code>.gitignore</code> committed to repo root.</td></tr>
+      <tr><td><strong>Structured keyword intake form</strong></td><td>Replaces the free-text prompt builder. 8 guided fields with inline hints. Converts to a rich, deterministic LLM prompt on first submit — avoids wasted regeneration loops from thin input.</td></tr>
+      <tr><td><strong>80% availability threshold</strong></td><td>Each name is scored as a percentage of checked platforms that are available. Names scoring below 80% are silently filtered before the user ever sees them. Results show only names that pass; the score badge is shown per name.</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>1 · User Interaction Flow</h2>
+  <div class="flow-box">
+    <div class="flow-step hl">
+      <div class="fs-num">1</div>
+      Keyword<br />Intake Form
+    </div>
+    <div class="flow-step">
+      <div class="fs-num">2</div>
+      AI Name +<br />Tagline Gen
+    </div>
+    <div class="flow-step">
+      <div class="fs-num">3</div>
+      Availability<br />Score Gate
+    </div>
+    <div class="flow-step hl2">
+      <div class="fs-num">4</div>
+      Filtered<br />Results
+    </div>
+    <div class="flow-step">
+      <div class="fs-num">5</div>
+      React &amp;<br />Refine Loop
+    </div>
+    <div class="flow-step">
+      <div class="fs-num">6</div>
+      Visuals +<br />Export
+    </div>
+  </div>
+
+  <h4>Step 1 — Keyword Intake Form (the critical first step)</h4>
+  <p>Instead of a free-text box, the user fills a structured form with <strong>8 guided keyword fields</strong>. Each field has inline hint text showing exactly what to type. All fields except "Core idea" are optional but encouraged — the form shows a real-time "prompt richness" indicator that goes from grey to green as more fields are filled, motivating completeness without being mandatory.</p>
+  <p>On submit, the frontend assembles a single deterministic prompt string and sends it to <code>POST /api/generate</code>. The Go server uses this structured payload — no ambiguous free-text parsing needed. This means the LLM gets enough context on the <strong>first call</strong>, eliminating the "thin prompt → bad names → user abandons" loop that wastes tokens and session memory.</p>
+
+  <div class="intake-grid">
+    <div class="intake-card">
+      <div class="ic-field">Core idea *</div>
+      <div class="ic-why">What does this brand do or sell?</div>
+      <div class="ic-hint">Hint: "eco-friendly coffee" · "indie game studio" · "online tutoring for kids"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Target audience</div>
+      <div class="ic-why">Who is the primary customer?</div>
+      <div class="ic-hint">Hint: "young professionals 25–35" · "parents of toddlers" · "B2B SaaS teams"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Brand personality</div>
+      <div class="ic-why">What emotional tone should the name carry?</div>
+      <div class="ic-hint">Hint: "playful, bold" · "minimal, premium" · "warm, community-driven"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Style / aesthetic</div>
+      <div class="ic-why">Visual and naming style preference</div>
+      <div class="ic-hint">Hint: "modern wordmark" · "nature-inspired" · "techy acronym" · "made-up word"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Industry / category</div>
+      <div class="ic-why">Helps avoid clashes with existing brands</div>
+      <div class="ic-hint">Hint: "food &amp; beverage" · "fintech" · "health &amp; wellness" · "creative services"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Color mood</div>
+      <div class="ic-why">Seeds mood board and logo palette</div>
+      <div class="ic-hint">Hint: "earth tones, green, cream" · "electric blue, white" · "no preference"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Name length preference</div>
+      <div class="ic-why">Short names are easier handles; longer names carry more meaning</div>
+      <div class="ic-hint">Hint: "1–6 chars" · "1 word" · "2 words ok" · "no preference"</div>
+    </div>
+    <div class="intake-card">
+      <div class="ic-field">Words / sounds to avoid</div>
+      <div class="ic-why">Prevents suggestions the user will immediately reject</div>
+      <div class="ic-hint">Hint: "avoid: green, eco, leaf" · "no made-up words" · "nothing religious"</div>
+    </div>
+  </div>
+
+  <p><strong>Prompt richness meter:</strong> 1 field = 20% (red), 3 fields = 50% (orange), 5+ fields = 80%+ (green). A tooltip says "More context = better names on the first try, fewer wasted regenerations." The Go handler validates that at minimum the <code>core_idea</code> field is non-empty before calling the LLM.</p>
+
+  
+  <h2>2 · Availability Scoring &amp; 80% Gate</h2>
+  <p>Every generated name is immediately run through the Go availability engine <strong>before</strong> it is sent to the frontend. Names that do not score ≥ 80% available are <strong>silently discarded</strong> — the user only sees names that pass. The score badge (e.g., "100%" or "83%") is shown on each result card. A short explanation appears next to the score (e.g., "Domain + 4/5 handles available").</p>
+
+  <h4>Scoring formula</h4>
+  <table>
+    <thead><tr><th>Platform</th><th>Weight</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td>.com domain</td><td>2 points</td><td>Highest priority — most founders need a .com</td></tr>
+      <tr><td>Instagram handle</td><td>1 point</td><td>Tier-1 social platform</td></tr>
+      <tr><td>X (Twitter) handle</td><td>1 point</td><td>Tier-1 social platform</td></tr>
+      <tr><td>TikTok handle</td><td>1 point</td><td>Tier-1 for most consumer brands</td></tr>
+      <tr><td>Threads handle</td><td>0.5 point</td><td>Tier-2, growing but not critical</td></tr>
+      <tr><td>YouTube handle</td><td>0.5 point</td><td>Tier-2</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Total possible = 6 points.</strong> Score % = (points earned / 6) × 100. Threshold: ≥ 80% = pass (≥ 4.8 points). If the .com is unavailable, max score is 4/6 = 67% → automatic fail regardless of social handles. This ensures no name slips through without domain availability.</p>
+
+  <h4>Live availability result example (what the user sees)</h4>
+  <div class="avail-demo">
+    <div class="avail-row header">
+      <div>Name</div>
+      <div>.com</div>
+      <div>IG</div>
+      <div>X</div>
+      <div>TikTok</div>
+      <div>Threads</div>
+      <div>Score</div>
+      <div>Status</div>
+    </div>
+    <div class="avail-row">
+      <div><strong>Verdara</strong></div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-score pass">100%</div>
+      <div><span class="av-tag show">SHOW</span></div>
+    </div>
+    <div class="avail-row">
+      <div><strong>Foliaro</strong></div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-no">✗</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-score pass">83%</div>
+      <div><span class="av-tag show">SHOW</span></div>
+    </div>
+    <div class="avail-row">
+      <div><strong>Leafora</strong></div>
+      <div class="av-yes">✓</div>
+      <div class="av-no">✗</div>
+      <div class="av-no">✗</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-score fail">67%</div>
+      <div><span class="av-tag hide">FILTERED</span></div>
+    </div>
+    <div class="avail-row">
+      <div><strong>Bruverde</strong></div>
+      <div class="av-no">✗</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-yes">✓</div>
+      <div class="av-score fail">50%</div>
+      <div><span class="av-tag hide">FILTERED</span></div>
+    </div>
+  </div>
+  <p>If <strong>zero names pass</strong> after filtering: the Go server automatically requests a second generation batch from Granite (up to 3 retry cycles), each time instructing the LLM to produce more unusual/coined words that are more likely to be clear on all platforms. If still no passes after 3 cycles, a "closest match" row appears showing the highest-scoring failed name with a breakdown ("Missing only: X handle — try @FolaroHQ as an alternative").</p>
+
+  
+  <h2>3 · System Architecture</h2>
+
+  <svg xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Segoe UI',sans-serif" font-size="12" style="width:100%;height:auto;display:block;margin:10px 0">
+    <defs>
+      <marker id="a1"><path d="M0,0 L6,3 L0,6 Z" fill="#3b82d4"></path></marker>
+      <marker id="a2"><path d="M0,0 L6,3 L0,6 Z" fill="#00695c"></path></marker>
+      <marker id="a3"><path d="M0,0 L6,3 L0,6 Z" fill="#7c5cd8"></path></marker>
+    </defs>
+
+    
+    <rect x="10" y="20" width="140" height="290" rx="6" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="80" y="40" text-anchor="middle" font-weight="700" font-size="11" fill="#57606a">BROWSER</text>
+    <text x="80" y="54" text-anchor="middle" font-size="10" fill="#3b82d4">Next.js / React</text>
+    <rect x="20" y="62" width="120" height="26" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="79" text-anchor="middle" fill="#3b82d4" font-weight="600" font-size="11">Keyword Intake Form</text>
+    <rect x="20" y="96" width="120" height="26" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="113" text-anchor="middle" fill="#3b82d4" font-weight="600" font-size="11">Results + Avail. Matrix</text>
+    <rect x="20" y="130" width="120" height="26" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="147" text-anchor="middle" fill="#3b82d4" font-weight="600" font-size="11">React / Refine Loop</text>
+    <rect x="20" y="164" width="120" height="26" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="181" text-anchor="middle" fill="#3b82d4" font-weight="600" font-size="11">Visual Identity</text>
+    <rect x="20" y="198" width="120" height="26" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="215" text-anchor="middle" fill="#3b82d4" font-weight="600" font-size="11">Export Pack</text>
+    <rect x="20" y="240" width="120" height="26" rx="4" fill="#f0f2f5" stroke="#e5e7eb"></rect>
+    <text x="80" y="257" text-anchor="middle" fill="#57606a" font-size="11">Prompt Richness Meter</text>
+    <rect x="20" y="274" width="120" height="26" rx="4" fill="#f0f2f5" stroke="#e5e7eb"></rect>
+    <text x="80" y="291" text-anchor="middle" fill="#57606a" font-size="11">Score Badge per Name</text>
+
+    
+    <line x1="150" y1="170" x2="198" y2="170" stroke="#3b82d4" stroke-width="1.5" marker-end="url(#a1)"></line>
+
+    
+    <rect x="200" y="20" width="155" height="290" rx="6" fill="#e0f2f1" stroke="#b2dfdb"></rect>
+    <text x="277" y="40" text-anchor="middle" font-weight="700" font-size="11" fill="#00695c">GO API SERVER</text>
+    <text x="277" y="54" text-anchor="middle" font-size="10" fill="#00695c">net/http · chi router</text>
+    <rect x="210" y="62" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="79" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">POST /api/generate</text>
+    <rect x="210" y="96" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="113" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">POST /api/availability</text>
+    <rect x="210" y="130" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="147" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">POST /api/visuals</text>
+    <rect x="210" y="164" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="181" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">POST /api/mockup</text>
+    <rect x="210" y="198" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="215" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">POST /api/export</text>
+    <rect x="210" y="232" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="249" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">PATCH /api/session/react</text>
+    <rect x="210" y="266" width="135" height="26" rx="4" fill="#ffffff" stroke="#b2dfdb"></rect>
+    <text x="277" y="283" text-anchor="middle" fill="#00695c" font-weight="600" font-size="11">80% Gate Filter Logic</text>
+
+    
+    <line x1="355" y1="170" x2="398" y2="170" stroke="#00695c" stroke-width="1.5" marker-end="url(#a2)"></line>
+
+    
+    <rect x="400" y="20" width="155" height="290" rx="6" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="477" y="40" text-anchor="middle" font-weight="700" font-size="11" fill="#57606a">AI / EXTERNAL</text>
+
+    <rect x="410" y="56" width="135" height="44" rx="4" fill="#e6f4ea" stroke="#b3d9be"></rect>
+    <text x="477" y="74" text-anchor="middle" fill="#1a7f37" font-weight="600" font-size="11">IBM Granite LLM</text>
+    <text x="477" y="89" text-anchor="middle" fill="#1a7f37" font-size="10">watsonx.ai · Name/Tagline/Brief</text>
+
+    <rect x="410" y="110" width="135" height="44" rx="4" fill="#fff3cd" stroke="#f0c060"></rect>
+    <text x="477" y="128" text-anchor="middle" fill="#9a5700" font-weight="600" font-size="11">Availability Engine</text>
+    <text x="477" y="143" text-anchor="middle" fill="#9a5700" font-size="10">RDAP + HTTP HEAD probes</text>
+
+    <rect x="410" y="164" width="135" height="44" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="477" y="182" text-anchor="middle" fill="#3b82d4" font-weight="600" font-size="11">Image Gen API</text>
+    <text x="477" y="197" text-anchor="middle" fill="#3b82d4" font-size="10">DALL-E 3 / SD XL</text>
+
+    <rect x="410" y="218" width="135" height="44" rx="4" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="477" y="236" text-anchor="middle" fill="#57606a" font-weight="600" font-size="11">Screenshot (Puppeteer)</text>
+    <text x="477" y="251" text-anchor="middle" fill="#57606a" font-size="10">Taken handle preview</text>
+
+    <rect x="410" y="272" width="135" height="30" rx="4" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="477" y="291" text-anchor="middle" fill="#57606a" font-size="11">Redis / Upstash Session</text>
+
+    
+    <line x1="355" y1="280" x2="408" y2="286" stroke="#57606a" stroke-width="1.2"></line>
+  </svg>
+
+  <h4>Technology Stack</h4>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="st-layer">Frontend</div>
+      <div class="st-items">Next.js 14 (App Router)<br />React + Tailwind CSS<br />shadcn/ui<br />Fetch API → Go backend</div>
+    </div>
+    <div class="stack-card">
+      <div class="st-layer">Backend (Go)</div>
+      <div class="st-items">Go 1.22+<br />chi router<br />encoding/json<br />net/http (parallel probes)<br />Redis client (go-redis)<br />Archive/zip (export)</div>
+    </div>
+    <div class="stack-card">
+      <div class="st-layer">AI &amp; Services</div>
+      <div class="st-items">IBM Granite (watsonx.ai)<br />DALL-E 3 / SD XL<br />RDAP API (domains)<br />Puppeteer (screenshots)<br />Vercel Blob (assets)</div>
+    </div>
+  </div>
+
+  
+  <h2>4 · Go Project Structure &amp; .gitignore</h2>
+  <pre>nomvox/
+├── cmd/
+│   └── server/
+│       └── main.go          # Entry point, router setup
+├── internal/
+│   ├── handlers/
+│   │   ├── generate.go      # POST /api/generate
+│   │   ├── availability.go  # POST /api/availability + 80% gate
+│   │   ├── visuals.go       # POST /api/visuals
+│   │   ├── mockup.go        # POST /api/mockup
+│   │   ├── export.go        # POST /api/export (ZIP)
+│   │   └── session.go       # PATCH /api/session/react
+│   ├── ai/
+│   │   ├── granite.go       # IBM Granite API client
+│   │   └── imagegen.go      # Image generation client
+│   ├── availability/
+│   │   ├── checker.go       # Parallel probe orchestrator
+│   │   ├── domain.go        # RDAP lookup
+│   │   ├── social.go        # HTTP HEAD probes per platform
+│   │   └── scorer.go        # Weighted 80% gate logic
+│   ├── session/
+│   │   └── store.go         # Redis session read/write
+│   └── models/
+│       └── types.go         # BrandSession, NameCard, AvailResult
+├── frontend/                # Next.js app (separate package.json)
+│   ├── app/
+│   ├── components/
+│   └── ...
+├── .env.example
+├── .gitignore               # Go .gitignore (see below)
+├── go.mod
+├── go.sum
+└── README.md</pre>
+
+  <h4>Go .gitignore</h4>
+  <pre># Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+nomvox-server
+
+# Test binary, built with go test -c
+*.test
+
+# Output of go build
+/cmd/server/server
+/bin/
+
+# Go workspace
+go.work
+go.work.sum
+
+# Module download cache
+/vendor/
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+
+# Test and coverage artifacts
+*.out
+coverage.html
+
+# Temp / generated
+tmp/
+dist/
+.next/
+node_modules/
+
+# Vercel
+.vercel</pre>
+
+  
+  <h2>5 · Key Go Handler Logic</h2>
+
+  <h4>availability/scorer.go — 80% gate</h4>
+  <pre>type PlatformResult struct {
+    Domain   bool // .com
+    Instagram bool
+    X         bool
+    TikTok    bool
+    Threads   bool
+    YouTube   bool
+}
+
+// Score returns a 0–100 float and whether it passes the 80% threshold.
+func Score(r PlatformResult) (float64, bool) {
+    points := 0.0
+    if r.Domain    { points += 2.0 }  // weighted double
+    if r.Instagram { points += 1.0 }
+    if r.X         { points += 1.0 }
+    if r.TikTok    { points += 1.0 }
+    if r.Threads   { points += 0.5 }
+    if r.YouTube   { points += 0.5 }
+    score := (points / 6.0) * 100.0
+    return score, score &gt;= 80.0
+}</pre>
+
+  <h4>availability/checker.go — parallel probes</h4>
+  <pre>func CheckAll(ctx context.Context, name string) PlatformResult {
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    r := PlatformResult{}
+
+    probes := []struct {
+        key  string
+        fn   func() bool
+    }{
+        {"domain",    func() bool { return checkDomain(ctx, name) }},
+        {"instagram", func() bool { return checkSocial(ctx, "https://instagram.com/"+name) }},
+        {"x",         func() bool { return checkSocial(ctx, "https://x.com/"+name) }},
+        {"tiktok",    func() bool { return checkSocial(ctx, "https://tiktok.com/@"+name) }},
+        {"threads",   func() bool { return checkSocial(ctx, "https://threads.net/@"+name) }},
+        {"youtube",   func() bool { return checkSocial(ctx, "https://youtube.com/@"+name) }},
+    }
+
+    for _, p := range probes {
+        wg.Add(1)
+        go func(probe struct { key string; fn func() bool }) {
+            defer wg.Done()
+            result := probe.fn()
+            mu.Lock()
+            defer mu.Unlock()
+            switch probe.key {
+            case "domain":    r.Domain = result
+            case "instagram": r.Instagram = result
+            case "x":         r.X = result
+            case "tiktok":    r.TikTok = result
+            case "threads":   r.Threads = result
+            case "youtube":   r.YouTube = result
+            }
+        }(p)
+    }
+    wg.Wait()
+    return r
+}</pre>
+
+  
+  <h2>6 · 15-Day Sprint Plan</h2>
+  <table>
+    <thead><tr><th>Day(s)</th><th>Phase</th><th>Deliverables</th><th>Stack</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1</strong></td><td>Env &amp; Scaffold</td><td>Monorepo init, Go module (<code>go mod init</code>), Next.js scaffold, chi router, Redis (Upstash), CI (GitHub Actions), <code>.gitignore</code>, <code>.env.example</code>, shared TypeScript types, Go structs in <code>models/types.go</code></td><td><span class="pill pill-go">Go</span> <span class="pill pill-next">Next</span></td></tr>
+      <tr><td><strong>2</strong></td><td>Keyword Intake Form</td><td>8-field structured form component, prompt richness meter (client-side), form → JSON payload serialization, Go handler validates <code>core_idea</code> non-empty, assembles LLM prompt string from all fields</td><td><span class="pill pill-next">Next</span> <span class="pill pill-go">Go</span></td></tr>
+      <tr><td><strong>3–4</strong></td><td>LLM Core — Names &amp; Taglines</td><td><code>internal/ai/granite.go</code> client, <code>POST /api/generate</code> handler, system prompt template with session memory injection, streaming JSON response to frontend, 5–10 NameCard structs per call, Zod validation on client</td><td><span class="pill pill-go">Go</span></td></tr>
+      <tr><td><strong>5</strong></td><td>Session Memory</td><td>Redis session schema (<code>liked[]</code>, <code>rejected[]</code>, <code>direction_notes[]</code>, <code>allGenerated[]</code>), <code>store.go</code> read/write, session injected into every Granite call, <code>PATCH /api/session/react</code> endpoint, deduplication guard</td><td><span class="pill pill-go">Go</span></td></tr>
+      <tr><td><strong>6–7</strong></td><td>Availability Engine + 80% Gate</td><td><code>domain.go</code> RDAP check, <code>social.go</code> parallel HTTP HEAD probes (6 platforms), <code>scorer.go</code> weighted 80% gate, auto-filter logic in <code>POST /api/availability</code>, result matrix UI component, zero-pass retry loop (up to 3 cycles), closest-match fallback card</td><td><span class="pill pill-go">Go</span> <span class="pill pill-next">Next</span></td></tr>
+      <tr><td><strong>8</strong></td><td>Refine Loop &amp; Brand Descriptions</td><td>Inline comment box per name card, direction slider ("playful ↔ premium"), short (1-sentence) + long (3–4 sentences) brand description via Granite, regenerate-per-field button</td><td><span class="pill pill-go">Go</span> <span class="pill pill-next">Next</span></td></tr>
+      <tr><td><strong>9–10</strong></td><td>Visual Identity — Mood Board &amp; Logo</td><td><code>internal/ai/imagegen.go</code> client, <code>POST /api/visuals</code>, 4-panel mood board (4 image-gen calls), 3 logo concept variants (minimalist / wordmark / emblem) with negative prompts, Vercel Blob asset storage, regenerate-single button per variant</td><td><span class="pill pill-go">Go</span></td></tr>
+      <tr><td><strong>11</strong></td><td>Hero Landing-Page Mock</td><td><code>POST /api/mockup</code> — Granite generates hero-section HTML/CSS (name + tagline + palette + logo slot), sandboxed iframe preview, "copy code" + "download HTML" buttons</td><td><span class="pill pill-go">Go</span> <span class="pill pill-next">Next</span></td></tr>
+      <tr><td><strong>12</strong></td><td>Export Pack</td><td><code>POST /api/export</code> — Go <code>archive/zip</code>: names-taglines.txt, brand-brief.pdf, mood-board.png, logo variants .svg/.png, hero-section.html, color-palette.json; download endpoint streams ZIP binary</td><td><span class="pill pill-go">Go</span></td></tr>
+      <tr><td><strong>13</strong></td><td>QA &amp; Integration</td><td>End-to-end happy path, error states (API down, rate limit, zero-pass loop), loading skeletons, mobile viewport pass (375 / 768 / 1280 px), accessibility basics (WCAG AA), Go unit tests for <code>scorer.go</code> and <code>checker.go</code></td><td>All</td></tr>
+      <tr><td><strong>14</strong></td><td>Demo Prep</td><td>Seed demo ("eco coffee for young professionals"), record 3-min video (script at §11), finalize GitHub README, deploy to Vercel (frontend) + Fly.io or Railway (Go server)</td><td>All</td></tr>
+      <tr><td><strong>15</strong></td><td>Submission</td><td>Tag v1.0.0 release, verify public repo + public video, complete submission platform page, upload IBM SkillsBuild certificates, final smoke-test on production URL</td><td>All</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>7 · Phase Breakdown</h2>
+  <div class="timeline">
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🏗️</div>
+        <div class="days">Day 1</div>
+        <div class="name">Phase 1<br />Setup</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Environment, Scaffold &amp; Repo</div>
+        <ul>
+          <li>Create GitHub repo, commit Go <code>.gitignore</code> and <code>.env.example</code></li>
+          <li><code>go mod init github.com/your-org/nomvox</code>; add <code>chi</code>, <code>go-redis</code>, <code>encoding/json</code></li>
+          <li>Next.js 14 scaffold inside <code>frontend/</code>; Tailwind + shadcn/ui setup</li>
+          <li>GitHub Actions CI: <code>go build ./...</code> + <code>go test ./...</code> + <code>npm run build</code></li>
+          <li>Provision Upstash Redis; add connection string to secrets</li>
+          <li>Define all shared structs in <code>internal/models/types.go</code> and TypeScript types in <code>frontend/lib/types.ts</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">📝</div>
+        <div class="days">Day 2</div>
+        <div class="name">Phase 2<br />Intake</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Keyword Intake Form — The Critical First Step</div>
+        <ul>
+          <li>8-field form with inline hint text per field; all fields except <code>core_idea</code> optional</li>
+          <li>Prompt richness meter: client-side JS counts filled fields → colour progress bar (red / orange / green)</li>
+          <li>Tooltip on meter: "More context = better names on the first try"</li>
+          <li>"Inspire me" button pre-fills with a random example brand scenario</li>
+          <li>On submit: frontend serializes to <code>IntakePayload</code> JSON → <code>POST /api/generate</code></li>
+          <li>Go handler assembles deterministic prompt: <em>"Generate brand names for a [core_idea] targeting [audience], personality: [personality], style: [style], industry: [industry], colors: [color_mood], length: [name_length]. Avoid: [avoid]."</em></li>
+          <li>Validation: <code>core_idea</code> empty → 400 with field-level error message</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🤖</div>
+        <div class="days">Days 3–5</div>
+        <div class="name">Phase 3<br />LLM + Memory</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Granite Generation + Session Memory</div>
+        <ul>
+          <li>Go Granite client: HTTP POST to watsonx.ai endpoint, stream response, parse JSON array of NameCard</li>
+          <li>NameCard struct: <code>Name</code>, <code>Tagline</code>, <code>ToneReasoning</code>, <code>StyleTags</code>, <code>ShortDesc</code>, <code>LongDesc</code></li>
+          <li>System prompt prefix on every call: injects <code>rejected[]</code>, <code>liked[]</code>, <code>direction_notes[]</code>, <code>allGenerated[]</code> from Redis session</li>
+          <li>Names in <code>allGenerated[]</code> are explicitly excluded in prompt: "Do not suggest any of these: [list]"</li>
+          <li>Redis session TTL: 2 hours; client-side localStorage backup of session ID</li>
+          <li>Zod schema validation on frontend for each NameCard; malformed cards silently skipped</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🔍</div>
+        <div class="days">Days 6–7</div>
+        <div class="name">Phase 4<br />Availability</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Parallel Availability Probes + 80% Gate</div>
+        <ul>
+          <li>Go runs all 6 platform probes concurrently with <code>sync.WaitGroup</code>; total probe time ≈ 1–2s</li>
+          <li>Domain: RDAP via <code>https://rdap.org/domain/{name}.com</code> — 200+registrar = taken, 404 = available</li>
+          <li>Social: HTTP HEAD with 5s timeout; 200 = taken, 404/302-to-signup = available, 429/5xx = unknown</li>
+          <li>Redis cache: availability results cached 10 min per name to avoid repeat probes in same session</li>
+          <li>Scorer applies weighted formula; names &lt; 80% are discarded before response is sent</li>
+          <li>Zero-pass retry: Go automatically re-requests Granite with "generate more unusual coined words" instruction; up to 3 cycles before showing closest-match fallback</li>
+          <li>Frontend: availability matrix table with colour badges; score pill on each name card</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🖼️</div>
+        <div class="days">Days 9–11</div>
+        <div class="name">Phase 5<br />Visuals</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Mood Board, Logo Concepts &amp; Landing-Page Mock</div>
+        <ul>
+          <li>4 mood board images: structured prompts using intake color mood + style + industry; 2×2 grid UI</li>
+          <li>3 logo variants: minimalist icon, wordmark, emblem — each with negative prompt ("no text clutter, no gradients unless specified")</li>
+          <li>Per-variant regenerate: each logo card has its own "redo this one" button; does not trigger the others</li>
+          <li>Hero landing mock: Granite generates <code>&lt;section&gt;</code> HTML with name, tagline, CTA, inline CSS using extracted palette — rendered in sandboxed iframe</li>
+          <li>All image assets stored as signed Vercel Blob URLs; included in export ZIP</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">📦</div>
+        <div class="days">Day 12</div>
+        <div class="name">Phase 6<br />Export</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">ZIP Export Pack</div>
+        <ul>
+          <li>Go <code>archive/zip</code> writer: bundles all session assets into a single ZIP stream</li>
+          <li>Contents: <code>names-taglines.txt</code>, <code>brand-brief.pdf</code> (html→pdf via wkhtmltopdf or chromedp), <code>mood-board.png</code>, <code>logo-icon.svg</code>, <code>logo-wordmark.svg</code>, <code>logo-emblem.svg</code>, <code>hero-section.html</code>, <code>color-palette.json</code></li>
+          <li>Endpoint streams ZIP binary with <code>Content-Disposition: attachment; filename="nomvox-brand-pack.zip"</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🚀</div>
+        <div class="days">Days 13–15</div>
+        <div class="name">Phase 7<br />Ship</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">QA, Demo, Documentation &amp; Submission</div>
+        <ul>
+          <li>Go unit tests: <code>scorer_test.go</code>, <code>checker_test.go</code> (mock HTTP responses), <code>session_test.go</code></li>
+          <li>End-to-end happy path, error states (rate limit, zero-pass, API timeout)</li>
+          <li>Record 3-min demo video using pre-seeded "eco coffee" scenario</li>
+          <li>Deploy: Go server to Fly.io (Dockerfile), Next.js to Vercel</li>
+          <li>Finalize README (all required sections), tag <code>v1.0.0</code></li>
+          <li>Complete submission platform page; verify public access for repo + video</li>
+          <li>Upload IBM SkillsBuild certificates for each team member</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  
+  <h2>8 · Go API Route Specification</h2>
+  <table>
+    <thead><tr><th>Route</th><th>Method</th><th>Input (JSON)</th><th>Output</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>/api/session</code></td><td>POST</td><td><code>{ userId? }</code></td><td><code>{ sessionId }</code></td><td>UUID v4; creates Redis key</td></tr>
+      <tr><td><code>/api/generate</code></td><td>POST</td><td><code>{ sessionId, intake: IntakePayload, action }</code></td><td>Stream: <code>NameCard[]</code></td><td>Builds prompt from intake; injects session memory; streams chunks</td></tr>
+      <tr><td><code>/api/availability</code></td><td>POST</td><td><code>{ sessionId, names: string[] }</code></td><td><code>AvailResult[]</code> (only ≥80% pass)</td><td>Parallel probes; 80% gate applied; retries if 0 pass</td></tr>
+      <tr><td><code>/api/session/react</code></td><td>PATCH</td><td><code>{ sessionId, name, action, note? }</code></td><td><code>{ ok }</code></td><td>Updates liked/rejected/direction_notes in Redis</td></tr>
+      <tr><td><code>/api/visuals</code></td><td>POST</td><td><code>{ sessionId, selectedName, palette, style }</code></td><td><code>{ moodboard: url[], logos: url[] }</code></td><td>7 image-gen calls (4 mood + 3 logo)</td></tr>
+      <tr><td><code>/api/mockup</code></td><td>POST</td><td><code>{ name, tagline, palette, style }</code></td><td><code>{ html: string }</code></td><td>Granite generates hero HTML/CSS string</td></tr>
+      <tr><td><code>/api/export</code></td><td>POST</td><td><code>{ sessionId, selectedName }</code></td><td>ZIP binary stream</td><td>Go <code>archive/zip</code>; all session assets bundled</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>9 · Gap Analysis &amp; Solutions (Updated)</h2>
+  <div class="gap-grid">
+    <div class="gap-card">
+      <div class="gap-title">GAP 1 — Zero all-green results</div>
+      <div class="gap-sol"><strong>Solution:</strong> Go server auto-retries Granite (up to 3 cycles) requesting more invented/coined words. After 3 failures, shows highest-scoring name with a breakdown card ("Missing only X handle — try @FolaroHQ") and a "try a different direction" prompt.</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 2 — Regenerate memory</div>
+      <div class="gap-sol"><strong>Solution:</strong> Redis session injects <code>liked[]</code>, <code>rejected[]</code>, <code>direction_notes[]</code> into every Granite call system prompt. <code>allGenerated[]</code> explicitly excluded. Direction slider value appended as a tonal instruction.</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 3 — Thin first-pass prompts</div>
+      <div class="gap-sol"><strong>Solution (new):</strong> Structured 8-field intake form with hints. Prompt richness meter motivates completeness. Go handler assembles a deterministic, rich prompt on first submit — no multi-round clarification needed.</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 4 — Handle probe accuracy</div>
+      <div class="gap-sol"><strong>Solution:</strong> Go parallel probes with 5s per-probe timeout. 429/5xx = unknown → "check manually" badge. RDAP for domains (not scraping). Redis cache 10 min. Confidence label shown on unknown results.</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 5 — Mockup scope creep</div>
+      <div class="gap-sol"><strong>Solution:</strong> Hard-scoped to single hero-section. Granite generates <code>&lt;section&gt;</code> HTML/CSS only. Rendered in sandboxed <code>&lt;iframe&gt;</code>. No multi-page build.</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 6 — Logo quality</div>
+      <div class="gap-sol"><strong>Solution:</strong> 3 explicit variants with negative prompts for clarity. Per-variant regenerate without regenerating the others. User picks one to include in export.</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 7 — Screenshot of taken handles</div>
+      <div class="gap-sol"><strong>Solution:</strong> Puppeteer server-side crop on taken handles → signed Vercel Blob URL. 10s timeout; silent fallback to "view live" link. Implemented as Day 14 stretch (after core MVP is done).</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-title">GAP 8 — 80% threshold edge cases</div>
+      <div class="gap-sol"><strong>Solution:</strong> User can toggle which platforms matter (e.g., "I don't need YouTube"). Toggle updates the denominator of the score formula in real time. Domain remains double-weighted and cannot be toggled off.</div>
+    </div>
+  </div>
+
+  
+  <h2>10 · Judging Criteria Alignment</h2>
+  <table>
+    <thead><tr><th>Criterion</th><th>Score</th><th>How NomVox addresses it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Technical Execution</strong></td>
+        <td><div class="score-bar"><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div></div></td>
+        <td>Go API server with concurrent availability probes, IBM Granite + watsonx.ai, image-gen API, Redis session, Puppeteer screenshots, Next.js streaming UI, weighted scoring algorithm, ZIP export — diverse and well-integrated.</td>
+      </tr>
+      <tr>
+        <td><strong>Innovation</strong></td>
+        <td><div class="score-bar"><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg empty"></div></div></td>
+        <td>80% availability gate (automatic filtering, not a checklist) + session memory regeneration is meaningfully different from Namelix/Namechk. Structured intake form that pre-empts thin prompts is a UX-level innovation in the category.</td>
+      </tr>
+      <tr>
+        <td><strong>Challenge Fit</strong></td>
+        <td><div class="score-bar"><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div></div></td>
+        <td>Spans 3 solution areas (AI creative partner, ideation platform, design/visual concepts). Every theme question is demonstrably answered: faster creation, bridging imagination to execution, AI as partner not generator.</td>
+      </tr>
+      <tr>
+        <td><strong>Feasibility</strong></td>
+        <td><div class="score-bar"><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg empty"></div></div></td>
+        <td>All APIs are production-ready. Go server is lightweight and deployable on Fly.io free tier. No hardware dependency. 15-day plan has clear daily scope. Stretch features are explicitly deferred.</td>
+      </tr>
+      <tr>
+        <td><strong>Real-World Impact</strong></td>
+        <td><div class="score-bar"><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div></div></td>
+        <td>Every new brand needs this. Saves days of manual research and removes the economic barrier to professional brand identity. 80% gate directly prevents wasted registrations — a concrete, user-facing value-add no competitor offers.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>11 · 3-Minute Demo Video Script</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Segment</th><th>What to show</th></tr></thead>
+    <tbody>
+      <tr><td>0:00–0:25</td><td>Hook</td><td>Show blank keyword intake form. Voiceover: "You have 10 minutes to name your brand. Let's go." No preamble.</td></tr>
+      <tr><td>0:25–0:55</td><td>Intake Form</td><td>Fill all 8 fields for "eco-friendly coffee brand." Watch prompt richness meter turn green. Hit Generate. Show Go server spinning (streaming indicator).</td></tr>
+      <tr><td>0:55–1:25</td><td>Results + Gate</td><td>8 name cards stream in. Highlight that 3 are filtered automatically (score badges show 67%, 50%). Zoom into the 80% score badge on "Verdara" and "Foliaro". Show availability matrix.</td></tr>
+      <tr><td>1:25–1:50</td><td>Refine Loop</td><td>Click "I like Verdara but want it more playful." → Regenerate → 5 new names appear, none are repeats. Show session sidebar with rejected list.</td></tr>
+      <tr><td>1:50–2:25</td><td>Visuals</td><td>Select "Verdara" → Generate mood board (4 panels appear) → 3 logo concepts → Hero landing mock in iframe. Download ZIP. Show ZIP contents briefly.</td></tr>
+      <tr><td>2:25–2:50</td><td>Architecture</td><td>Quick architecture diagram: Go backend, Granite, Redis session, availability engine. Highlight IBM Bob as primary dev tool.</td></tr>
+      <tr><td>2:50–3:00</td><td>Close</td><td>"NomVox — from blank page to brand identity in under 3 minutes." Show final result card.</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>12 · Risk Register</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Image-gen cost overrun</td><td><span class="pill pill-risk">Medium</span></td><td>High</td><td>Cap at 7 image-gen calls per session (4 mood + 3 logo); lazy-load on explicit user request; cache all generated images in Vercel Blob</td></tr>
+      <tr><td>Social probes blocked (429)</td><td><span class="pill pill-risk">Medium</span></td><td>Medium</td><td>Go probes with 1s stagger + random user-agent; 429 = "unknown" badge + direct "check manually" link; does not crash scoring</td></tr>
+      <tr><td>Granite JSON malformed</td><td><span class="pill pill-risk">Low</span></td><td>High</td><td>Go response parser uses <code>encoding/json</code> strict decode; malformed card skipped; retry once with stricter format instruction in prompt</td></tr>
+      <tr><td>Zero names pass 80% gate after 3 retries</td><td><span class="pill pill-risk">Low</span></td><td>Medium</td><td>Show closest-match fallback card with breakdown + platform-toggle to let user lower their threshold for one platform</td></tr>
+      <tr><td>15-day sprint overrun</td><td><span class="pill pill-risk">Medium</span></td><td>High</td><td>Screenshot feature and color extractor are explicit stretch items; core MVP (intake → generate → gate → visuals → export) can ship without them</td></tr>
+      <tr><td>Demo video &gt; 3 min</td><td><span class="pill pill-risk">Medium</span></td><td>High</td><td>Pre-script with timestamps above; record dry run on Day 13; hard-cut at 2:58</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>13 · Submission Checklist</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Status</th><th>Due</th></tr></thead>
+    <tbody>
+      <tr><td>Working prototype deployed (Vercel + Fly.io)</td><td><span class="pill pill-build">Build</span></td><td>Day 14</td></tr>
+      <tr><td>IBM SkillsBuild certificate per team member</td><td><span class="pill pill-build">Build</span></td><td>Day 7</td></tr>
+      <tr><td>Public GitHub repo with full README</td><td><span class="pill pill-build">Build</span></td><td>Day 14</td></tr>
+      <tr><td>Go .gitignore committed to root</td><td><span class="pill pill-done">Day 1</span></td><td>Day 1</td></tr>
+      <tr><td>Demo video ≤ 3 min (YouTube / Loom)</td><td><span class="pill pill-build">Build</span></td><td>Day 14</td></tr>
+      <tr><td>Submission platform page complete</td><td><span class="pill pill-build">Build</span></td><td>Day 15</td></tr>
+      <tr><td>Repo + video publicly accessible verified</td><td><span class="pill pill-build">Build</span></td><td>Day 15</td></tr>
+      <tr><td>Deadline: July 31 2026, 11:59 PM ET</td><td><span class="pill pill-risk">Hard deadline</span></td><td>July 31</td></tr>
+    </tbody>
+  </table>
+
+  <footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>

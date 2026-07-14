@@ -1,0 +1,584 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NomVox — Full SDLC Plan</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #1f2328; background: #ffffff; }
+  .page { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  /* Hero */
+  .hero { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 24px 28px; margin-bottom: 32px; }
+  .hero h1 { font-size: 22px; font-weight: 700; color: #1f2328; letter-spacing: -0.3px; }
+  .hero .sub { font-size: 13px; color: #57606a; margin-top: 4px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 12px; background: #e8f0fe; color: #3b82d4; border: 1px solid #c3d6f7; }
+  .badge.purple { background: #ede9f9; color: #7c5cd8; border-color: #d0c6f5; }
+  .badge.green { background: #e6f4ea; color: #1a7f37; border-color: #b3d9be; }
+
+  /* Section headings */
+  h2 { font-size: 15px; font-weight: 700; color: #1f2328; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #3b82d4; }
+  h3 { font-size: 13px; font-weight: 700; color: #1f2328; margin: 18px 0 6px; }
+  h4 { font-size: 12px; font-weight: 700; color: #57606a; text-transform: uppercase; letter-spacing: 0.4px; margin: 14px 0 5px; }
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+
+  /* Phase timeline */
+  .timeline { display: grid; gap: 0; }
+  .phase { display: grid; grid-template-columns: 110px 1fr; border: 1px solid #e5e7eb; border-bottom: none; }
+  .phase:last-child { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 4px 4px; }
+  .phase:first-child { border-radius: 4px 4px 0 0; }
+  .phase-label { background: #f7f8fa; border-right: 1px solid #e5e7eb; padding: 12px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .phase-label .days { font-size: 11px; font-weight: 700; color: #3b82d4; }
+  .phase-label .name { font-size: 11px; color: #57606a; margin-top: 2px; }
+  .phase-label .icon { font-size: 18px; margin-bottom: 4px; }
+  .phase-body { padding: 12px 16px; }
+  .phase-body .title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .phase-body ul { margin: 0; }
+  .phase-body li { font-size: 13px; }
+
+  /* Deliverable table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
+  th { background: #f7f8fa; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #57606a; padding: 8px 10px; text-align: left; border: 1px solid #e5e7eb; }
+  td { padding: 8px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+
+  /* Status pills */
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .pill-done { background: #e6f4ea; color: #1a7f37; }
+  .pill-build { background: #e8f0fe; color: #3b82d4; }
+  .pill-risk { background: #fff3cd; color: #9a5700; }
+  .pill-scope { background: #ede9f9; color: #7c5cd8; }
+
+  /* Gap/risk cards */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .gap-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
+  .gap-card .gap-title { font-size: 12px; font-weight: 700; color: #9a5700; margin-bottom: 4px; }
+  .gap-card .gap-sol { font-size: 12px; color: #1f2328; }
+  .gap-card .gap-sol strong { color: #1a7f37; }
+
+  /* Architecture diagram (SVG) */
+  svg.arch { width: 100%; height: auto; display: block; margin: 10px 0; }
+
+  /* Judging alignment table */
+  .score-bar { display: flex; gap: 2px; align-items: center; }
+  .score-seg { height: 8px; width: 14px; border-radius: 2px; background: #3b82d4; }
+  .score-seg.empty { background: #e5e7eb; }
+
+  /* Sprint table */
+  .sprint-row td:first-child { font-weight: 700; color: #3b82d4; white-space: nowrap; }
+
+  /* Stack row */
+  .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stack-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 10px 12px; }
+  .stack-card .st-layer { font-size: 11px; font-weight: 700; color: #57606a; text-transform: uppercase; margin-bottom: 4px; }
+  .stack-card .st-items { font-size: 12px; color: #1f2328; }
+
+  /* Separator */
+  .divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  
+  <div class="hero">
+    <h1>NomVox — AI Brand Identity Platform</h1>
+    <div class="sub">Full SDLC Plan · IBM AI Builders Challenge · July 2026 · Creative Industries Theme</div>
+    <div class="badge-row">
+      <span class="badge">AI Creative Partner</span>
+      <span class="badge">Ideation Platform</span>
+      <span class="badge purple">Design &amp; Visual Concepts</span>
+      <span class="badge purple">Personalized Assistant</span>
+      <span class="badge green">20-Day Build</span>
+      <span class="badge green">Next.js + IBM Granite</span>
+    </div>
+  </div>
+
+  
+  <h2>1 · Problem Statement</h2>
+  <p>Every new business, creator, or side-hustle founder faces the same blank-page problem: <strong>what do I call this, and does anyone already own that name?</strong> Today that means juggling a name-brainstorm session, a domain registrar tab, separate searches on Instagram/X/TikTok, a freelancer quote for logo concepts, and a week of back-and-forth before you have anything you can confidently share.</p>
+  <p>The gap is not lack of ideas — it is the <strong>iteration loop</strong>. Current tools (Namelix, Namechk, Looka) are one-shot generators with no conversational memory. A user cannot say "I liked the energy of option 3 but want it shorter and less corporate" and have the tool genuinely respond to that signal.</p>
+
+  
+  <h2>2 · Solution Overview</h2>
+  <p><strong>NomVox</strong> is a conversational AI brand-identity partner. A founder describes their idea in plain language; NomVox generates names, taglines, visual mood boards, a quick logo concept, and a hero-section landing-page mockup — all within a single iterative session that <em>remembers</em> what the user liked or rejected and refines accordingly.</p>
+
+  <h4>Core interaction flow</h4>
+  <table>
+    <thead><tr><th>#</th><th>Step</th><th>What the user sees</th><th>AI role</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Describe brand idea</td><td>Structured prompt builder: industry, size, style, colors, purpose/motto</td><td>—</td></tr>
+      <tr><td>2</td><td>First-pass generation</td><td>5–10 name + tagline cards with tone reasoning</td><td>IBM Granite LLM</td></tr>
+      <tr><td>3</td><td>Live availability check</td><td>Domain &amp; social handle badges (✓/✗ + screenshot thumbnail if taken)</td><td>Backend availability engine</td></tr>
+      <tr><td>4</td><td>React &amp; refine</td><td>Inline comment box per card + global direction slider ("more playful ↔ more premium")</td><td>Granite re-generates with session memory</td></tr>
+      <tr><td>5</td><td>Visual identity pack</td><td>Logo concept (SVG + raster), mood board (4-panel), hero-section mockup</td><td>Image-gen API (DALL-E 3 / Stable Diffusion)</td></tr>
+      <tr><td>6</td><td>Export</td><td>ZIP: names list, taglines, logo files, mood board, landing-page HTML mock, brand brief PDF</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>3 · System Architecture</h2>
+
+  
+  <svg class="arch" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Segoe UI',sans-serif" font-size="12">
+    
+    <rect x="10" y="10" width="140" height="280" rx="6" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="80" y="30" text-anchor="middle" font-weight="700" font-size="11" fill="#57606a">BROWSER</text>
+    <rect x="20" y="40" width="120" height="30" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="60" text-anchor="middle" fill="#3b82d4" font-weight="600">Prompt Builder</text>
+    <rect x="20" y="82" width="120" height="30" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="102" text-anchor="middle" fill="#3b82d4" font-weight="600">Results Cards</text>
+    <rect x="20" y="124" width="120" height="30" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="144" text-anchor="middle" fill="#3b82d4" font-weight="600">Refine / React</text>
+    <rect x="20" y="166" width="120" height="30" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="186" text-anchor="middle" fill="#3b82d4" font-weight="600">Visual Identity</text>
+    <rect x="20" y="208" width="120" height="30" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="80" y="228" text-anchor="middle" fill="#3b82d4" font-weight="600">Export Pack</text>
+    <text x="80" y="268" text-anchor="middle" font-size="11" fill="#57606a">Next.js / React</text>
+
+    
+    <line x1="150" y1="155" x2="198" y2="155" stroke="#3b82d4" stroke-width="1.5" marker-end="url(#arr)"></line>
+    <defs><marker id="arr"><path d="M0,0 L6,3 L0,6 Z" fill="#3b82d4"></path></marker></defs>
+
+    
+    <rect x="200" y="60" width="130" height="190" rx="6" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="265" y="80" text-anchor="middle" font-weight="700" font-size="11" fill="#57606a">NEXT.JS API</text>
+    <rect x="210" y="90" width="110" height="28" rx="4" fill="#ede9f9" stroke="#d0c6f5"></rect>
+    <text x="265" y="109" text-anchor="middle" fill="#7c5cd8" font-weight="600">/api/generate</text>
+    <rect x="210" y="126" width="110" height="28" rx="4" fill="#ede9f9" stroke="#d0c6f5"></rect>
+    <text x="265" y="145" text-anchor="middle" fill="#7c5cd8" font-weight="600">/api/availability</text>
+    <rect x="210" y="162" width="110" height="28" rx="4" fill="#ede9f9" stroke="#d0c6f5"></rect>
+    <text x="265" y="181" text-anchor="middle" fill="#7c5cd8" font-weight="600">/api/visuals</text>
+    <rect x="210" y="198" width="110" height="28" rx="4" fill="#ede9f9" stroke="#d0c6f5"></rect>
+    <text x="265" y="217" text-anchor="middle" fill="#7c5cd8" font-weight="600">/api/export</text>
+
+    
+    <line x1="330" y1="105" x2="378" y2="105" stroke="#7c5cd8" stroke-width="1.5" marker-end="url(#arr2)"></line>
+    <defs><marker id="arr2"><path d="M0,0 L6,3 L0,6 Z" fill="#7c5cd8"></path></marker></defs>
+    <line x1="330" y1="141" x2="378" y2="200" stroke="#7c5cd8" stroke-width="1.5" marker-end="url(#arr2)"></line>
+    <line x1="330" y1="177" x2="378" y2="250" stroke="#7c5cd8" stroke-width="1.5" marker-end="url(#arr2)"></line>
+
+    
+    <rect x="380" y="60" width="150" height="260" rx="6" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="455" y="80" text-anchor="middle" font-weight="700" font-size="11" fill="#57606a">AI / EXTERNAL</text>
+
+    <rect x="390" y="88" width="130" height="44" rx="4" fill="#e6f4ea" stroke="#b3d9be"></rect>
+    <text x="455" y="107" text-anchor="middle" fill="#1a7f37" font-weight="600">IBM Granite LLM</text>
+    <text x="455" y="122" text-anchor="middle" fill="#1a7f37" font-size="11">Name / Tagline / Brief</text>
+
+    <rect x="390" y="142" width="130" height="44" rx="4" fill="#fff3cd" stroke="#f0c060"></rect>
+    <text x="455" y="161" text-anchor="middle" fill="#9a5700" font-weight="600">Availability Engine</text>
+    <text x="455" y="176" text-anchor="middle" fill="#9a5700" font-size="11">HTTP probe + RDAP</text>
+
+    <rect x="390" y="196" width="130" height="44" rx="4" fill="#e8f0fe" stroke="#c3d6f7"></rect>
+    <text x="455" y="215" text-anchor="middle" fill="#3b82d4" font-weight="600">Image Gen API</text>
+    <text x="455" y="230" text-anchor="middle" fill="#3b82d4" font-size="11">Logo / Moodboard</text>
+
+    <rect x="390" y="250" width="130" height="44" rx="4" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="455" y="269" text-anchor="middle" fill="#57606a" font-weight="600">Screenshot API</text>
+    <text x="455" y="284" text-anchor="middle" fill="#57606a" font-size="11">Puppeteer / Screenshotone</text>
+
+    
+    <rect x="560" y="110" width="140" height="80" rx="6" fill="#f7f8fa" stroke="#e5e7eb"></rect>
+    <text x="630" y="132" text-anchor="middle" font-weight="700" font-size="11" fill="#57606a">SESSION STORE</text>
+    <text x="630" y="152" text-anchor="middle" fill="#57606a" font-size="12">Redis / Upstash</text>
+    <text x="630" y="168" text-anchor="middle" fill="#57606a" font-size="11">Conversation memory</text>
+    <text x="630" y="183" text-anchor="middle" fill="#57606a" font-size="11">Rejected names log</text>
+    <line x1="530" y1="110" x2="558" y2="150" stroke="#57606a" stroke-width="1.2"></line>
+  </svg>
+
+  <h4>Technology Stack</h4>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="st-layer">Frontend</div>
+      <div class="st-items">Next.js 14 (App Router)<br />React + Tailwind CSS<br />shadcn/ui components<br />Framer Motion (transitions)</div>
+    </div>
+    <div class="stack-card">
+      <div class="st-layer">Backend / API</div>
+      <div class="st-items">Next.js API routes<br />Node.js edge functions<br />Redis / Upstash (session)<br />Puppeteer (screenshots)</div>
+    </div>
+    <div class="stack-card">
+      <div class="st-layer">AI &amp; Services</div>
+      <div class="st-items">IBM Granite (LLM)<br />IBM watsonx.ai<br />DALL-E 3 or SD XL (images)<br />RDAP / domain API</div>
+    </div>
+  </div>
+
+  
+  <h2>4 · Gap Analysis &amp; Solutions</h2>
+  <div class="gap-grid">
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 1 — Zero all-green results</div>
+      <div class="gap-sol">No name in a batch may be fully available. <strong>Solution:</strong> Show a priority matrix — rows are names, columns are platforms. User toggles which platforms matter. Show "best fit" score (e.g., domain + Instagram available = 4/5). Offer a "closest match" row with minor spelling variants that unlock availability.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 2 — Regenerate memory</div>
+      <div class="gap-sol">LLM must not repeat rejected names or lose liked names between calls. <strong>Solution:</strong> Maintain a session object in Redis: <code>liked[]</code>, <code>rejected[]</code>, <code>direction_notes[]</code>. Every /api/generate call injects this as a system-prompt prefix. Names in <code>rejected[]</code> are explicitly excluded.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 3 — Mockup scope creep</div>
+      <div class="gap-sol">Full site mockup is weeks of work. <strong>Solution:</strong> Scope to a single hero-section HTML mock (headline, sub-headline, CTA button, brand color palette, placeholder logo). Generated by Granite as HTML/CSS + image slot filled by image-gen. Render in an <code>&lt;iframe&gt;</code> sandbox.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 4 — Handle availability accuracy</div>
+      <div class="gap-sol">Direct HTTP probes can be blocked or return false positives. <strong>Solution:</strong> Probe Instagram, X, TikTok, Threads, YouTube via URL HEAD request + HTTP status heuristic (200 = taken, 404 = available). For domains, use a proper RDAP/WHOIS API (Domainr or similar). Cache results for 10 min. Show confidence label.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 5 — Screenshot of taken handles</div>
+      <div class="gap-sol">Show <em>who</em> owns a taken handle. <strong>Solution:</strong> Use Puppeteer (server-side) or Screenshotone API to capture a viewport-crop of the profile page when a handle is marked taken. Store screenshot as a signed URL. Show thumbnail with "Currently owned by" overlay. Rate-limit to avoid blocks.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 6 — Logo generation quality</div>
+      <div class="gap-sol">Prompt-to-logo quality varies. <strong>Solution:</strong> Generate 3 logo concept variants (minimalist icon, wordmark, emblem). Auto-extract brand colors from the mood board using a color quantization step. Provide a "regenerate this one" button per variant without regenerating others.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 7 — Cold-start blank page</div>
+      <div class="gap-sol">Users don't know what to type. <strong>Solution:</strong> Structured prompt builder with guided fields (industry dropdown, brand adjectives chips, target audience, style preference, color mood). All fields optional — each filled field sharpens the prompt. Show "Inspire me" examples.</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-title">GAP 8 — Judging demo readiness</div>
+      <div class="gap-sol">3-minute video must show the full loop. <strong>Solution:</strong> Seed a "happy path" demo with a pre-seeded brand brief (e.g., "eco coffee for young professionals"). Record: input → names → availability → react → visuals → export. All in under 2:30 to leave 30s for architecture slide.</div>
+    </div>
+
+  </div>
+
+  
+  <h2>5 · Feature Specification</h2>
+  <table>
+    <thead><tr><th>Feature</th><th>MVP (ship day 15)</th><th>Stretch (days 16–20)</th><th>Out of scope</th></tr></thead>
+    <tbody>
+      <tr><td>Prompt builder (structured)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>AI name + tagline generation (Granite)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Tone reasoning per name</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Session memory (liked/rejected)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Regenerate with inline comments</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Domain availability (RDAP)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Social handle check (4 platforms)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Availability priority matrix</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Screenshot of taken handles</td><td></td><td><span class="pill pill-scope">Stretch</span></td><td></td></tr>
+      <tr><td>Short + long brand descriptions</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Mood board (4-panel image grid)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Logo concepts (3 variants)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Hero-section landing page mock</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Color palette extraction</td><td></td><td><span class="pill pill-scope">Stretch</span></td><td></td></tr>
+      <tr><td>Export ZIP (names + visuals + brief)</td><td><span class="pill pill-done">MVP</span></td><td></td><td></td></tr>
+      <tr><td>Full multi-page site mockup</td><td></td><td></td><td>Out of scope</td></tr>
+      <tr><td>Social post auto-scheduler</td><td></td><td></td><td>Out of scope</td></tr>
+      <tr><td>Trademark search</td><td></td><td></td><td>Out of scope</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>6 · 20-Day Sprint Plan</h2>
+  <table>
+    <thead><tr><th>Days</th><th>Phase</th><th>Deliverables</th><th>Owner focus</th></tr></thead>
+    <tbody class="sprint-row">
+      <tr><td>1–2</td><td>Discovery &amp; Setup</td><td>Project repo, README draft, Next.js scaffold, IBM watsonx.ai credentials, Upstash Redis, env vars, CI pipeline (GitHub Actions)</td><td>All</td></tr>
+      <tr><td>3–4</td><td>Prompt Builder UI</td><td>Structured prompt form (industry, style, colors, purpose chips), plain-text fallback, mobile-responsive layout, Storybook stories</td><td>Frontend</td></tr>
+      <tr><td>5–6</td><td>LLM Core — Names &amp; Taglines</td><td>/api/generate route, Granite prompt template, streaming response, 5-card result UI with tone reasoning, session init (Redis)</td><td>Backend + AI</td></tr>
+      <tr><td>7</td><td>Session Memory</td><td>liked/rejected state management, direction_notes injection into system prompt, "Regenerate" button, deduplication guard</td><td>Backend</td></tr>
+      <tr><td>8–9</td><td>Availability Engine</td><td>Domain RDAP check, HTTP HEAD probes for Instagram / X / TikTok / Threads / YouTube, availability badge UI, partial-availability priority matrix, closest-variant fallback</td><td>Backend</td></tr>
+      <tr><td>10</td><td>Brand Descriptions</td><td>Short (1 sentence) + long (3–4 sentences) AI-generated brand brief per selected name; editable text area with "regenerate" per field</td><td>AI</td></tr>
+      <tr><td>11–12</td><td>Visual Identity — Mood Board &amp; Logo</td><td>Image-gen API integration, 4-panel mood board prompt chain, 3 logo-concept variants (minimalist / wordmark / emblem), image cache, regenerate-single button</td><td>AI + Backend</td></tr>
+      <tr><td>13</td><td>Hero Landing-Page Mock</td><td>Granite generates hero-section HTML/CSS with chosen name + tagline + color palette; sandboxed iframe preview; "copy code" button</td><td>AI + Frontend</td></tr>
+      <tr><td>14</td><td>Export Pack</td><td>ZIP bundle: names-taglines.txt, brand-brief.pdf (HTML→PDF), mood-board.png, logo-variants.svg/png, hero-section.html; download button</td><td>Backend</td></tr>
+      <tr><td>15</td><td>MVP Integration &amp; QA</td><td>End-to-end happy path test, error states (rate limit, API down), loading skeletons, mobile pass, accessibility audit (WCAG AA basics)</td><td>All</td></tr>
+      <tr><td>16–17</td><td>Polish &amp; Stretch Features</td><td>Screenshot thumbnails of taken handles (Puppeteer), color palette extractor, direction slider UI ("playful ↔ premium"), micro-animations</td><td>All</td></tr>
+      <tr><td>18</td><td>Demo Preparation</td><td>Seed demo data ("eco coffee for young professionals"), record 3-min video walkthrough, architecture diagram slide, draft GitHub README</td><td>All</td></tr>
+      <tr><td>19</td><td>Documentation</td><td>Final README (problem, solution, AI approach, IBM Bob usage, architecture), inline code comments, API docs</td><td>All</td></tr>
+      <tr><td>20</td><td>Submission</td><td>Push to public GitHub, upload demo video, complete submission platform page, verify all links publicly accessible</td><td>All</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>7 · Phase Breakdown</h2>
+  <div class="timeline">
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">📋</div>
+        <div class="days">Days 1–2</div>
+        <div class="name">Phase 1<br />Planning</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Discovery, Environment &amp; Architecture</div>
+        <ul>
+          <li>Finalise feature scope and acceptance criteria for each sprint</li>
+          <li>Set up Next.js 14 monorepo with TypeScript, Tailwind, ESLint, Prettier</li>
+          <li>Provision IBM watsonx.ai project, obtain API keys, test Granite endpoint</li>
+          <li>Create Upstash Redis instance for session persistence</li>
+          <li>Establish GitHub repo, branch strategy (main / dev / feature/*), GitHub Actions CI</li>
+          <li>Define shared TypeScript types: BrandSession, NameCard, AvailabilityResult, VisualPack</li>
+          <li>Write .env.example and secrets management docs</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🎨</div>
+        <div class="days">Days 3–7</div>
+        <div class="name">Phase 2<br />Core AI</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Prompt Builder → LLM Generation → Session Memory</div>
+        <ul>
+          <li>Build structured prompt form with guided chips; convert to LLM-ready prompt string</li>
+          <li>Implement /api/generate: system prompt + user context → Granite → 5–10 NameCard objects (JSON)</li>
+          <li>Stream tokens to UI for perceived speed; render cards as they arrive</li>
+          <li>Each NameCard includes: name, tagline, tone reasoning, style tags</li>
+          <li>Session store schema: <code>{ sessionId, liked[], rejected[], direction_notes[], allGenerated[] }</code></li>
+          <li>Regenerate: user adds inline comment → POST to /api/generate with full session context → filtered/new names only</li>
+          <li>Deduplication: names in allGenerated are never re-surfaced</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🔍</div>
+        <div class="days">Days 8–9</div>
+        <div class="name">Phase 3<br />Availability</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Domain &amp; Handle Availability Engine</div>
+        <ul>
+          <li><strong>Domain:</strong> RDAP lookup via api.rdap.org/{tld}/{name} — parse registrar presence; fallback to Domainr API</li>
+          <li><strong>Social probes:</strong> Server-side HEAD requests to instagram.com/{h}, x.com/{h}, tiktok.com/@{h}, threads.net/@{h}, youtube.com/@{h}</li>
+          <li>Status heuristic: 200 = taken, 404 = available, 429/5xx = unknown (show "check manually" badge)</li>
+          <li>Results cached in Redis for 10 min to avoid repeated probes during same session</li>
+          <li>Priority matrix UI: rows = name candidates, columns = platforms; user toggles priority</li>
+          <li>Closest-variant fallback: if no name is fully green, append numeric suffix or phonetic swap variants and re-check</li>
+          <li>Screenshot of taken handles: Puppeteer headless crop of profile page stored as signed Vercel Blob URL</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🖼️</div>
+        <div class="days">Days 11–13</div>
+        <div class="name">Phase 4<br />Visuals</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Mood Board, Logo Concepts &amp; Landing-Page Mock</div>
+        <ul>
+          <li><strong>Mood board:</strong> 4 image-gen calls with structured prompts (color palette, style, product context); arrange in 2×2 grid component</li>
+          <li><strong>Logo concepts:</strong> 3 variants — minimalist icon, wordmark, emblem — each generated with explicit negative prompts for legibility; SVG clean-up post-processing</li>
+          <li><strong>Color palette:</strong> Extract 5 dominant colors from mood board using Quantize.js; display swatches + HEX codes</li>
+          <li><strong>Hero landing mock:</strong> Granite generates hero-section HTML/CSS using name + tagline + palette; rendered in sandboxed iframe; "copy code" + "download HTML" buttons</li>
+          <li>All image assets stored in Vercel Blob with 24-hr TTL; included in export ZIP</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">📦</div>
+        <div class="days">Days 14–15</div>
+        <div class="name">Phase 5<br />Export &amp; QA</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Export Pack &amp; MVP Quality Gate</div>
+        <ul>
+          <li>ZIP bundle: names-taglines.txt, brand-brief.pdf, mood-board.png, logo-{variant}.svg/png, hero-section.html, color-palette.json</li>
+          <li>Error states: API rate limit (graceful degradation message), image gen failure (placeholder + retry), handle probe timeout (manual-check fallback)</li>
+          <li>Loading skeletons for all async sections; no blank white flashes</li>
+          <li>Mobile-responsive pass: test on 375px, 768px, 1280px viewports</li>
+          <li>Basic accessibility: keyboard nav, aria-labels, color contrast ≥ 4.5:1</li>
+          <li>Performance: Core Web Vitals target — LCP &lt; 2.5s on desktop with throttled 3G</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-label">
+        <div class="icon">🚀</div>
+        <div class="days">Days 16–20</div>
+        <div class="name">Phase 6<br />Ship</div>
+      </div>
+      <div class="phase-body">
+        <div class="title">Polish, Demo &amp; Submission</div>
+        <ul>
+          <li>Direction slider ("more playful ↔ more premium") injected into session context on regenerate</li>
+          <li>Micro-animations: card entrance (fade-slide), availability badge pop, mood board reveal</li>
+          <li>Record 3-min demo video: happy path "eco coffee brand" — input → names → availability → react → visuals → export</li>
+          <li>Finalize GitHub README with all required sections</li>
+          <li>Deploy to Vercel (production URL in README)</li>
+          <li>Complete submission platform page; verify video + repo publicly accessible</li>
+          <li>Upload IBM SkillsBuild completion certificates for all team members</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  
+  <h2>8 · IBM Granite Prompt Design</h2>
+  <h4>System prompt (injected every call)</h4>
+  <table>
+    <thead><tr><th>Section</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td>Role</td><td>You are NomVox, an expert brand-naming partner. You generate creative, memorable brand names and taglines aligned with the user's brand direction.</td></tr>
+      <tr><td>Constraints</td><td>Never suggest names from this rejected list: {rejected[]}. The user has liked these names/styles: {liked[]}. Previous direction notes: {direction_notes[]}. Do not repeat any name from: {allGenerated[]}.</td></tr>
+      <tr><td>Output format</td><td>Return a JSON array of 5–10 NameCard objects: { name, tagline, toneReasoning, styleTags[], shortDescription, longDescription }.</td></tr>
+      <tr><td>Quality rules</td><td>Names should be ≤ 12 characters, pronounceable, and globally inoffensive. Taglines ≤ 8 words. Reasoning should be 1–2 sentences explaining the brand tone.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Image-gen prompt template (mood board)</h4>
+  <table>
+    <thead><tr><th>Field</th><th>Example value</th></tr></thead>
+    <tbody>
+      <tr><td>Style directive</td><td>"editorial product photography, flat lay, {style_adjectives}"</td></tr>
+      <tr><td>Color anchors</td><td>"dominant colors: {palette_colors}, cohesive palette"</td></tr>
+      <tr><td>Subject</td><td>"{industry} brand imagery, {target_audience} lifestyle"</td></tr>
+      <tr><td>Negative prompt</td><td>"text, logos, watermarks, low resolution, busy composition"</td></tr>
+      <tr><td>Aspect ratio</td><td>1:1 (square), 512×512, seed randomized per variant</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>9 · API Route Specification</h2>
+  <table>
+    <thead><tr><th>Route</th><th>Method</th><th>Input</th><th>Output</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>/api/session</td><td>POST</td><td>{ userId? }</td><td>{ sessionId }</td><td>Creates Redis session; UUID v4</td></tr>
+      <tr><td>/api/generate</td><td>POST</td><td>{ sessionId, promptData, action: "init"|"refine" }</td><td>Stream: NameCard[]</td><td>Injects session memory; streams JSON chunks</td></tr>
+      <tr><td>/api/availability</td><td>POST</td><td>{ sessionId, names: string[] }</td><td>{ name, domain, instagram, x, tiktok, threads, youtube }[]</td><td>Parallel probes; cached 10 min</td></tr>
+      <tr><td>/api/screenshot</td><td>POST</td><td>{ url, platform }</td><td>{ screenshotUrl }</td><td>Puppeteer; only called on taken handles</td></tr>
+      <tr><td>/api/visuals</td><td>POST</td><td>{ sessionId, selectedName, palette, style }</td><td>{ moodboard: url[], logos: url[] }</td><td>4 mood + 3 logo image-gen calls</td></tr>
+      <tr><td>/api/mockup</td><td>POST</td><td>{ name, tagline, palette, style }</td><td>{ html: string }</td><td>Granite → hero HTML/CSS string</td></tr>
+      <tr><td>/api/export</td><td>POST</td><td>{ sessionId, selectedName }</td><td>ZIP binary (application/zip)</td><td>Bundles all assets from session</td></tr>
+      <tr><td>/api/session/react</td><td>PATCH</td><td>{ sessionId, name, action: "like"|"reject"|"note", note? }</td><td>{ ok }</td><td>Updates Redis session object</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>10 · Judging Criteria Alignment</h2>
+  <table>
+    <thead><tr><th>Criterion</th><th>Score</th><th>How NomVox addresses it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Technical Execution</strong></td>
+        <td>
+          <div class="score-bar">
+            <div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div>
+          </div>
+        </td>
+        <td>IBM Granite (LLM) + watsonx.ai, image-gen API, RDAP domain check, Puppeteer screenshots, Redis session, streaming API, Next.js full-stack — diverse, well-integrated stack</td>
+      </tr>
+      <tr>
+        <td><strong>Innovation</strong></td>
+        <td>
+          <div class="score-bar">
+            <div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg empty"></div>
+          </div>
+        </td>
+        <td>Iterative creative-partner loop with session memory is meaningfully different from static name generators. Live availability woven into ideation (not as a separate step) is novel. Hero-page mockup generation closes the imagination→execution gap in one tool.</td>
+      </tr>
+      <tr>
+        <td><strong>Challenge Fit</strong></td>
+        <td>
+          <div class="score-bar">
+            <div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div>
+          </div>
+        </td>
+        <td>Spans three solution areas: AI creative partner, creative ideation platform, AI-powered design/visual concept tool. Every judging sub-theme (help people create faster, bridge imagination to execution, AI as partner not generator) is demonstrably hit.</td>
+      </tr>
+      <tr>
+        <td><strong>Feasibility</strong></td>
+        <td>
+          <div class="score-bar">
+            <div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg empty"></div>
+          </div>
+        </td>
+        <td>All technologies are mature and API-accessible. No native mobile, no hardware dependency. Vercel deployment is zero-infrastructure. Fallbacks defined for every external dependency. Scoped to hero mock (not full site) to remain buildable in 20 days.</td>
+      </tr>
+      <tr>
+        <td><strong>Real-World Impact</strong></td>
+        <td>
+          <div class="score-bar">
+            <div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div><div class="score-seg"></div>
+          </div>
+        </td>
+        <td>Universal need — every new business, creator, band, nonprofit needs this. Saves days of manual name research + freelancer briefs. Directly addresses economic barrier to professional brand identity for solo founders and small teams.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>11 · Risk Register</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Image-gen API rate limit or cost overrun</td><td><span class="pill pill-risk">Medium</span></td><td>High</td><td>Cache all generated images; lazy-load on user request (not auto-generate); cap to 3 mood + 3 logo per session</td></tr>
+      <tr><td>Social handle probes blocked (429/bot detection)</td><td><span class="pill pill-risk">Medium</span></td><td>Medium</td><td>Server-side requests with randomized user-agent and 1s delay between probes; fallback "check manually" badge with direct link</td></tr>
+      <tr><td>Granite output not valid JSON</td><td><span class="pill pill-risk">Low</span></td><td>High</td><td>Response validation with Zod schema; retry once with stricter format instruction; never crash — return partial results</td></tr>
+      <tr><td>Session data lost (Redis TTL)</td><td><span class="pill pill-risk">Low</span></td><td>Medium</td><td>Set TTL to 2 hours; localStorage backup of session state on client; graceful "start new session" recovery</td></tr>
+      <tr><td>Puppeteer screenshot times out</td><td><span class="pill pill-risk">Medium</span></td><td>Low</td><td>10s timeout; skip screenshot silently; show "view live" link instead</td></tr>
+      <tr><td>Demo video over 3 minutes</td><td><span class="pill pill-risk">Medium</span></td><td>High</td><td>Pre-script and time-box: 30s intro, 90s demo flow, 30s architecture, 30s impact</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>12 · GitHub README Outline</h2>
+  <table>
+    <thead><tr><th>Section</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td>Project Title &amp; Tagline</td><td>NomVox — Your AI Brand Identity Partner</td></tr>
+      <tr><td>Problem Statement</td><td>Blank-page brand naming + handle fragmentation + no iteration memory</td></tr>
+      <tr><td>Solution Description</td><td>Conversational AI loop: names → availability → visuals → mockup → export</td></tr>
+      <tr><td>AI Approach &amp; Architecture</td><td>Granite LLM, image-gen, session memory, availability engine — diagram link</td></tr>
+      <tr><td>Selected Challenge Theme</td><td>Creative Industries — AI Creative Partner + Design &amp; Visual Concepts</td></tr>
+      <tr><td>How IBM Bob Was Used</td><td>Primary development tool: architecture planning, code generation, SDLC docs, component scaffolding, prompt engineering, QA review</td></tr>
+      <tr><td>Tech Stack</td><td>Next.js, TypeScript, Tailwind, IBM Granite, watsonx.ai, Redis, Puppeteer</td></tr>
+      <tr><td>Local Setup</td><td>Clone → npm install → copy .env.example → npm run dev</td></tr>
+      <tr><td>Live Demo</td><td>Vercel URL (public)</td></tr>
+      <tr><td>Demo Video</td><td>YouTube/Loom link (≤ 3 min)</td></tr>
+      <tr><td>Team</td><td>Member names + IBM SkillsBuild certificate links</td></tr>
+    </tbody>
+  </table>
+
+  
+  <h2>13 · Submission Checklist</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Status</th><th>Due</th></tr></thead>
+    <tbody>
+      <tr><td>Working prototype deployed (Vercel)</td><td><span class="pill pill-build">Build</span></td><td>Day 18</td></tr>
+      <tr><td>IBM SkillsBuild certificate (each member)</td><td><span class="pill pill-build">Build</span></td><td>Day 10</td></tr>
+      <tr><td>Public GitHub repo with README</td><td><span class="pill pill-build">Build</span></td><td>Day 19</td></tr>
+      <tr><td>Demo video ≤ 3 min (YouTube/Loom)</td><td><span class="pill pill-build">Build</span></td><td>Day 19</td></tr>
+      <tr><td>Submission platform page complete</td><td><span class="pill pill-build">Build</span></td><td>Day 20</td></tr>
+      <tr><td>GitHub repo publicly accessible</td><td><span class="pill pill-build">Build</span></td><td>Day 20</td></tr>
+      <tr><td>Video publicly accessible</td><td><span class="pill pill-build">Build</span></td><td>Day 20</td></tr>
+      <tr><td>Deadline: July 31 2026, 11:59 PM ET</td><td><span class="pill pill-risk">Deadline</span></td><td>July 31</td></tr>
+    </tbody>
+  </table>
+
+  <hr class="divider" />
+
+  
+  <h2>14 · 3-Minute Demo Video Script</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Segment</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td>0:00–0:30</td><td>Hook</td><td>"You have 10 minutes to name your new brand. Let's go." — Show blank prompt builder; no preamble.</td></tr>
+      <tr><td>0:30–1:15</td><td>Input → First pass</td><td>Type "eco-friendly coffee brand for young professionals, minimal aesthetic, green and cream tones." Hit Generate. Show 8 name cards streaming in with taglines and tone reasoning.</td></tr>
+      <tr><td>1:15–1:45</td><td>Availability check</td><td>Click "Check availability" — matrix populates with domain + 5 social handle badges. Highlight 2 fully-green names. Show screenshot thumbnail of one taken handle ("owned by X").</td></tr>
+      <tr><td>1:45–2:15</td><td>Refine loop</td><td>Click "I like Verdara but want it more playful." → Regenerate → 5 new names appear, none are repeats from session. Show session note in sidebar.</td></tr>
+      <tr><td>2:15–2:45</td><td>Visual identity</td><td>Select a name → Generate mood board (4 images) → 3 logo concepts → Hero landing mock in iframe. Color palette extracted. Export ZIP downloaded.</td></tr>
+      <tr><td>2:45–3:00</td><td>Architecture &amp; close</td><td>Quick architecture diagram (5s). "Built with IBM Granite, watsonx.ai, and IBM Bob. NomVox — your AI brand identity partner."</td></tr>
+    </tbody>
+  </table>
+
+  <footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>
