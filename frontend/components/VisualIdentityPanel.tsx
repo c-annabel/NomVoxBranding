@@ -27,8 +27,6 @@ const LOGO_STYLE_LABELS: Record<string, string> = {
   business: "horizontal wordmark lockup — clean white background, corporate typography, single accent colour",
 };
 
-const YEAR = new Date().getFullYear();
-
 export default function VisualIdentityPanel({
   brandName, card, intake, sessionId, visuals,
   onBack, onStartOver, onRegenerateLogos, onRegenerateMoodboard,
@@ -73,6 +71,13 @@ export default function VisualIdentityPanel({
   }
 
   // CSS concept placeholders — each with a distinct visual style
+  // Derive initials for the CSS logo concepts (max 2 chars)
+  const initials = useMemo(() => {
+    const parts = brandName.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return brandName.slice(0, 2).toUpperCase();
+  }, [brandName]);
+
   const logoItems = useMemo(() => [
     {
       key: "profile",
@@ -80,9 +85,40 @@ export default function VisualIdentityPanel({
       uri: visuals.logo_profile,
       hint: "1:1 square — Twitter, Instagram, LinkedIn",
       placeholder: {
-        styleName: "Minimal Wordmark",
-        style: { background: "linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 100%)" } as React.CSSProperties,
-        textColor: "#c4b5fd",
+        styleName: "Geometric Mark",
+        render: () => (
+          /* Bauhaus-style geometric mark — bold hexagonal shape + initial */
+          <div className="w-full aspect-square flex flex-col items-center justify-center relative overflow-hidden"
+            style={{ background: "linear-gradient(160deg, #0f0f1e 0%, #1c0a3a 50%, #0a0f1f 100%)" }}>
+            {/* Outer ring */}
+            <div className="absolute" style={{
+              width: "58%", height: "58%",
+              border: "2px solid rgba(139,92,246,0.45)",
+              borderRadius: "50%",
+              background: "rgba(139,92,246,0.07)",
+            }} />
+            {/* Hexagonal accent shape */}
+            <div className="absolute" style={{
+              width: "42%", height: "42%",
+              background: "linear-gradient(135deg, rgba(139,92,246,0.6) 0%, rgba(34,211,238,0.35) 100%)",
+              clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            }} />
+            {/* Brand initial */}
+            <span className="relative z-10 font-black select-none"
+              style={{ fontSize: "clamp(1.5rem,6vw,2.2rem)", color: "#fff", letterSpacing: "-0.04em", textShadow: "0 0 20px rgba(139,92,246,0.8)" }}>
+              {initials.slice(0, 1)}
+            </span>
+            {/* Corner accent dots */}
+            {[0, 90, 180, 270].map(deg => (
+              <div key={deg} className="absolute" style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "#22d3ee",
+                transform: `rotate(${deg}deg) translateY(-36%)`,
+                opacity: 0.7,
+              }} />
+            ))}
+          </div>
+        ),
       },
     },
     {
@@ -91,9 +127,42 @@ export default function VisualIdentityPanel({
       uri: visuals.logo_app,
       hint: "Rounded square — app stores",
       placeholder: {
-        styleName: "Bold Icon",
-        style: { background: "linear-gradient(135deg, #0a1628 0%, #0d2040 100%)" } as React.CSSProperties,
-        textColor: "#67e8f9",
+        styleName: "Gradient Icon",
+        render: () => (
+          /* Vibrant app store icon — glassmorphic gradient + bold letterform */
+          <div className="w-full aspect-square flex items-center justify-center relative overflow-hidden"
+            style={{
+              background: "linear-gradient(145deg, #0d1b3e 0%, #1a0554 40%, #0a2240 100%)",
+              borderRadius: "0", /* parent handles radius */
+            }}>
+            {/* Ambient glow blobs */}
+            <div className="absolute" style={{
+              width: "80%", height: "80%", borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(139,92,246,0.30) 0%, transparent 70%)",
+              top: "10%", left: "10%",
+            }} />
+            <div className="absolute" style={{
+              width: "50%", height: "50%", borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(34,211,238,0.20) 0%, transparent 70%)",
+              bottom: "5%", right: "5%",
+            }} />
+            {/* Glassmorphic card */}
+            <div className="relative flex flex-col items-center justify-center"
+              style={{
+                width: "62%", height: "62%",
+                background: "rgba(255,255,255,0.08)",
+                borderRadius: "22%",
+                border: "1.5px solid rgba(255,255,255,0.18)",
+                backdropFilter: "blur(8px)",
+                boxShadow: "0 8px 32px rgba(139,92,246,0.30)",
+              }}>
+              <span className="font-black select-none"
+                style={{ fontSize: "clamp(1.2rem,5vw,1.8rem)", color: "#fff", letterSpacing: "-0.03em" }}>
+                {initials}
+              </span>
+            </div>
+          </div>
+        ),
       },
     },
     {
@@ -102,25 +171,43 @@ export default function VisualIdentityPanel({
       uri: visuals.logo_business,
       hint: "16:9 horizontal — business cards, letterhead",
       placeholder: {
-        styleName: "Clean Lockup",
-        style: { background: "linear-gradient(135deg, #f5f0e8 0%, #ede4d3 100%)" } as React.CSSProperties,
-        textColor: "#1a0a2e",
+        styleName: "Wordmark Lockup",
+        render: () => (
+          /* Clean horizontal lockup on light — corporate print quality */
+          <div className="w-full aspect-square flex flex-col items-center justify-center gap-2 px-6 relative overflow-hidden"
+            style={{ background: "linear-gradient(160deg, #faf9f7 0%, #f0ecf8 100%)" }}>
+            {/* Subtle brand mark behind text */}
+            <div className="absolute" style={{
+              width: "55%", height: "55%", borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)",
+            }} />
+            {/* Icon + wordmark row */}
+            <div className="flex items-center gap-2.5 relative">
+              {/* Small geometric icon */}
+              <div style={{
+                width: 28, height: 28,
+                background: "linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)",
+                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                flexShrink: 0,
+              }} />
+              <span className="font-black tracking-tight select-none"
+                style={{ fontSize: "clamp(1rem,4vw,1.4rem)", color: "#1a0a2e", letterSpacing: "-0.02em" }}>
+                {brandName}
+              </span>
+            </div>
+            {/* Divider rule */}
+            <div style={{ width: "70%", height: 1, background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.40), transparent)" }} />
+            {/* Tagline stub */}
+            <span className="text-xs uppercase tracking-widest select-none"
+              style={{ color: "rgba(107,70,193,0.65)", fontSize: "0.6rem", letterSpacing: "0.15em" }}>
+              Brand Identity
+            </span>
+          </div>
+        ),
       },
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [visuals.logo_profile, visuals.logo_app, visuals.logo_business, brandName]);
-
-  // Copyright footer — shown on all visual steps
-  function Footer() {
-    return (
-      <div className="px-6 py-3 border-t text-center"
-        style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(5,7,15,0.40)" }}>
-        <p className="text-[11px]" style={{ color: "var(--color-text-hint)" }}>
-          © {YEAR} c-annabel · Developed with IBM Bob · NomVox Brand Identity Platform
-        </p>
-      </div>
-    );
-  }
+  ], [visuals.logo_profile, visuals.logo_app, visuals.logo_business, brandName, initials]);
 
   // ── Step tabs ──────────────────────────────────────────────────────────────
   function StepTabs() {
@@ -233,21 +320,8 @@ export default function VisualIdentityPanel({
                         </p>
                       </div>
                     ) : (
-                      <div className="w-full aspect-square flex flex-col items-center justify-center gap-3 p-6"
-                        style={placeholder.style}>
-                        <div className="font-black text-3xl tracking-tight" style={{ color: placeholder.textColor }}>
-                          {brandName}
-                        </div>
-                        <div className="text-xs font-bold uppercase tracking-widest opacity-70"
-                          style={{ color: placeholder.textColor }}>
-                          {placeholder.styleName}
-                        </div>
-                        <div className="w-12 h-0.5 rounded-full opacity-40"
-                          style={{ background: placeholder.textColor }} />
-                        <div className="text-[10px] opacity-50 text-center" style={{ color: placeholder.textColor }}>
-                          Concept direction
-                        </div>
-                      </div>
+                      /* Rich CSS concept placeholder — branded, selectable, design-quality */
+                      placeholder.render()
                     )}
 
                     <div className="px-4 py-3 flex items-center justify-between">
@@ -285,7 +359,6 @@ export default function VisualIdentityPanel({
               </div>
             )}
           </div>
-          <Footer />
         </div>
       </div>
     );
@@ -352,11 +425,96 @@ export default function VisualIdentityPanel({
                 <img src={moodImg} alt="Brand mood board" className="w-full h-auto object-cover" />
               </div>
             ) : (
-              <div className="rounded-xl p-12 text-center"
-                style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-                <p className="text-sm" style={{ color: "var(--color-text-hint)" }}>
-                  Mood board not generated yet — go back to Logo Concepts, choose a logo, then click "Next: Mood Board".
-                </p>
+              /* ── CSS Brand Board — shown when Imagen is unavailable ─── */
+              <div className="rounded-xl overflow-hidden"
+                style={{ border: "1px solid rgba(139,92,246,0.20)" }}>
+                {/* Top section — colour story + brand name */}
+                <div className="grid grid-cols-2 gap-0" style={{ minHeight: 180 }}>
+                  {/* Left — colour field */}
+                  <div className="flex flex-col justify-between p-6 relative overflow-hidden"
+                    style={{ background: "linear-gradient(160deg, #0f0f1e 0%, #1c0a3a 55%, #0a1f3e 100%)" }}>
+                    {/* Ambient glow */}
+                    <div className="absolute inset-0" style={{
+                      background: "radial-gradient(ellipse 80% 60% at 30% 40%, rgba(139,92,246,0.25) 0%, transparent 70%)",
+                      pointerEvents: "none",
+                    }} />
+                    <p className="text-xs font-black uppercase tracking-widest relative"
+                      style={{ color: "rgba(139,92,246,0.70)" }}>Colour World</p>
+                    <div>
+                      <p className="font-black text-2xl tracking-tight relative leading-none mb-1"
+                        style={{ color: "#e6e8f0" }}>{brandName}</p>
+                      <p className="text-xs italic relative" style={{ color: "rgba(196,181,253,0.70)" }}>
+                        {card.tagline || "Brand Identity Concept"}
+                      </p>
+                    </div>
+                    {/* Colour swatches */}
+                    <div className="flex gap-2 mt-3 relative">
+                      {["#8B5CF6","#22d3ee","#1e3a5f","#e6e8f0","#0b0f19"].map((c, i) => (
+                        <div key={i} className="rounded-full" style={{ width: 20, height: 20, background: c, border: "1px solid rgba(255,255,255,0.15)" }} />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right — typography taster */}
+                  <div className="flex flex-col justify-center p-6 gap-3"
+                    style={{ background: "rgba(255,255,255,0.03)", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
+                    <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--color-pulse)" }}>
+                      Typography Scale
+                    </p>
+                    <p className="font-black tracking-tight leading-none" style={{ fontSize: "1.6rem", color: "#e6e8f0" }}>
+                      Aa
+                    </p>
+                    <p className="text-sm font-bold" style={{ color: "rgba(230,232,240,0.75)" }}>
+                      Bold · Black
+                    </p>
+                    <p className="text-xs" style={{ color: "rgba(230,232,240,0.45)", letterSpacing: "0.05em" }}>
+                      Regular · Hint text
+                    </p>
+                    <div className="mt-2 px-3 py-1.5 rounded-md text-xs font-black self-start"
+                      style={{ background: "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff" }}>
+                      CTA Button
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom section — platform mockups */}
+                <div className="grid grid-cols-3 gap-0"
+                  style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  {/* Social / Avatar frame */}
+                  <div className="flex flex-col items-center justify-center gap-2 p-4"
+                    style={{ background: "rgba(139,92,246,0.05)", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div className="rounded-full flex items-center justify-center font-black"
+                      style={{ width: 44, height: 44, background: "linear-gradient(135deg,#7c3aed,#1d4ed8)", color: "#fff", fontSize: "1rem" }}>
+                      {initials.slice(0,1)}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-hint)" }}>
+                      Social
+                    </p>
+                  </div>
+                  {/* App icon frame */}
+                  <div className="flex flex-col items-center justify-center gap-2 p-4"
+                    style={{ background: "rgba(34,211,238,0.03)", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div className="flex items-center justify-center font-black"
+                      style={{ width: 44, height: 44, background: "linear-gradient(145deg,#1a0554,#0a2240)", color: "#fff", fontSize: "0.85rem",
+                        borderRadius: "22%", border: "1px solid rgba(255,255,255,0.12)" }}>
+                      {initials}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-hint)" }}>
+                      App
+                    </p>
+                  </div>
+                  {/* Business card frame */}
+                  <div className="flex flex-col items-center justify-center gap-2 p-4"
+                    style={{ background: "rgba(255,255,255,0.02)" }}>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded"
+                      style={{ background: "#faf9f7", fontSize: "0.55rem", fontWeight: 900, color: "#1a0a2e", border: "1px solid rgba(139,92,246,0.20)" }}>
+                      <div style={{ width: 8, height: 8, background: "#7c3aed", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)" }} />
+                      {brandName}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-hint)" }}>
+                      Print
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -388,7 +546,6 @@ export default function VisualIdentityPanel({
               </button>
             </div>
           </div>
-          <Footer />
         </div>
       </div>
     );
@@ -483,7 +640,6 @@ export default function VisualIdentityPanel({
             </div>
           )}
         </div>
-        <Footer />
       </div>
     </div>
   );

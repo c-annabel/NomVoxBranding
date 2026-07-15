@@ -12,9 +12,10 @@ import (
 	"time"
 )
 
-// ImagenClient calls Google AI Studio's Imagen 3 endpoint for image generation
-// and Gemini 2.0 Flash for vision analysis.
-// Requires GOOGLE_AI_API_KEY in the environment.
+// ImagenClient wraps Google AI image-generation and vision endpoints.
+// Image generation uses Gemini 2.0 Flash (free tier, native image output).
+// Vision analysis uses Gemini 2.0 Flash (text output).
+// Both share the same GOOGLE_AI_API_KEY.
 type ImagenClient struct {
 	apiKey     string
 	httpClient *http.Client
@@ -27,38 +28,72 @@ func NewImagenClient() (*ImagenClient, error) {
 	}
 	return &ImagenClient{
 		apiKey:     key,
-		httpClient: &http.Client{Timeout: 60 * time.Second},
+		httpClient: &http.Client{Timeout: 90 * time.Second},
 	}, nil
 }
 
-// ── Imagen 3 — image generation ───────────────────────────────────────────────
+// ── Gemini 2.0 Flash — native image generation ────────────────────────────────
+//
+// Endpoint: /v1beta/models/gemini-2.5-flash-image:generateContent
+// The model is prompted with responseModalities ["IMAGE","TEXT"].
+// Each response Part may be either text or inlineData (base64 PNG/JPEG).
+// We collect every inlineData part and return the raw base64 strings.
+//
+// Free-tier limits (as of 2026): 15 req/min, 1500 req/day.
+// Stable model (no -preview suffix). Replaces Imagen 3 which required paid credits.
+// Fallback: gemini-3.1-flash-image (newer) if gemini-2.5-flash-image is unavailable.
 
-const imagenEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict"
+const geminiImageGenEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/" +
+	"gemini-2.5-flash-image:generateContent"
 
-type imagenRequest struct {
-	Instances  []imagenInstance  `json:"instances"`
-	Parameters imagenParameters  `json:"parameters"`
+type geminiImageGenRequest struct {
+	Contents         []geminiContent        `json:"contents"`
+	GenerationConfig geminiImageGenConfig   `json:"generationConfig"`
 }
 
-type imagenInstance struct {
-	Prompt string `json:"prompt"`
+type geminiContent struct {
+	Role  string        `json:"role"`
+	Parts []geminiPart  `json:"parts"`
 }
 
-type imagenParameters struct {
-	SampleCount      int    `json:"sampleCount"`
-	AspectRatio      string `json:"aspectRatio"`
-	SafetyFilterLevel string `json:"safetFilterLevel,omitempty"`
+type geminiPart struct {
+	Text       string            `json:"text,omitempty"`
+	InlineData *geminiInlineData `json:"inlineData,omitempty"`
 }
 
-type imagenResponse struct {
-	Predictions []struct {
-		BytesBase64Encoded string `json:"bytesBase64Encoded"`
-		MimeType           string `json:"mimeType"`
-	} `json:"predictions"`
+type geminiInlineData struct {
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"` // base64
 }
 
-// GenerateImages sends a prompt to Imagen 3 and returns base64-encoded PNG images.
-// count must be 1–4.
+type geminiImageGenConfig struct {
+	ResponseModalities []string `json:"responseModalities"`
+	// CandidateCount is not used here — we loop and call once per image for reliability.
+}
+
+type geminiImageGenResponse struct {
+	Candidates []struct {
+		Content struct {
+			Parts []struct {
+				Text       string `json:"text,omitempty"`
+				InlineData *struct {
+					MimeType string `json:"mimeType"`
+					Data     string `json:"data"`
+				} `json:"inlineData,omitempty"`
+			} `json:"parts"`
+		} `json:"content"`
+	} `json:"candidates"`
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Status  string `json:"status"`
+	} `json:"error,omitempty"`
+}
+
+// GenerateImages sends a prompt to Gemini 2.0 Flash image generation.
+// count controls how many images to return (1–4). Each image is fetched
+// in a separate request to avoid quota issues.
+// Returns a slice of raw base64-encoded PNG strings.
 func (c *ImagenClient) GenerateImages(ctx context.Context, prompt string, count int, aspectRatio string) ([]string, error) {
 	if count < 1 {
 		count = 1
@@ -66,50 +101,92 @@ func (c *ImagenClient) GenerateImages(ctx context.Context, prompt string, count 
 	if count > 4 {
 		count = 4
 	}
-	if aspectRatio == "" {
-		aspectRatio = "1:1"
+	// Embed aspect ratio hint into the prompt since the API doesn't accept it as a parameter.
+	fullPrompt := prompt
+	if aspectRatio != "" && aspectRatio != "1:1" {
+		fullPrompt = fmt.Sprintf("%s\n\nImage aspect ratio: %s.", prompt, aspectRatio)
 	}
 
-	reqBody := imagenRequest{
-		Instances:  []imagenInstance{{Prompt: prompt}},
-		Parameters: imagenParameters{SampleCount: count, AspectRatio: aspectRatio},
+	out := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		b64, err := c.generateOneImage(ctx, fullPrompt)
+		if err != nil {
+			// Tolerate partial failures — return whatever we got so far.
+			if len(out) == 0 {
+				return nil, err // fail only if we got nothing at all
+			}
+			break
+		}
+		out = append(out, b64)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("gemini-image: no images returned")
+	}
+	return out, nil
+}
+
+// generateOneImage calls the Gemini image-generation endpoint once and returns
+// the first inlineData (base64) part from the response.
+func (c *ImagenClient) generateOneImage(ctx context.Context, prompt string) (string, error) {
+	reqBody := geminiImageGenRequest{
+		Contents: []geminiContent{
+			{
+				Role:  "user",
+				Parts: []geminiPart{{Text: prompt}},
+			},
+		},
+		GenerationConfig: geminiImageGenConfig{
+			ResponseModalities: []string{"IMAGE", "TEXT"},
+		},
 	}
 	body, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("imagen: marshal: %w", err)
+		return "", fmt.Errorf("gemini-image: marshal: %w", err)
 	}
 
-	url := imagenEndpoint + "?key=" + c.apiKey
+	url := geminiImageGenEndpoint + "?key=" + c.apiKey
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("imagen: build request: %w", err)
+		return "", fmt.Errorf("gemini-image: build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("imagen: http: %w", err)
+		return "", fmt.Errorf("gemini-image: http: %w", err)
 	}
 	defer resp.Body.Close()
 
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("gemini-image: read body: %w", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("imagen: status %d: %s", resp.StatusCode, TruncateStr(string(b), 300))
+		return "", fmt.Errorf("gemini-image: status %d: %s",
+			resp.StatusCode, TruncateStr(string(respBytes), 400))
 	}
 
-	var result imagenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("imagen: decode: %w", err)
+	var result geminiImageGenResponse
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return "", fmt.Errorf("gemini-image: decode: %w", err)
 	}
 
-	out := make([]string, 0, len(result.Predictions))
-	for _, p := range result.Predictions {
-		out = append(out, p.BytesBase64Encoded)
+	// Surface API-level errors embedded in a 200 response.
+	if result.Error != nil {
+		return "", fmt.Errorf("gemini-image: API error %d %s: %s",
+			result.Error.Code, result.Error.Status, result.Error.Message)
 	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("imagen: no images returned")
+
+	// Walk all candidates + parts, return first image found.
+	for _, cand := range result.Candidates {
+		for _, part := range cand.Content.Parts {
+			if part.InlineData != nil && part.InlineData.Data != "" {
+				return part.InlineData.Data, nil
+			}
+		}
 	}
-	return out, nil
+	return "", fmt.Errorf("gemini-image: no image part in response (candidates=%d)", len(result.Candidates))
 }
 
 // ── Gemini 2.0 Flash — vision analysis ───────────────────────────────────────
@@ -117,23 +194,12 @@ func (c *ImagenClient) GenerateImages(ctx context.Context, prompt string, count 
 const geminiVisionEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 // AnalyseImage sends a base64-encoded image to Gemini 2.0 Flash and returns
-// a structured VisionContext (colours, mood, style, textures).
+// a structured VisionContext (colours, mood, style, textures) as raw JSON text.
 func (c *ImagenClient) AnalyseImage(ctx context.Context, base64Image, mimeType string) (string, error) {
 	if mimeType == "" {
 		mimeType = "image/jpeg"
 	}
 
-	type inlinePart struct {
-		InlineData struct {
-			MimeType string `json:"mimeType"`
-			Data     string `json:"data"`
-		} `json:"inlineData"`
-	}
-	type textPart struct {
-		Text string `json:"text"`
-	}
-
-	// Build multipart request
 	payload := map[string]interface{}{
 		"contents": []map[string]interface{}{
 			{
@@ -200,9 +266,7 @@ Return ONLY the JSON object, no other text.`,
 }
 
 // Base64ToDataURI converts a raw base64 string to a data URI for embedding in HTML/JSON.
-// Imagen 3 returns URL-safe base64 (RFC 4648 §5, uses - and _ instead of + and /).
-// We try RawURLEncoding first, then RawStdEncoding, then StdEncoding so the function
-// works regardless of which variant the upstream API returns.
+// Gemini returns standard base64 (with padding). We try all variants for robustness.
 func Base64ToDataURI(b64 string, mimeType string) string {
 	if b64 == "" {
 		return ""
@@ -210,16 +274,16 @@ func Base64ToDataURI(b64 string, mimeType string) string {
 	if mimeType == "" {
 		mimeType = "image/png"
 	}
-	// Try URL-safe (no padding) — Imagen 3 primary format
+	// Try standard (with padding) — Gemini primary format
+	if _, err := base64.StdEncoding.DecodeString(b64); err == nil {
+		return "data:" + mimeType + ";base64," + b64
+	}
+	// Try URL-safe (no padding) — Imagen 3 / older callers
 	if _, err := base64.RawURLEncoding.DecodeString(b64); err == nil {
 		return "data:" + mimeType + ";base64," + b64
 	}
 	// Try standard (no padding) — some proxies strip padding
 	if _, err := base64.RawStdEncoding.DecodeString(b64); err == nil {
-		return "data:" + mimeType + ";base64," + b64
-	}
-	// Try standard with padding — legacy fallback
-	if _, err := base64.StdEncoding.DecodeString(b64); err == nil {
 		return "data:" + mimeType + ";base64," + b64
 	}
 	return ""

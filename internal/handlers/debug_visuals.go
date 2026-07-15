@@ -7,52 +7,88 @@ import (
 	"time"
 
 	"github.com/c-annabel/NomVoxBranding/internal/ai"
+	"github.com/c-annabel/NomVoxBranding/internal/models"
 )
 
 // debugVisualsResponse is the JSON body returned by GET /api/debug-visuals.
 type debugVisualsResponse struct {
-	ImagenOK    bool   `json:"imagen_ok"`
-	ImagenError string `json:"imagen_error,omitempty"`
-	DataURILen  int    `json:"data_uri_len,omitempty"` // length of first data URI if generation succeeded
-	GraniteOK   bool   `json:"granite_ok"`
+	// Gemini image generation (optional — may fail if credits depleted)
+	GeminiImageOK    bool   `json:"gemini_image_ok"`
+	GeminiImageError string `json:"gemini_image_error,omitempty"`
+	DataURILen       int    `json:"data_uri_len,omitempty"`
+
+	// watsonx SVG logo generation (primary fallback — free tier)
+	SVGLogoOK    bool   `json:"svg_logo_ok"`
+	SVGLogoError string `json:"svg_logo_error,omitempty"`
+	SVGDataURI   string `json:"svg_data_uri_preview,omitempty"` // first 120 chars
+
+	// watsonx text (Granite/Llama) — used for mockup, persona, SVG
+	GraniteOK    bool   `json:"granite_ok"`
 	GraniteError string `json:"granite_error,omitempty"`
 }
 
 // DebugVisualsHandler handles GET /api/debug-visuals.
-// It fires a minimal test prompt at Imagen 3 and watsonx and reports success/failure.
-// DEV ONLY — not exposed in production.
+// Tests Gemini image gen, watsonx SVG logo gen, and watsonx text. DEV ONLY.
 func DebugVisualsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
 
 	resp := debugVisualsResponse{}
 
-	// ── Test Imagen 3 ─────────────────────────────────────────────────────────
+	// ── 1. Test Gemini image generation ──────────────────────────────────────
 	imagenClient, err := ai.NewImagenClient()
 	if err != nil {
-		resp.ImagenError = "client init: " + err.Error()
+		resp.GeminiImageError = "client init: " + err.Error()
 	} else {
 		imgs, err := imagenClient.GenerateImages(ctx, "a simple blue circle on a white background", 1, "1:1")
 		if err != nil {
-			resp.ImagenError = err.Error()
+			resp.GeminiImageError = err.Error()
 		} else if len(imgs) == 0 {
-			resp.ImagenError = "no images returned"
+			resp.GeminiImageError = "no images returned"
 		} else {
 			uri := ai.Base64ToDataURI(imgs[0], "image/png")
 			if uri == "" {
-				resp.ImagenError = "base64 decode failed (len=" + itoa(len(imgs[0])) + ")"
+				resp.GeminiImageError = "base64 decode failed (len=" + itoa(len(imgs[0])) + ")"
 			} else {
-				resp.ImagenOK = true
+				resp.GeminiImageOK = true
 				resp.DataURILen = len(uri)
 			}
 		}
 	}
 
-	// ── Test watsonx (Granite/Llama) ──────────────────────────────────────────
-	graniteClient, err := ai.NewGraniteClient()
-	if err != nil {
-		resp.GraniteError = "client init: " + err.Error()
+	// ── 2. Test watsonx SVG logo generation ──────────────────────────────────
+	graniteClient, graniteErr := ai.NewGraniteClient()
+	if graniteErr != nil {
+		resp.SVGLogoError = "granite client: " + graniteErr.Error()
+		resp.GraniteError = graniteErr.Error()
 	} else {
+		// Test SVG logo
+		testCard := models.NameCard{Name: "TestBrand", Tagline: "Test tagline"}
+		testIntake := models.IntakePayload{
+			Industry:    "technology",
+			ColorMood:   "deep indigo and cyan",
+			Personality: "modern, clean",
+		}
+		sys := ai.BuildSVGLogoSystemPrompt()
+		usr := ai.BuildSVGLogoUserPrompt(testCard, testIntake, "profile")
+		raw, err := graniteClient.Generate(ctx, sys, usr)
+		if err != nil {
+			resp.SVGLogoError = err.Error()
+		} else {
+			uri := ai.SVGToDataURI(raw)
+			if uri == "" {
+				resp.SVGLogoError = "SVGToDataURI returned empty (raw len=" + itoa(len(raw)) + ")"
+			} else {
+				resp.SVGLogoOK = true
+				if len(uri) > 120 {
+					resp.SVGDataURI = uri[:120] + "…"
+				} else {
+					resp.SVGDataURI = uri
+				}
+			}
+		}
+
+		// Test plain text (Granite/Llama)
 		out, err := graniteClient.Generate(ctx, "You are a test assistant.", "Reply with exactly: OK")
 		if err != nil {
 			resp.GraniteError = err.Error()
@@ -64,7 +100,7 @@ func DebugVisualsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(resp) //nolint:errcheck
 }
 
 // itoa is a minimal int-to-string helper to avoid importing strconv.

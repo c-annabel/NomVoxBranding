@@ -669,11 +669,11 @@ export default function HomeClient() {
               </p>
               <div className="flex flex-col gap-3 text-left mb-4">
                 {[
-                  { label: "🎨  Generating mood board (×4)",     color: "#f59e0b" },
-                  { label: "🔷  Creating logo concepts (×3)",     color: "var(--color-signal)" },
-                  { label: "📄  Building landing page mockup",    color: "var(--color-pulse)" },
-                  { label: "👤  Crafting brand persona",          color: "#4ade80" },
-                ].map(item => (
+                    { label: "🎨  Generating brand mood board",     color: "#f59e0b" },
+                    { label: "🔷  Creating SVG logo concepts (×3)", color: "var(--color-signal)" },
+                    { label: "📄  Building landing page mockup",    color: "var(--color-pulse)" },
+                    { label: "👤  Crafting brand persona",          color: "#4ade80" },
+                  ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3 rounded-lg px-4 py-3"
                     style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.15)" }}>
                     <span className="text-sm font-semibold" style={{ color: item.color }}>{item.label}</span>
@@ -684,7 +684,7 @@ export default function HomeClient() {
                 ))}
               </div>
               <p className="text-xs" style={{ color: "var(--color-text-hint)" }}>
-                This takes about 30–60 seconds — Imagen 3 is running.
+                This takes 30–60 seconds — AI is generating your brand visuals.
               </p>
             </div>
           </div>
@@ -712,7 +712,7 @@ export default function HomeClient() {
       {/* ── Global copyright footer — visible on all screens ─── */}
       <footer className="w-full text-center py-4 mt-auto"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        <p className="text-[11px]" style={{ color: "var(--color-text-hint)" }}>
+        <p className="text-sm" style={{ color: "var(--color-text-hint)" }}>
           © {new Date().getFullYear()} c-annabel · Developed with IBM Bob · NomVox Brand Identity Platform
         </p>
       </footer>

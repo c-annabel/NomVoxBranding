@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -195,6 +196,197 @@ func LogoConceptPrompt(card models.NameCard, intake models.IntakePayload, logoTy
 	}
 }
 
+// ── SVG Logo Generation (Granite / watsonx fallback) ─────────────────────────
+//
+// When Gemini image generation is unavailable, watsonx generates inline SVG logos.
+// Each logoType receives a distinct prompt that produces valid, self-contained SVG.
+
+// BuildSVGLogoSystemPrompt returns the system prompt for SVG logo generation.
+func BuildSVGLogoSystemPrompt() string {
+	return `You are NomVox, a brand design AI specialising in vector logo design.
+Generate a SINGLE self-contained SVG logo based on the brand description.
+
+STRICT RULES:
+- Return ONLY the raw SVG markup starting with <svg — no markdown, no explanation, no code fences.
+- The SVG must be fully self-contained: all styles inline, no external references.
+- viewBox="0 0 200 200" for square logos (profile, app). viewBox="0 0 400 200" for landscape (business).
+- No <image> tags, no foreignObject, no scripts.
+- Use only SVG primitives: <rect>, <circle>, <ellipse>, <path>, <polygon>, <polyline>, <text>, <g>, <defs>, <linearGradient>, <radialGradient>, <filter>.
+- Maximum 80 lines of SVG.
+- The result must render correctly in a browser <img> tag with src="data:image/svg+xml;base64,..."`
+}
+
+// BuildSVGLogoUserPrompt returns the user turn for SVG logo generation.
+// logoType: "profile" | "app" | "business"
+func BuildSVGLogoUserPrompt(card models.NameCard, intake models.IntakePayload, logoType string) string {
+	colourHint := strings.TrimSpace(intake.ColorMood)
+	if colourHint == "" {
+		colourHint = "deep indigo #3b0764 and electric cyan #22d3ee"
+	}
+	personality := strings.TrimSpace(intake.Personality)
+	if personality == "" {
+		personality = "modern and distinctive"
+	}
+	industry := strings.TrimSpace(intake.Industry)
+	if industry == "" {
+		industry = "technology"
+	}
+	initial := ""
+	if len(card.Name) > 0 {
+		initial = string([]rune(card.Name)[:1])
+	}
+	initials := initial
+	if len([]rune(card.Name)) > 1 {
+		initials = string([]rune(card.Name)[:2])
+	}
+
+	switch logoType {
+	case "profile":
+		return fmt.Sprintf(
+			`Create a square SVG logo mark (viewBox="0 0 200 200") for brand "%s" in the %s industry.
+Style: Bauhaus-inspired geometric abstract mark. Bold shapes, strong negative space.
+Brand personality: %s. Colour palette: %s.
+Design: Draw ONE central abstract geometric shape (hexagon, diamond, overlapping circles, or star) centred at 100,100.
+Fill with a gradient using the brand colours. Add a subtle outer ring or frame.
+Include the brand initial "%s" centred in the shape using a bold sans-serif font, white fill.
+Dark background (#0b0f19 or brand dark tone).
+NO brand name text below — only the mark and initial.`,
+			card.Name, industry, personality, colourHint, initial,
+		)
+	case "app":
+		return fmt.Sprintf(
+			`Create a square SVG app icon (viewBox="0 0 200 200") for brand "%s" — "%s". Industry: %s.
+Style: App store icon — rounded-rectangle frame with gradient background. Glassmorphic feel.
+Brand personality: %s. Colour palette: %s.
+Design: Draw a rounded rectangle (rx="36") filling most of the canvas with a gradient background.
+Inside: draw a bold abstract symbol or monogram "%s" centred, white or light coloured.
+Add a subtle radial gradient glow in the centre. Use deep rich colours for the background gradient.
+The icon should look premium and recognisable at 48×48px.`,
+			card.Name, card.Tagline, industry, personality, colourHint, initials,
+		)
+	case "business":
+		return fmt.Sprintf(
+			`Create a landscape SVG wordmark lockup (viewBox="0 0 400 200") for brand "%s" — "%s".
+Industry: %s. Brand personality: %s. Colour palette: %s.
+Style: Clean horizontal lockup on white/light background for print (business cards, letterhead).
+Design:
+1. Left side (x=40): Draw a small abstract geometric icon mark (hexagon or diamond, 48×48) filled with brand colour gradient.
+2. Right of icon: Brand name "%s" in bold sans-serif, large (font-size="36"), dark colour (#1a0a2e or similar).
+3. Below brand name: tagline "%s" in lighter font (font-size="14"), brand accent colour, tracking-wide.
+4. Below everything: a thin horizontal rule line in brand accent colour.
+Light background (#faf9f7 or #f5f0f8). Total composition centred vertically in the canvas.`,
+			card.Name, card.Tagline, industry, personality, colourHint,
+			card.Name, card.Tagline,
+		)
+	default:
+		return fmt.Sprintf(
+			`Create a square SVG logo (viewBox="0 0 200 200") for brand "%s". %s colour palette. Geometric style.`,
+			card.Name, colourHint,
+		)
+	}
+}
+
+// SVGToDataURI converts raw SVG string to a data URI for use in <img src=...>.
+// Uses base64 encoding for maximum browser compatibility.
+func SVGToDataURI(svg string) string {
+	if svg == "" {
+		return ""
+	}
+	// Trim any leading/trailing whitespace and ensure it starts with <svg
+	svg = strings.TrimSpace(svg)
+	if !strings.HasPrefix(svg, "<svg") {
+		// Try to extract just the SVG block
+		if idx := strings.Index(svg, "<svg"); idx >= 0 {
+			svg = svg[idx:]
+		} else {
+			return ""
+		}
+	}
+	// Close tag safety check
+	if !strings.Contains(svg, "</svg>") {
+		svg += "</svg>"
+	}
+	encoded := base64.StdEncoding.EncodeToString([]byte(svg))
+	return "data:image/svg+xml;base64," + encoded
+}
+
+// ── SVG Mood Board Tiles ──────────────────────────────────────────────────────
+
+// BuildSVGTileSystemPrompt returns the system prompt for a single SVG mood board tile.
+func BuildSVGTileSystemPrompt() string {
+	return `You are NomVox, a brand design AI specialising in abstract SVG art.
+Generate a SINGLE self-contained SVG brand mood tile.
+
+STRICT RULES:
+- Return ONLY the raw SVG markup starting with <svg — no markdown, no explanation, no code fences.
+- viewBox="0 0 300 300" always.
+- The SVG must be purely abstract — no text, no brand names, no letters.
+- Use only geometric primitives and gradients to create visual mood.
+- Maximum 50 lines of SVG.
+- Use brand colours provided in the prompt.`
+}
+
+// BuildSVGMoodBoardPrompts returns 4 distinct SVG tile prompts for the mood board.
+// Each tile represents a different facet of the brand's visual world.
+func BuildSVGMoodBoardPrompts(card models.NameCard, intake models.IntakePayload) []string {
+	colour1 := "#8B5CF6" // pulse purple
+	colour2 := "#22d3ee" // signal cyan
+	colour3 := "#0b0f19" // void
+	if c := strings.TrimSpace(intake.ColorMood); c != "" {
+		// Use the provided colour as a hint for accent
+		colour1 = "#8B5CF6"
+	}
+
+	personality := strings.TrimSpace(intake.Personality)
+	if personality == "" {
+		personality = "modern, aspirational"
+	}
+	industry := strings.TrimSpace(intake.Industry)
+	if industry == "" {
+		industry = "creative"
+	}
+
+	name := card.Name
+
+	return []string{
+		// Tile 1: Colour field / texture
+		fmt.Sprintf(
+			`Create an abstract SVG mood tile (viewBox="0 0 300 300") for brand "%s" in %s industry.
+Style: Colour field — no shapes, pure gradient atmosphere.
+Use: deep background %s, radiating circles or concentric rings in %s and %s.
+Multiple overlapping semi-transparent ellipses/circles creating depth and texture.
+NO text, NO letters. Pure abstract colour study.`,
+			name, industry, colour3, colour1, colour2,
+		),
+		// Tile 2: Geometric pattern
+		fmt.Sprintf(
+			`Create an abstract SVG geometric pattern tile (viewBox="0 0 300 300") for brand "%s".
+Style: Repeating geometric forms — hexagons, triangles, or diamonds in a grid.
+Colours: %s background, %s and %s shapes with varying opacity (0.3 to 0.9).
+Brand personality: %s. Pure geometry, no text, no letters.
+Create visual rhythm through size variation and overlapping.`,
+			name, colour3, colour1, colour2, personality,
+		),
+		// Tile 3: Abstract marks / motion
+		fmt.Sprintf(
+			`Create an abstract SVG motion tile (viewBox="0 0 300 300") for brand "%s".
+Style: Flowing curves or diagonal lines suggesting motion and energy.
+Use curved <path> elements, arcs, and bezier curves.
+Colours: %s background, %s and %s strokes of varying width (1px to 8px).
+No text, no letters. Express brand personality: %s.`,
+			name, colour3, colour1, colour2, personality,
+		),
+		// Tile 4: Brand mark echo
+		fmt.Sprintf(
+			`Create an abstract SVG brand echo tile (viewBox="0 0 300 300") for brand "%s" in %s.
+Style: Central focal point — one large central shape (circle or hexagon) filled with gradient %s→%s.
+Surrounded by diminishing rings or orbits in lighter tones.
+Dark background %s. No text, no letters. Aspirational, premium feel.`,
+			name, industry, colour1, colour2, colour3,
+		),
+	}
+}
+
 // ── Brand Persona Prompts ─────────────────────────────────────────────────────
 
 // BuildPersonaSystemPrompt returns the system prompt for generating a BrandPersona.
@@ -280,7 +472,9 @@ Rules:
 }
 
 // BuildMockupUserPrompt returns the user turn for landing page generation.
-func BuildMockupUserPrompt(card models.NameCard, intake models.IntakePayload) string {
+// selectedLogoKey ("profile"|"app"|"business") and selectedLogoStyle are optional;
+// when provided they add logo context to the design directives.
+func BuildMockupUserPrompt(card models.NameCard, intake models.IntakePayload, selectedLogoKey, selectedLogoStyle string) string {
 	colourHint := intake.ColorMood
 	if colourHint == "" {
 		colourHint = "deep navy background, white text, electric blue accent"
@@ -293,6 +487,17 @@ func BuildMockupUserPrompt(card models.NameCard, intake models.IntakePayload) st
 	if styleHint == "" {
 		styleHint = "minimal wordmark"
 	}
+
+	// Derive logo context clause
+	logoCtx := ""
+	logoStyle := strings.TrimSpace(selectedLogoStyle)
+	if logoStyle == "" {
+		logoStyle = logoStyleDescription(selectedLogoKey)
+	}
+	if logoStyle != "" && logoStyle != "clean modern mark" {
+		logoCtx = fmt.Sprintf("\n- Logo style chosen: %s — echo this aesthetic in nav typography, button shape, and icon use.", logoStyle)
+	}
+
 	return fmt.Sprintf(
 		`Create a hero landing page for brand "%s".
 
@@ -304,7 +509,7 @@ Brand details:
 - Colour palette: %s
 - Brand personality: %s
 - Visual style: %s
-- Target audience: %s
+- Target audience: %s%s
 
 Design requirements:
 - Background colour must directly use the specified colour palette (not generic dark grey).
@@ -322,6 +527,7 @@ Design requirements:
 		personality,
 		styleHint,
 		strings.TrimSpace(intake.TargetAudience),
+		logoCtx,
 		personality,
 		card.Name,
 		card.Name,
