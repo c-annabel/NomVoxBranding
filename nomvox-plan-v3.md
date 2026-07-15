@@ -1,4 +1,4 @@
-# NomVox SDLC Plan v3
+# NomVox SDLC Plan v4
 
 ## Overview
 
@@ -6,7 +6,7 @@ NomVox is an AI-powered brand identity platform that transforms a raw business c
 
 **Sprint:** 15 days  
 **Backend:** Go (net/http + chi router)  
-**Frontend:** Next.js 14 + Tailwind CSS + Space Grotesk font  
+**Frontend:** Next.js 16.2 + Tailwind CSS v4 + Space Grotesk font
 **AI Core (text / reasoning):** IBM Granite via watsonx.ai — name generation, taglines, origin stories, brand scores, persona, voice samples, competitor radar, landing page HTML (required for challenge compliance)
 **AI Core (vision + image gen):** Google AI Studio free tier — Gemini 2.0 Flash (vision image analysis, natively multimodal, no extra key) + Imagen 3 (mood board + logo image generation) — zero cost for demo prototype
 **Session store:** Redis / Upstash  
@@ -120,7 +120,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-01: Environment, Scaffold & Repo [ ] pending
+### ST-01: Environment, Scaffold & Repo [x] COMPLETE
 
 **Intent:** Establish the full monorepo structure, Go module, Next.js app, CI, secrets management, and shared type definitions. This is the foundation every other sub-task builds on.
 
@@ -153,7 +153,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-02: Keyword Intake Form [ ] pending
+### ST-02: Keyword Intake Form [x] COMPLETE
 
 **Intent:** Build the structured 8-field intake form that replaces a free-text prompt box. This is the critical first step — gathering enough context in one shot to avoid thin-prompt regeneration loops. The Go handler assembles a deterministic, rich LLM prompt from the structured payload.
 
@@ -181,7 +181,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-03: LLM Core — Name Generation, Origin Story, Brand Score, Voice Samples [ ] pending
+### ST-03: LLM Core — Name Generation, Origin Story, Brand Score, Voice Samples [x] COMPLETE (pending WML association)
 
 **Intent:** Implement the IBM Granite LLM integration that generates name cards enriched with origin story, brand score, and voice samples — all in a single structured call. This makes every name feel consultant-grade on first delivery, not just a list.
 
@@ -211,7 +211,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-04: Session Memory & Anti-Name Reasoning [ ] pending
+### ST-04: Session Memory & Anti-Name Reasoning [x] COMPLETE
 
 **Intent:** Implement the Redis session store that makes NomVox a genuine creative partner. Every liked name, rejected name, rejection explanation, visual note, slider position, and uploaded vision context is persisted and injected into every subsequent AI call. Anti-Name Reasoning adds a clarifying question loop when a name is rejected, making the AI's learning visible to the user.
 
@@ -241,7 +241,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-05: Availability Engine & 80% Gate [ ] pending
+### ST-05: Availability Engine & 80% Gate [x] COMPLETE
 
 **Intent:** Implement the Go availability engine that checks domain and social handle availability in parallel, applies the weighted 80% scoring gate, filters out failing names before they reach the user, and handles zero-pass retry cycles and closest-match fallback.
 
@@ -278,7 +278,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-06: Select / Reject / Reproduce State Machine UI [ ] pending
+### ST-06: Select / Reject / Reproduce State Machine UI [x] COMPLETE
 
 **Intent:** Implement the three-option interaction model (Step B in the state machine) as a clear, deliberate UI component. This is the core creative-partner mechanic — the user is never forced into a linear flow.
 
@@ -307,7 +307,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-07: Brand Persona Card [ ] pending
+### ST-07: Style DNA Slider [x] COMPLETE — Brand Persona Card [ ] pending (merged into ST-08 visual phase)
 
 **Intent:** After a name is selected, generate a brand persona card that describes the brand as if it were a person. This goes beyond naming into brand strategy and is the single feature most likely to make judges stop and say "I've never seen a tool do that."
 
@@ -332,7 +332,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-08: Vision Image Upload & Visual Identity [ ] pending
+### ST-08: Vision Image Upload & Visual Identity [x] COMPLETE (visual pipeline + persona; vision upload = stretch)
 
 **Intent:** Implement the optional vision image upload (post-name-selection) that lets users show rather than describe their brand's visual direction. The extracted palette and mood feed into all image-gen calls for mood board, logos, and landing page. Also covers the full visual identity pipeline: mood board, all three logo types, and colour palette display.
 
@@ -371,7 +371,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-09: Hero Landing-Page Mockup [ ] pending
+### ST-09: Hero Landing-Page Mockup [x] COMPLETE (merged into /api/visuals, rendered in VisualIdentityPanel iframe)
 
 **Intent:** Generate a single hero-section HTML/CSS mockup for the selected name, incorporating the brand palette, tagline, and logo slot. Scoped strictly to one section — not a full site — so it remains buildable in one day and demoable in 30 seconds.
 
@@ -424,7 +424,7 @@ Elevated creative taglines to use in the app, pitch, and README:
 
 ---
 
-### ST-11: QA, Accessibility & Error States [ ] pending
+### ST-11: QA, Accessibility & Error States [-] IN PROGRESS (tsc + go vet clean; production build clean; mobile responsive layouts verified; unit tests pending)
 
 **Intent:** Validate the full end-to-end flow, ensure all async sections have loading states, confirm mobile responsiveness, and confirm graceful degradation for every external dependency that could fail.
 

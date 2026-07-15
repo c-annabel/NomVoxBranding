@@ -1,10 +1,10 @@
-import IntakeForm from "@/components/IntakeForm";
-import type { IntakePayload } from "@/lib/types";
-
-// Temporary client wrapper — page becomes interactive in ST-03 when
-// name cards and the generate API are wired up.
 import HomeClient from "./HomeClient";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function Home() {
-  return <HomeClient />;
+  return (
+    <ErrorBoundary>
+      <HomeClient />
+    </ErrorBoundary>
+  );
 }

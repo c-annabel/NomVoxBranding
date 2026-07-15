@@ -94,3 +94,63 @@ export interface GenerateResponse {
 export interface SessionResponse {
   session_id: string;
 }
+
+export interface ReactResponse {
+  ok: boolean;
+  clarifying_question?: string; // only set on reject+note
+}
+
+// ── UI state machine ──────────────────────────────────────────────
+export type AppStep =
+  | "intake"       // user filling the form
+  | "generating"   // AI generating names
+  | "results"      // name cards shown, user selecting/rejecting
+  | "clarifying"   // AI asked a question after rejection
+  | "selected"     // user selected a name → visual identity phase
+  | "visuals"      // visuals being generated / shown
+  | "export";      // export phase
+
+export interface NameCardState {
+  card: NameCard;
+  availability?: AvailabilityResult;
+  reaction?: "liked" | "rejected" | null;
+}
+
+// ── Style DNA Sliders ─────────────────────────────────────────────
+export interface StyleDNA {
+  playful: number;   // 0 = premium, 1 = playful
+  abstract: number;  // 0 = descriptive, 1 = abstract
+}
+
+// ── Visual Identity ───────────────────────────────────────────────
+export interface BrandPersona {
+  age: number;
+  occupation: string;
+  voice: string;
+  reads: string[];
+  never_says: string[];
+  core_values: string[];
+}
+
+export interface VisualsResponse {
+  mood_board: string[];      // data URIs
+  logo_profile: string;
+  logo_app: string;
+  logo_business: string;
+  mockup_html: string;
+  persona?: BrandPersona;
+}
+
+export interface ExportRequest {
+  session_id: string;
+  brand_name: string;
+  card: NameCard;
+  intake: IntakePayload;
+  mood_board: string[];
+  logo_profile: string;
+  logo_app: string;
+  logo_business: string;
+  selected_logo_key: string; // "profile" | "app" | "business"
+  mockup_html: string;
+  persona?: BrandPersona;
+}

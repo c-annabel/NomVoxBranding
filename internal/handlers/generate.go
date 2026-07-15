@@ -2,81 +2,191 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
+	"github.com/c-annabel/NomVoxBranding/internal/ai"
 	"github.com/c-annabel/NomVoxBranding/internal/models"
+	"github.com/c-annabel/NomVoxBranding/internal/session"
+	"github.com/google/uuid"
 )
 
+// fileLog writes a timestamped line to nomvox.log (append mode).
+// Non-fatal — if log file can't be written, prints to stderr instead.
+func fileLog(format string, args ...interface{}) {
+	msg := fmt.Sprintf("[%s] %s\n", time.Now().Format("15:04:05"), fmt.Sprintf(format, args...))
+	f, err := os.OpenFile("nomvox.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("(fileLog unavailable) " + msg)
+		return
+	}
+	defer f.Close()
+	f.WriteString(msg)
+	log.Print(msg) // also print to stderr so terminal shows it live
+}
+
+// generateResponse is what the frontend receives.
+type generateResponse struct {
+	SessionID string            `json:"session_id"`
+	Cards     []models.NameCard `json:"cards"`
+}
+
+// generateRequest is the full incoming payload from the frontend.
+type generateRequest struct {
+	SessionID string               `json:"session_id"` // empty on first call
+	Intake    models.IntakePayload `json:"intake"`
+	Action    string               `json:"action"` // "init" | "reproduce"
+}
+
+// lazyStore holds the session store singleton initialised on first use.
+// We defer initialisation so the server can start without Redis configured.
+var lazyStore *session.Store
+
+func getStore() (*session.Store, error) {
+	if lazyStore != nil {
+		return lazyStore, nil
+	}
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		return nil, fmt.Errorf("REDIS_URL not set")
+	}
+	s, err := session.New(redisURL)
+	if err != nil {
+		return nil, err
+	}
+	lazyStore = s
+	return lazyStore, nil
+}
+
 // GenerateHandler handles POST /api/generate.
-// In ST-03 this will call the Granite LLM client and stream name cards.
-// For now it validates the payload and returns the assembled prompt string
-// so the intake form can be tested end-to-end before the LLM is wired up.
+// It loads session memory from Redis, calls IBM Granite with full context,
+// persists updated session, and returns enriched NameCards.
 func GenerateHandler(w http.ResponseWriter, r *http.Request) {
-	var payload models.IntakePayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, `{"error":"invalid JSON"}`, http.StatusBadRequest)
+	var req generateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	// Validate required field.
-	if strings.TrimSpace(payload.CoreIdea) == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "core_idea is required",
-			"field": "core_idea",
-		})
+	if strings.TrimSpace(req.Intake.CoreIdea) == "" {
+		jsonError(w, "core_idea is required", http.StatusBadRequest)
 		return
 	}
 
-	// Assemble deterministic LLM prompt from all filled fields.
-	// ST-03 will pass this to the Granite client.
-	prompt := assembleLLMPrompt(payload)
+	// ── Session management ─────────────────────────────────────────
+	sessionID := strings.TrimSpace(req.SessionID)
+	if sessionID == "" {
+		sessionID = uuid.NewString()
+	}
+
+	store, storeErr := getStore()
+	var sess *models.BrandSession
+
+	if storeErr == nil {
+		loaded, err := store.Get(r.Context(), sessionID)
+		if err != nil {
+			log.Printf("generate: session load: %v", err)
+		}
+		if loaded != nil {
+			sess = loaded
+		}
+	}
+
+	if sess == nil {
+		sess = &models.BrandSession{
+			SessionID: sessionID,
+			Intake:    req.Intake,
+		}
+	}
+
+	// ── Build prompts with full session context ────────────────────
+	client, err := ai.NewGraniteClient()
+	if err != nil {
+		log.Printf("generate: granite client: %v", err)
+		jsonError(w, "AI service unavailable — check WATSONX_API_KEY and WATSONX_PROJECT_ID", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Always generate 4 names. The new radical-naming prompt is longer than the
+	// original, so 5 names frequently hits the 3000-token ceiling and truncates JSON.
+	// 4 names reliably fit within budget with the enriched system prompt.
+	nameCount := 4
+
+	systemPrompt := ai.BuildSystemPrompt(sess)
+	userPrompt := ai.BuildUserPrompt(req.Intake, nameCount)
+
+	fileLog("generate: calling LLM (nameCount=%d, sessionID=%s)", nameCount, sessionID)
+	start := time.Now()
+
+	// ── Call LLM — use request context so chi timeout cancels cleanly ──
+	raw, err := client.Generate(r.Context(), systemPrompt, userPrompt)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		fileLog("generate: LLM call failed after %s: %v", elapsed, err)
+		// Retry once with an even tighter prompt
+		userPrompt2 := fmt.Sprintf("Generate %d brand names. Return ONLY a JSON array [ ... ]. No other text.", nameCount)
+		raw, err = client.Generate(r.Context(), systemPrompt, userPrompt2)
+		if err != nil {
+			fileLog("generate: retry failed: %v", err)
+			jsonError(w, fmt.Sprintf("LLM call failed: %v", err), http.StatusBadGateway)
+			return
+		}
+	}
+
+	fileLog("generate: LLM responded in %s, raw len=%d, preview=%q", elapsed, len(raw), ai.TruncateStr(raw, 120))
+
+	// ── Parse + validate cards ─────────────────────────────────────
+	cards, parseErr := ai.ParseNameCards(raw)
+	if parseErr != nil || len(cards) == 0 {
+		fileLog("generate: parse failed: %v", parseErr)
+		// Return helpful error with the raw prefix so user can report it
+		snippet := ai.TruncateStr(raw, 200)
+		jsonError(w, fmt.Sprintf("AI response could not be parsed (first 200 chars): %s", snippet), http.StatusInternalServerError)
+		return
+	}
+	fileLog("generate: parsed %d cards OK", len(cards))
+
+	// ── Update session memory ──────────────────────────────────────
+	for _, c := range cards {
+		sess.AllGenerated = appendUnique(sess.AllGenerated, c.Name)
+	}
+	sess.Intake = req.Intake // update intake in case user changed fields
+
+	if storeErr == nil {
+		if err := store.Set(r.Context(), sess); err != nil {
+			log.Printf("generate: session save: %v", err)
+		}
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
-		"prompt": prompt,
+	json.NewEncoder(w).Encode(generateResponse{
+		SessionID: sessionID,
+		Cards:     cards,
 	})
 }
 
-// assembleLLMPrompt builds a rich, deterministic prompt string from the
-// structured intake payload. Only appends clauses for non-empty fields.
+// appendUnique appends s to slice only if not already present.
+func appendUnique(slice []string, s string) []string {
+	for _, v := range slice {
+		if v == s {
+			return slice
+		}
+	}
+	return append(slice, s)
+}
+
+// assembleLLMPrompt is kept for backward compatibility — now delegates to ai package.
 func assembleLLMPrompt(p models.IntakePayload) string {
-	var b strings.Builder
-	b.WriteString("Generate brand names for a ")
-	b.WriteString(strings.TrimSpace(p.CoreIdea))
+	return ai.BuildUserPrompt(p, 8)
+}
 
-	if v := strings.TrimSpace(p.TargetAudience); v != "" {
-		b.WriteString(", targeting ")
-		b.WriteString(v)
-	}
-	if v := strings.TrimSpace(p.Personality); v != "" {
-		b.WriteString(", personality: ")
-		b.WriteString(v)
-	}
-	if v := strings.TrimSpace(p.Style); v != "" {
-		b.WriteString(", style: ")
-		b.WriteString(v)
-	}
-	if v := strings.TrimSpace(p.Industry); v != "" {
-		b.WriteString(", industry: ")
-		b.WriteString(v)
-	}
-	if v := strings.TrimSpace(p.ColorMood); v != "" {
-		b.WriteString(", colour mood: ")
-		b.WriteString(v)
-	}
-	if v := strings.TrimSpace(p.NameLength); v != "" {
-		b.WriteString(", name length preference: ")
-		b.WriteString(v)
-	}
-	if v := strings.TrimSpace(p.Avoid); v != "" {
-		b.WriteString(". Avoid: ")
-		b.WriteString(v)
-	}
-	b.WriteString(".")
-
-	return b.String()
+func jsonError(w http.ResponseWriter, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }

@@ -1,0 +1,871 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NomVox — Full SDLC Plan</title>
+<style>
+  :root {
+    --void: #05070f;
+    --nebula: #0e1220;
+    --pulse: #8B5CF6;
+    --pulse-lo: #6d3fc0;
+    --signal: #22d3ee;
+    --text: #EDEFFE;
+    --text-2: #C4CBEA;
+    --text-3: #8892B8;
+    --green: #4ade80;
+    --amber: #f59e0b;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.6;
+    padding: 0 0 80px;
+  }
+  /* ── Header ── */
+  .hero {
+    background: linear-gradient(135deg, #0a0518 0%, #0b0f19 40%, #06101a 100%);
+    border-bottom: 1px solid rgba(139,92,246,0.30);
+    padding: 48px 32px 36px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% -10%, rgba(139,92,246,0.18) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(139,92,246,0.18);
+    border: 1px solid rgba(139,92,246,0.40);
+    color: #c4b5fd;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    padding: 4px 14px;
+    border-radius: 9999px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, #c4b5fd 0%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .hero .tagline { color: var(--text-2); font-size: 1.05rem; margin-bottom: 4px; }
+  .hero .sub { color: var(--text-3); font-size: .85rem; }
+  /* ── Nav ── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(5,7,15,0.95);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0 32px;
+    display: flex; gap: 0; overflow-x: auto;
+    backdrop-filter: blur(12px);
+  }
+  .nav a {
+    display: inline-block;
+    padding: 14px 16px;
+    font-size: .78rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  .nav a:hover { color: var(--signal); border-color: var(--signal); }
+  /* ── Sections ── */
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 52px 0 16px; }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .sec-num {
+    font-size: .68rem; font-weight: 900;
+    background: rgba(139,92,246,0.22);
+    color: #c4b5fd;
+    border: 1px solid rgba(139,92,246,0.40);
+    padding: 2px 8px; border-radius: 9999px;
+    letter-spacing: .10em; text-transform: uppercase;
+  }
+  .section-rule {
+    height: 1px;
+    background: linear-gradient(90deg, var(--pulse), var(--signal), transparent);
+    margin: 10px 0 28px;
+  }
+  p { color: var(--text-2); margin-bottom: 12px; }
+  /* ── Cards ── */
+  .card {
+    background: rgba(14,18,32,0.95);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: .95rem; font-weight: 800; color: var(--text);
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-sub { font-size: .82rem; color: var(--text-3); margin-bottom: 10px; }
+  /* ── Sprint table ── */
+  .sprint-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px 120px;
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .sprint-grid .sh {
+    background: rgba(139,92,246,0.12);
+    padding: 10px 14px;
+    font-size: .72rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .10em; color: #c4b5fd;
+    border-bottom: 1px solid rgba(139,92,246,0.20);
+  }
+  .sprint-grid .sc {
+    padding: 12px 14px;
+    font-size: .83rem;
+    color: var(--text-2);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: top;
+  }
+  .sprint-grid .sc:last-child, .sprint-grid .sc:nth-last-child(-n+4) { border-bottom: none; }
+  .sprint-grid .sc.id { color: var(--signal); font-weight: 700; font-size: .8rem; }
+  .sprint-grid .sc.done { color: var(--green); font-weight: 700; font-size: .78rem; }
+  .sprint-grid .sc.dep { color: var(--amber); font-size: .78rem; }
+  /* ── Architecture ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .arch-card {
+    background: rgba(14,18,32,0.95);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .arch-card .ac-head {
+    font-size: .72rem; font-weight: 900; text-transform: uppercase;
+    letter-spacing: .12em; margin-bottom: 8px;
+  }
+  .arch-card ul { padding-left: 16px; }
+  .arch-card li { font-size: .80rem; color: var(--text-2); margin-bottom: 4px; }
+  /* ── Judging table ── */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th {
+    text-align: left; padding: 10px 14px;
+    background: rgba(139,92,246,0.10);
+    font-size: .72rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .10em; color: #c4b5fd;
+    border-bottom: 1px solid rgba(139,92,246,0.20);
+  }
+  td { padding: 11px 14px; font-size: .84rem; color: var(--text-2); border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px; border-radius: 9999px;
+    font-size: .70rem; font-weight: 800;
+  }
+  .badge.green { background: rgba(74,222,128,0.16); color: var(--green); border: 1px solid rgba(74,222,128,0.30); }
+  .badge.amber { background: rgba(245,158,11,0.16); color: var(--amber); border: 1px solid rgba(245,158,11,0.30); }
+  .badge.pulse { background: rgba(139,92,246,0.18); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.35); }
+  .badge.cyan  { background: rgba(34,211,238,0.14); color: var(--signal); border: 1px solid rgba(34,211,238,0.30); }
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex; flex-direction: column; gap: 0;
+    margin: 20px 0;
+  }
+  .flow-step {
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .flow-left {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .flow-dot {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .80rem; font-weight: 900;
+  }
+  .flow-line {
+    width: 2px; flex: 1; min-height: 32px;
+    background: linear-gradient(180deg, rgba(139,92,246,0.40), rgba(34,211,238,0.25));
+    margin: 4px 0;
+  }
+  .flow-body { padding: 6px 0 24px; }
+  .flow-body h4 { font-size: .88rem; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .flow-body p { font-size: .78rem; color: var(--text-3); margin: 0; }
+  /* ── Env var table ── */
+  .env-table { margin-bottom: 20px; }
+  .env-row {
+    display: grid; grid-template-columns: 220px 1fr;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 9px 14px;
+    background: rgba(14,18,32,0.70);
+    font-size: .82rem;
+  }
+  .env-row:first-child { border-radius: 10px 10px 0 0; background: rgba(139,92,246,0.10); }
+  .env-row:last-child { border-radius: 0 0 10px 10px; border-bottom: none; }
+  .env-key { font-family: "Courier New", monospace; color: var(--signal); font-weight: 700; }
+  .env-val { color: var(--text-2); }
+  /* ── Footer ── */
+  footer {
+    text-align: center; padding: 32px 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-3); font-size: .78rem;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-badge">IBM AI Builders Challenge · July 2026</div>
+  <h1>NomVox — SDLC Plan</h1>
+  <p class="tagline">Born from the Void · AI-powered Brand Identity Platform</p>
+  <p class="sub">Creative Industries Theme · Primary Tool: IBM Bob · ST-01 → ST-15</p>
+</div>
+
+
+<nav class="nav">
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#sprints">Sprints</a>
+  <a href="#flow">User Flow</a>
+  <a href="#judging">Judging</a>
+  <a href="#env">Env Vars</a>
+  <a href="#deploy">Deploy</a>
+  <a href="#risks">Risks</a>
+  <a href="#demo">Demo Script</a>
+</nav>
+
+<div class="wrap">
+
+
+
+
+<section id="overview">
+  <h2><span class="sec-num">01</span> Project Overview</h2>
+  <div class="section-rule"></div>
+
+  <p>NomVox is a <strong>conversational AI brand-identity partner</strong> that transforms a one-line business concept into a complete, launch-ready brand universe — coined names, cross-platform availability checks, logo concepts, mood boards, brand persona, and a hero landing-page mockup — all in under 60 seconds.</p>
+
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Problem</div>
+      <ul>
+        <li>Founders juggle 5+ tabs to name a brand</li>
+        <li>Existing tools (Namelix, Namechk, Looka) are one-shot — no memory</li>
+        <li>"I liked option 3 but want it shorter" → dead end</li>
+        <li>Domain + handle checks are manual and slow</li>
+        <li>Logo costs ≥$500 freelancer or hours of iteration</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--signal)">Solution</div>
+      <ul>
+        <li>Coined names — invented vocabulary, never real words</li>
+        <li>Live RDAP + 5 social platform probes per name</li>
+        <li>60% availability gate filters unusable names</li>
+        <li>Session memory: every like/reject/note feeds next AI call</li>
+        <li>Logo × 3 styles + mood board + landing page mockup</li>
+        <li>Export ZIP with all brand assets</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--green)">Challenge Fit</div>
+      <ul>
+        <li>✅ AI Creative Partner</li>
+        <li>✅ Creative Ideation Platform</li>
+        <li>✅ AI Design &amp; Visual Concept Tools</li>
+        <li>✅ Personalized Creative Assistant</li>
+        <li>Primary tool: IBM Bob (required)</li>
+        <li>Core AI: IBM Granite / watsonx.ai</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--amber)">Why Web App</div>
+      <ul>
+        <li>No App Store review delay</li>
+        <li>Screenshotting/scraping = backend task</li>
+        <li>Faster to demo (screen-record directly)</li>
+        <li>Responsive — works on mobile browser</li>
+        <li>No native capabilities needed (no GPS/camera)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+
+
+<section id="architecture">
+  <h2><span class="sec-num">02</span> Architecture</h2>
+  <div class="section-rule"></div>
+
+  <div class="arch-grid" style="grid-template-columns:repeat(auto-fill, minmax(200px,1fr))">
+    <div class="arch-card">
+      <div class="ac-head" style="color:#c4b5fd">Frontend</div>
+      <ul>
+        <li>Next.js 16.2 + React 19</li>
+        <li>Tailwind CSS v4, App Router</li>
+        <li>Space Grotesk font</li>
+        <li>Vercel deployment</li>
+        <li>5-screen state machine</li>
+        <li>ErrorBoundary + mobile responsive</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--signal)">Backend</div>
+      <ul>
+        <li>Go 1.22+ + chi v5 router</li>
+        <li>Fly.io deployment</li>
+        <li>7 API routes</li>
+        <li>60s wall-clock timeout guard</li>
+        <li>Concurrent goroutines (5 tasks)</li>
+        <li>ZIP export streamed to browser</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">AI — Text</div>
+      <ul>
+        <li>IBM watsonx.ai</li>
+        <li>meta-llama/llama-3-3-70b-instruct</li>
+        <li>IAM token cache 50min</li>
+        <li>max_new_tokens=1800</li>
+        <li>greedy decoding</li>
+        <li>RepetitionPenalty=1.05</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:#f59e0b">AI — Images</div>
+      <ul>
+        <li>Imagen 3 (Google AI Studio)</li>
+        <li>4 mood board panels (1:1)</li>
+        <li>3 logo concepts (parallel)</li>
+        <li>Base64 RawURLEncoding decode</li>
+        <li>Gemini 2.0 Flash (vision, optional)</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--green)">Session / Data</div>
+      <ul>
+        <li>Redis via Upstash (free tier)</li>
+        <li>2-hour TTL per session</li>
+        <li>Liked / Rejected / Notes / DNA</li>
+        <li>AllGenerated prevents repeats</li>
+        <li>SelectedName + Persona stored</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--red)">Availability</div>
+      <ul>
+        <li>RDAP (Verisign) — domain</li>
+        <li>Instagram / X / TikTok</li>
+        <li>Threads / YouTube</li>
+        <li>60% weighted gate</li>
+        <li>Zero-pass → top-2 partials</li>
+        <li>Competitor Radar (Granite)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">API Routes</div>
+    <table>
+      <tr><th>Method</th><th>Route</th><th>Timeout</th><th>Description</th></tr>
+      <tr><td>GET</td><td>/api/ping</td><td>—</td><td>Health check — returns {"status":"ok","service":"nomvox"}</td></tr>
+      <tr><td>POST</td><td>/api/generate</td><td>120s</td><td>LLM name generation — builds system prompt from session memory, calls watsonx.ai, parses 4 NameCards, saves AllGenerated to Redis</td></tr>
+      <tr><td>POST</td><td>/api/session</td><td>30s</td><td>Create new BrandSession in Redis</td></tr>
+      <tr><td>PATCH</td><td>/api/session/react</td><td>30s</td><td>Update session: like / reject / note / visual-note / slider / select. On reject+note → fires Anti-Name Reasoning clarifying Q</td></tr>
+      <tr><td>POST</td><td>/api/availability</td><td>60s</td><td>Probe 6 platforms concurrently, apply 60% gate, run Competitor Radar, return passing+partials</td></tr>
+      <tr><td>POST</td><td>/api/visuals</td><td>120s</td><td>5 concurrent tasks: 4×mood board, 3×logo, HTML mockup, brand persona. Saves to session.</td></tr>
+      <tr><td>POST</td><td>/api/export</td><td>30s</td><td>Stream ZIP: brand-brief.json, brand-brief.html, landing-page.html, logos/*.png, mood-board/*.png, README.txt</td></tr>
+    </table>
+  </div>
+</section>
+
+
+
+
+<section id="sprints">
+  <h2><span class="sec-num">03</span> Sprint Plan — ST-01 → ST-15</h2>
+  <div class="section-rule"></div>
+
+  <div class="sprint-grid">
+    <div class="sh">Sprint</div>
+    <div class="sh">Deliverable</div>
+    <div class="sh">Status</div>
+    <div class="sh">Dependencies</div>
+
+    <div class="sc id">ST-01</div>
+    <div class="sc">Go module scaffold, chi router, /api/ping, Redis session store, shared structs, .env.example, Dockerfile, fly.toml, GitHub Actions CI, README</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">—</div>
+
+    <div class="sc id">ST-02</div>
+    <div class="sc">8-field intake form, prompt richness meter, Inspire Me examples, brand CSS tokens (void/pulse/signal), star-field background, intakeValues persistence across navigation</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-01</div>
+
+    <div class="sc id">ST-03</div>
+    <div class="sc">IBM Granite LLM integration — IAM token exchange + 50min cache, /ml/v1/text/chat endpoint, ExtractJSON with truncation repair, file logging to nomvox.log, cmd/testllm/ standalone tester</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-01</div>
+
+    <div class="sc id">ST-04</div>
+    <div class="sc">Redis session memory — POST /api/session, PATCH /api/session/react (6 action types: like/reject/note/visual-note/slider/select), Anti-Name Reasoning (clarifying question on reject), RejectionDialog component</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-03</div>
+
+    <div class="sc id">ST-05</div>
+    <div class="sc">Availability engine — RDAP domain check, 6-platform parallel goroutines, weighted 60% gate (domain=2pt, social=1pt, minor=0.5pt), unknown=conservative/taken, zero-pass fallback (top-2 partials + amber banner), 60s wall-clock timeout, Competitor Radar via Granite</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-01</div>
+
+    <div class="sc id">ST-06+07</div>
+    <div class="sc">Full 5-screen state machine UI — Like/Reject/Select, StyleDNA sliders (Playful↔Premium + Abstract↔Descriptive), generating guard (prevents triple-fire), per-card accent border colours, ← Edit Inputs soft nav (preserves session), ← Back to Names return banner, liked-names summary banner</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-02, ST-04, ST-05</div>
+
+    <div class="sc id">ST-08</div>
+    <div class="sc">/api/visuals handler — 5 concurrent goroutines: mood board (4 images), logo×3 (profile/app/business), HTML landing mockup, brand persona JSON. Base64ToDataURI fixed to RawURLEncoding. Saves to Redis session.</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-03</div>
+
+    <div class="sc id">ST-09</div>
+    <div class="sc">Landing page mockup via Granite — always-visible 640px iframe in sandboxed iframe, stripMDFences() cleans LLM output, BuildMockupSystemPrompt/UserPrompt with brand colour + personality injection</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-08</div>
+
+    <div class="sc id">ST-10</div>
+    <div class="sc">/api/export — ZIP streamed to browser: brand-brief.json, brand-brief.html (NomVox-styled, with all brand data + scores + persona), landing-page.html, logos/*.png (incl. selected-logo.png), mood-board/*.png, README.txt. Copyright line with dynamic year.</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-08, ST-09</div>
+
+    <div class="sc id">ST-11</div>
+    <div class="sc">/api/debug-visuals, /api/debug-llm, /api/diagnose dev endpoints. Brand Score text-sm bars capped max-w-[80px]. Availability badges text-xs in 2-col grid. StyleDNA slider max-w-xl. DesignDoc.md full tech reference (Section 3).</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-08</div>
+
+    <div class="sc id">ST-12</div>
+    <div class="sc">Radical naming prompt — 5 strategies (syllable forge, phonaesthetics, neologism splice, void-word, ancient root mutation), explicit bans on real words/-ify/-ly/-oo/-io. Logo prompts: 3 distinct styles. Mood board: full brand context incl. origin story + tagline + audience + logo style.</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-03</div>
+
+    <div class="sc id">FIX-A</div>
+    <div class="sc">Remove manual &lt;head&gt; block from layout.tsx — App Router hydration mismatch causing blank/slow page. Add ErrorBoundary component wrapping HomeClient. Fix AvailabilityBadges stale unknowns ref.</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-06</div>
+
+    <div class="sc id">FIX-B</div>
+    <div class="sc">Mobile responsiveness — NameCardComponent grids changed from fixed-px to flex-col + lg:grid. CORS middleware upgraded: ALLOWED_ORIGINS (comma-separated), CORS_WILDCARD, dynamic Vary header. README final polish for challenge submission.</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-06</div>
+
+    <div class="sc id">ST-13</div>
+    <div class="sc">Unit tests — 23 tests across: ai package (ExtractJSON, ParseNameCards, BuildSystemPrompt, BuildUserPrompt), availability package (CheckName, CheckNames, score/sort/dedup), session helpers (appendUnique, removeString, BrandSession accumulation). All pass.</div>
+    <div class="sc done">✅ Done</div>
+    <div class="sc dep">ST-03, ST-05</div>
+
+    <div class="sc id">ST-14</div>
+    <div class="sc">Production deployment — Go API to Fly.io, Next.js to Vercel. Set all 5 secret env vars on Fly.io. Set NEXT_PUBLIC_API_URL on Vercel. Set ALLOWED_ORIGINS to Vercel domain. End-to-end smoke test from deployed URLs.</div>
+    <div class="sc done" style="color:var(--amber)">⏳ Pending</div>
+    <div class="sc dep">All ST-01→ST-13</div>
+
+    <div class="sc id">ST-15</div>
+    <div class="sc">Demo video (max 3 min): 0:00–0:20 problem hook, 0:20–0:45 intake form, 0:45–1:45 name generation + availability, 1:45–2:30 creative partner loop (reject/refine), 2:30–3:00 visual identity + export. Upload to YouTube. Update README links. Submit on platform by July 31 2026.</div>
+    <div class="sc done" style="color:var(--amber)">⏳ Pending</div>
+    <div class="sc dep">ST-14</div>
+  </div>
+</section>
+
+
+
+
+<section id="flow">
+  <h2><span class="sec-num">04</span> User Flow — Creative Partner Loop</h2>
+  <div class="section-rule"></div>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-left">
+        <div class="flow-dot" style="background:rgba(251,146,60,0.20);color:#fb923c">1</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-body">
+        <h4>Intake Form — 8-field structured prompt builder</h4>
+        <p>Core Idea (required) + 7 optional fields: Target Audience, Brand Personality, Style/Aesthetic, Industry, Colour Mood, Name Length, Avoid. Prompt richness meter shows how much context has been given. Inspire Me button fills all fields with a curated example.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-left">
+        <div class="flow-dot" style="background:rgba(139,92,246,0.20);color:#c4b5fd">2</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-body">
+        <h4>AI Name Generation — 4 coined names in ~20s</h4>
+        <p>LLM called with 5-strategy radical naming system prompt + full session context (liked names, rejection notes, slider DNA). Each card includes: Name, Tagline, Origin Story, Brand Score (memorability/spellability/safety/squatter risk), Brand Voice samples (IG/Email/404), Style Tags.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-left">
+        <div class="flow-dot" style="background:rgba(34,211,238,0.16);color:var(--signal)">3</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-body">
+        <h4>Availability Check — parallel probes across 6 platforms</h4>
+        <p>RDAP domain check + Instagram, X, TikTok, Threads, YouTube probed concurrently. Weighted 60% gate filters names. Zero-pass fallback shows top-2 partials with amber warning. Competitor Radar runs semantic clash detection via second LLM call. 60s wall-clock timeout.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-left">
+        <div class="flow-dot" style="background:rgba(74,222,128,0.16);color:var(--green)">4</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-body">
+        <h4>Creative Partner Loop — Like / Pass (with reason) / Choose</h4>
+        <p>♡ Like → name added to session liked list, influences next regeneration. ✕ Pass (optional reason) → AI fires Anti-Name Reasoning — asks one clarifying question. User answers → injected into session notes → ↻ Regenerate generates fresh names with full context. StyleDNA sliders (Playful↔Premium, Abstract↔Descriptive) shape the next batch.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-left">
+        <div class="flow-dot" style="background:rgba(139,92,246,0.20);color:#c4b5fd">5</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-body">
+        <h4>Visual Identity Pack — 3-step sub-flow</h4>
+        <p><strong>Step 1: Logo Concepts</strong> — 3 parallel Imagen 3 calls: Geometric Bauhaus profile mark / Gradient Glassmorphism app icon / Horizontal Wordmark business card. User selects one. <strong>Step 2: Mood Board</strong> — 4-panel Imagen 3 board generated with logo context + brand colours + personality. Brand Persona card ("brand as a person"). <strong>Step 3: Landing Page Mockup</strong> — Granite generates a complete hero-section HTML with inline CSS, matching brand palette and personality.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-left">
+        <div class="flow-dot" style="background:rgba(245,158,11,0.18);color:var(--amber)">6</div>
+        <div class="flow-line" style="min-height:0;background:none"></div>
+      </div>
+      <div class="flow-body">
+        <h4>Export Pack — ZIP downloaded to browser</h4>
+        <p>brand-brief.json (machine-readable), brand-brief.html (NomVox-styled HTML), landing-page.html, logos/logo-profile.png + logo-app-icon.png + logo-business-card.png + selected-logo.png, mood-board/panel-1.png through panel-4.png, README.txt with full brand data + copyright.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<section id="judging">
+  <h2><span class="sec-num">05</span> Judging Criteria Alignment</h2>
+  <div class="section-rule"></div>
+
+  <table>
+    <tr>
+      <th>Criterion</th>
+      <th>Weight</th>
+      <th>NomVox Evidence</th>
+      <th>Rating</th>
+    </tr>
+    <tr>
+      <td><strong>Technical Execution</strong><br /><span style="color:var(--text-3);font-size:.78rem">Quality of implementation, effective use of AI + IBM technologies</span></td>
+      <td><span class="badge pulse">~25%</span></td>
+      <td>IBM watsonx.ai (Llama 3.3 70B via chat API), IAM token cache, 5-concurrent goroutine image pipeline, Redis session store, RDAP + parallel probers, Go chi router, Next.js 16 App Router, TypeScript clean build, 23 unit tests all passing, ErrorBoundary, mobile responsive</td>
+      <td><span class="badge green">Strong</span></td>
+    </tr>
+    <tr>
+      <td><strong>Innovation</strong><br /><span style="color:var(--text-3);font-size:.78rem">Creativity, originality, uniqueness of solution</span></td>
+      <td><span class="badge pulse">~25%</span></td>
+      <td>5-strategy radical naming philosophy (syllable forge / phonaesthetics / neologism splice / void-word / ancient root mutation) — names are genuinely invented, not word mashups. Targeted mood board regeneration after logo selection (AI sees the logo context before generating the board). Anti-Name Reasoning asks a clarifying question rather than just regenerating.</td>
+      <td><span class="badge green">Strong</span></td>
+    </tr>
+    <tr>
+      <td><strong>Challenge Fit</strong><br /><span style="color:var(--text-3);font-size:.78rem">Alignment with Creative Industries theme</span></td>
+      <td><span class="badge pulse">~20%</span></td>
+      <td>Spans 4 of 6 solution areas simultaneously: AI Creative Partner + Creative Ideation Platform + AI Design &amp; Visual Concept Tools + Personalized Creative Assistant. Directly addresses "how can AI act as a creative partner rather than simply a content generator" — the core theme question.</td>
+      <td><span class="badge green">Excellent</span></td>
+    </tr>
+    <tr>
+      <td><strong>Feasibility</strong><br /><span style="color:var(--text-3);font-size:.78rem">Practicality and potential for real-world implementation</span></td>
+      <td><span class="badge pulse">~15%</span></td>
+      <td>All APIs on free tiers (watsonx.ai free, Google AI Studio free, Upstash free). Go + Vercel + Fly.io = total cost ~$0/month for demo scale. No scraping = no ToS risk. RDAP for domain = proper protocol. Export ZIP = permanent, usable artifact. Real handles probe gives real-world utility.</td>
+      <td><span class="badge green">Strong</span></td>
+    </tr>
+    <tr>
+      <td><strong>Real-World Impact</strong><br /><span style="color:var(--text-3);font-size:.78rem">Meaningful value, addresses real-world needs</span></td>
+      <td><span class="badge pulse">~15%</span></td>
+      <td>Universal appeal — any side hustle, app, band, nonprofit needs a name. Instant demo value (judges get it in 10s). Reduces name→handle→visual process from days to 60 seconds. Export pack is immediately usable: HTML landing page, logos, JSON brief for developers. Zero cold-start: works from just one sentence.</td>
+      <td><span class="badge green">Strong</span></td>
+    </tr>
+  </table>
+
+  <div class="card">
+    <div class="card-title">IBM Bob Usage — Required for Eligibility</div>
+    <div class="card-sub">All of the following completed with IBM Bob as primary development tool</div>
+    <table>
+      <tr><th>Area</th><th>How IBM Bob Was Used</th></tr>
+      <tr><td>Architecture</td><td>Technology selection debates (Go vs Node, Redis vs memory, Imagen 3 vs DALL-E), tradeoff analysis, service mesh design</td></tr>
+      <tr><td>SDLC Planning</td><td>Full sprint-by-sprint plan ST-01→ST-15, gap analysis against judging criteria, risk register, timeline estimation</td></tr>
+      <tr><td>Prompt Engineering</td><td>5-strategy radical naming system prompt, anti-name reasoning, persona generation, competitor radar, mood board contextualisation, logo concept differentiation, landing page HTML generation</td></tr>
+      <tr><td>Code Scaffolding</td><td>All Go handlers (generate, visuals, export, session, availability), Redis session store, ZIP builder, CORS middleware, IAM token client</td></tr>
+      <tr><td>Bug Diagnosis</td><td>JSON truncation (nameCount 5→4, max_new_tokens increase), Base64 encoding fix (RawURLEncoding vs StdEncoding), hydration mismatch (<head> block removal), triple-fire guard</head></td></tr>
+      <tr><td>QA</td><td>Unit test design, mobile responsive review, error-state coverage, availability threshold calibration</td></tr>
+    </table>
+  </div>
+</section>
+
+
+
+
+<section id="env">
+  <h2><span class="sec-num">06</span> Environment Variables</h2>
+  <div class="section-rule"></div>
+
+  <div class="env-table">
+    <div class="env-row">
+      <div class="env-key">Variable</div>
+      <div class="env-val" style="font-weight:700;color:var(--text-2)">Value / Notes</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">REDIS_URL</div>
+      <div class="env-val">rediss://:password@host.upstash.io:6379 — Upstash free tier, 2hr session TTL</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">WATSONX_API_KEY</div>
+      <div class="env-val">IBM Cloud IAM API key (from cloud.ibm.com/iam/apikeys). 40-char alphanumeric. Token cached 50min.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">WATSONX_PROJECT_ID</div>
+      <div class="env-val">UUID from watsonx.ai project settings. Required for all model calls.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">WATSONX_URL</div>
+      <div class="env-val">https://ca-tor.ml.cloud.ibm.com (Toronto region) — auto-selects Llama 3.3 70B. us-south uses Granite 3 8B.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">WATSONX_CPD_URL</div>
+      <div class="env-val">Optional. Set only for Cloud Pak for Data (https://ca-tor.dai.cloud.ibm.com). Leave empty for public IBM Cloud.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">GOOGLE_AI_API_KEY</div>
+      <div class="env-val">Google AI Studio API key — used for Imagen 3 (image generation) and Gemini 2.0 Flash (vision, optional).</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">ALLOWED_ORIGIN</div>
+      <div class="env-val">Single CORS origin, e.g. https://nomvox.vercel.app. Defaults to http://localhost:3000.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">ALLOWED_ORIGINS</div>
+      <div class="env-val">Comma-separated list for multi-origin production, e.g. https://nomvox.app,https://nomvox.vercel.app</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">CORS_WILDCARD</div>
+      <div class="env-val">Set to "true" to allow all origins (*). Use only for public API mode.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">PORT</div>
+      <div class="env-val">Go server port. Default 8080. Fly.io injects this automatically.</div>
+    </div>
+    <div class="env-row">
+      <div class="env-key">NEXT_PUBLIC_API_URL</div>
+      <div class="env-val">Frontend only (Vercel env var). Set to https://nomvox-api.fly.dev in production. Default http://localhost:8080 in dev.</div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<section id="deploy">
+  <h2><span class="sec-num">07</span> Deployment Guide</h2>
+  <div class="section-rule"></div>
+
+  <div class="arch-grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="card-title" style="color:var(--pulse)">🚀 Fly.io — Go API</div>
+      <div class="card-sub" style="margin-bottom:12px">Target: https://nomvox-api.fly.dev</div>
+      <ol style="padding-left:18px;color:var(--text-2);font-size:.82rem;line-height:2">
+        <li>fly launch (creates fly.toml, sets app name)</li>
+        <li>fly secrets set WATSONX_API_KEY=… WATSONX_PROJECT_ID=… WATSONX_URL=… GOOGLE_AI_API_KEY=… REDIS_URL=… ALLOWED_ORIGINS=https://nomvox.vercel.app</li>
+        <li>fly deploy (builds from Dockerfile, deploys Go binary)</li>
+        <li>Smoke test: curl https://nomvox-api.fly.dev/api/ping</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--signal)">⚡ Vercel — Next.js</div>
+      <div class="card-sub" style="margin-bottom:12px">Target: https://nomvox.vercel.app</div>
+      <ol style="padding-left:18px;color:var(--text-2);font-size:.82rem;line-height:2">
+        <li>cd frontend &amp;&amp; vercel (follow prompts, auto-detects Next.js)</li>
+        <li>vercel env add NEXT_PUBLIC_API_URL → set to https://nomvox-api.fly.dev</li>
+        <li>vercel --prod (deploy to production)</li>
+        <li>Smoke test: open https://nomvox.vercel.app in browser</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Local Development</div>
+    <table>
+      <tr><th>Step</th><th>Command</th><th>Notes</th></tr>
+      <tr><td>Clone</td><td>git clone https://github.com/c-annabel/NomVoxBranding</td><td>—</td></tr>
+      <tr><td>Env vars</td><td>cp .env.example .env &amp;&amp; edit .env</td><td>5 keys needed</td></tr>
+      <tr><td>Go server</td><td>go run ./cmd/server</td><td>:8080</td></tr>
+      <tr><td>Next.js</td><td>cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</td><td>:3000</td></tr>
+      <tr><td>LLM test</td><td>go run ./cmd/testllm</td><td>4-step verification</td></tr>
+      <tr><td>Unit tests</td><td>go test ./... -v</td><td>23 tests, all pass</td></tr>
+      <tr><td>Production build</td><td>cd frontend &amp;&amp; npm run build</td><td>2.1s, TypeScript clean</td></tr>
+    </table>
+  </div>
+</section>
+
+
+
+
+<section id="risks">
+  <h2><span class="sec-num">08</span> Risk Register</h2>
+  <div class="section-rule"></div>
+
+  <table>
+    <tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr>
+    <tr>
+      <td>watsonx.ai rate limit during demo</td>
+      <td><span class="badge amber">Medium</span></td>
+      <td><span class="badge amber">Medium</span></td>
+      <td>IAM token cache (50min) reduces auth calls. Pre-warm with one test call before recording demo. Keep testllm ready to verify connectivity.</td>
+    </tr>
+    <tr>
+      <td>Imagen 3 content policy block (logo prompt)</td>
+      <td><span class="badge amber">Medium</span></td>
+      <td><span class="badge amber">Medium</span></td>
+      <td>CSS placeholder tiles always shown when Imagen unavailable — user can still select a logo direction. Prompts explicitly say "no text, no faces" to avoid policy triggers.</td>
+    </tr>
+    <tr>
+      <td>Social platform rate-limits probes (429)</td>
+      <td><span class="badge amber">Medium</span></td>
+      <td><span class="badge green">Low</span></td>
+      <td>Unknown probes treated as "taken" (conservative). Amber banner explains "check inconclusive". Zero-pass fallback shows top-2 partials. User can regenerate.</td>
+    </tr>
+    <tr>
+      <td>LLM JSON truncation (&gt; 4 names)</td>
+      <td><span class="badge green">Low</span></td>
+      <td><span class="badge amber">Medium</span></td>
+      <td>nameCount fixed at 4. max_new_tokens=1800. ExtractJSON repairs truncated arrays. Retry with minimal prompt on first failure.</td>
+    </tr>
+    <tr>
+      <td>Redis Upstash free tier limits</td>
+      <td><span class="badge green">Low</span></td>
+      <td><span class="badge green">Low</span></td>
+      <td>Session store is non-fatal — server falls back gracefully when Redis unavailable. Demo uses short sessions. Upgrade to paid tier for production.</td>
+    </tr>
+    <tr>
+      <td>Fly.io cold start latency</td>
+      <td><span class="badge amber">Medium</span></td>
+      <td><span class="badge green">Low</span></td>
+      <td>Keep Fly.io machine always-on for demo week (min_machines_running=1 in fly.toml). Alternatively, pre-warm with a ping before starting demo recording.</td>
+    </tr>
+  </table>
+</section>
+
+
+
+
+<section id="demo">
+  <h2><span class="sec-num">09</span> Demo Video Script (3 min)</h2>
+  <div class="section-rule"></div>
+
+  <div class="card">
+    <div class="card-title">Timeline Breakdown</div>
+    <table>
+      <tr><th>Time</th><th>Section</th><th>What to Show</th></tr>
+      <tr>
+        <td><span class="badge cyan">0:00–0:20</span></td>
+        <td><strong>Problem Hook</strong></td>
+        <td>One sentence: "Naming a brand today means 5 open tabs, hours of searching, and still no guarantee the handle is available." Show the intake form screen.</td>
+      </tr>
+      <tr>
+        <td><span class="badge cyan">0:20–0:50</span></td>
+        <td><strong>Intake + Generate</strong></td>
+        <td>Type "eco-friendly coffee brand for young professionals" in Core Idea. Fill 3–4 optional fields. Point out Prompt Richness Meter. Hit Generate Names. Show the Loading screen with animated dots.</td>
+      </tr>
+      <tr>
+        <td><span class="badge cyan">0:50–1:30</span></td>
+        <td><strong>Name Cards + Availability</strong></td>
+        <td>Show 4 invented names appearing. Scroll through — point out Origin Story, Brand Voice, Brand Score. Watch availability badges update live. Show a PASS ✓ badge and a PARTIAL with competitor radar warning.</td>
+      </tr>
+      <tr>
+        <td><span class="badge cyan">1:30–2:00</span></td>
+        <td><strong>Creative Partner Loop</strong></td>
+        <td>Like one name. Reject another with reason "too harsh sounding". Watch the AI ask a clarifying question. Answer "I want something softer and more poetic". Hit Regenerate. Show new names that reflect the feedback. Point out liked-names banner.</td>
+      </tr>
+      <tr>
+        <td><span class="badge cyan">2:00–2:30</span></td>
+        <td><strong>Visual Identity Pack</strong></td>
+        <td>Choose a name. Show visuals-loading screen. Step 1: 3 logo concepts appear — select one. Step 2: Mood Board generates with brand context. Show brand persona card. Step 3: Landing page mockup in iframe.</td>
+      </tr>
+      <tr>
+        <td><span class="badge cyan">2:30–3:00</span></td>
+        <td><strong>Export + Wrap</strong></td>
+        <td>Click Export Pack → ZIP downloads. Show the contents: brand-brief.html open in browser, landing-page.html, logos folder. End: "From blank page to brand universe in under 60 seconds. NomVox — Born from the Void."</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Recording Tips</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <p style="color:var(--text-3);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Before recording</p>
+        <ul style="padding-left:16px;color:var(--text-2);font-size:.82rem">
+          <li>Verify /api/ping responds on deployed URL</li>
+          <li>Run one test generation to warm IAM token</li>
+          <li>Set browser zoom to 90% for full card visibility</li>
+          <li>Use OBS Studio or QuickTime for screen capture</li>
+          <li>Pre-fill intake form (don't show typing in video)</li>
+        </ul>
+      </div>
+      <div>
+        <p style="color:var(--text-3);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">During recording</p>
+        <ul style="padding-left:16px;color:var(--text-2);font-size:.82rem">
+          <li>Show logo in top-left throughout</li>
+          <li>Narrate what's happening — don't just click</li>
+          <li>Pause on availability badges — judges care about this</li>
+          <li>Emphasise: "AI remembers what I said" on regen</li>
+          <li>Show ZIP contents in file explorer after download</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  © 2026 c-annabel — Developed with IBM Bob — NomVox Brand Identity Platform<br />
+  IBM AI Builders Challenge · Creative Industries Theme · July 2026
+</footer>
+
+</body>
+</html>

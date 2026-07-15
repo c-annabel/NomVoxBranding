@@ -93,3 +93,70 @@ html, body {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--color-pulse), var(--color-signal), transparent);
 }
+
+/* ── Range sliders — cross-browser visible track + thumb ─────────── */
+/* Purple variant (.nv-range) and Cyan variant (.nv-range-cyan)       */
+.nv-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.12);
+  outline: none;
+  border: none;
+  position: relative;
+}
+/* Webkit thumb */
+.nv-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  border: 2px solid rgba(255,255,255,0.70);
+  box-shadow: 0 0 8px rgba(139,92,246,0.60);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.nv-range::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  box-shadow: 0 0 16px rgba(139,92,246,0.80);
+}
+/* Firefox thumb */
+.nv-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  border: 2px solid rgba(255,255,255,0.70);
+  box-shadow: 0 0 8px rgba(139,92,246,0.60);
+  cursor: pointer;
+}
+/* Firefox track */
+.nv-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.12);
+}
+
+/* Cyan override for second slider */
+.nv-range-cyan::-webkit-slider-thumb {
+  background: #22d3ee;
+  box-shadow: 0 0 8px rgba(34,211,238,0.60);
+}
+.nv-range-cyan::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 16px rgba(34,211,238,0.80);
+}
+.nv-range-cyan::-moz-range-thumb {
+  background: #22d3ee;
+  box-shadow: 0 0 8px rgba(34,211,238,0.60);
+}
+
+/* ── Animated ellipsis (loading dots) ────────────────────────────── */
+@keyframes dot1 { 0%,20%{opacity:0} 40%,100%{opacity:1} }
+@keyframes dot2 { 0%,40%{opacity:0} 60%,100%{opacity:1} }
+@keyframes dot3 { 0%,60%{opacity:0} 80%,100%{opacity:1} }
+.nv-dot1 { animation: dot1 1.2s infinite; }
+.nv-dot2 { animation: dot2 1.2s infinite; }
+.nv-dot3 { animation: dot3 1.2s infinite; }
