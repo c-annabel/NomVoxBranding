@@ -34,11 +34,11 @@ The user reacts, refines, and selects. The AI explains every rejection, asks a c
 | **Style DNA Sliders** | Playful↔Premium + Abstract↔Descriptive influence next batch |
 | **Anti-Name Reasoning** | AI asks a clarifying question after each rejection |
 | **Competitor Radar** | Semantic brand clash detection via second Granite call |
-| **Logo Concepts** | 3 distinct styles: Geometric Bauhaus / Gradient Glassmorphism / Horizontal Wordmark |
-| **Mood Board** | 4-panel Imagen 3 board tailored to brand colours + personality |
-| **Brand Persona** | "Brand as a person" card — age, occupation, voice, values |
-| **Landing Page Mockup** | AI-generated hero section HTML with brand colours + CTA |
-| **Export Pack** | ZIP: brand-brief.json, brand-brief.html, landing-page.html, logos/*.png, mood-board/*.png, README.txt |
+| **Logo Concepts** | 3 distinct SVG styles: Geometric Bauhaus / Gradient Glassmorphism / Horizontal Wordmark |
+| **Mood Board** | 4-panel SVG abstract tile board tailored to brand colours + personality (2×2 grid) |
+| **Brand Persona** | "Brand as a person" card — age, occupation, voice, never-says, core values |
+| **Landing Page Mockup** | AI-generated hero section HTML/CSS with brand colours, logo in nav, CTA button |
+| **Export Pack** | ZIP: brand-brief.json, brand-brief.html, landing-page.html, logos/*.svg, mood-board/*.svg, README.txt |
 
 ## AI Approach & Architecture
 
@@ -51,9 +51,10 @@ IBM Granite (watsonx.ai) ──► All text & reasoning
   • Competitor name radar (semantic clash detection)
   • Hero landing-page HTML/CSS mockup
 
-Imagen 3 (Google AI Studio, free tier) ──► Image generation
-  • Mood board — 4 cohesive but distinct photographic panels
+Imagen 3 (Google AI Studio) ──► Image generation [fallback: watsonx SVG]
+  • Mood board — 4 abstract brand tiles (SVG via watsonx when Gemini credits absent)
   • Logo concepts — Profile / App Icon / Business Card (3 parallel calls)
+  • Fallback chain: Gemini PNG → watsonx SVG → CSS art placeholders
 
 Gemini 2.0 Flash (Google AI Studio, free tier) ──► Vision [optional]
   • User uploads reference image → extracts palette, mood, style
@@ -72,8 +73,8 @@ Next.js 16 + React 19 (Vercel) ──► Frontend
   • Numbered intake form (Q1–Q8) with prompt richness meter
   • Name cards: Like / Pass (with reason) / Choose
   • Style DNA sliders + Regenerate loop with session memory
-  • Visual Identity: Step 1 Logos → Step 2 Mood Board → Step 3 Landing Page
-  • ErrorBoundary for graceful failure recovery
+  • Visual Identity: Step 1 Logos → Step 2 Mood Board (2×2 SVG grid + Persona) → Step 3 Landing Page (iframe 75% scale)
+  • Graceful fallback at every failure point (CSS art → SVG → PNG)
 ```
 
 ### Session Memory Loop (Creative Partner Pattern)
