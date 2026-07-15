@@ -143,10 +143,10 @@ export default function NameCardComponent({
 
       {/* ══════════════════════════════════════════════════════════════
           ROW 2 — Availability | Brand Score | Brand Voice | Actions
-          Mobile: single column stack; Desktop (lg): 4-column grid
+          4 equal columns — evenly distributed
       ══════════════════════════════════════════════════════════════ */}
       <div className="flex flex-col lg:grid"
-        style={{ gridTemplateColumns: "1fr 1fr 1fr 120px" }}>
+        style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
 
         {/* Availability */}
         <div className="px-4 pt-3 pb-4 lg:border-r border-b lg:border-b-0"
@@ -162,16 +162,17 @@ export default function NameCardComponent({
           {card.score ? (
             <div className="space-y-2">
               {[
-                { label: "Memory", value: card.score.memorability },
-                { label: "Spell",  value: card.score.spellability },
-                { label: "Safety", value: card.score.global_safety },
+                { label: "Mem",   value: card.score.memorability },
+                { label: "Spell", value: card.score.spellability },
+                { label: "Safe",  value: card.score.global_safety },
               ].map(row => (
                 <div key={row.label} className="flex items-center gap-1.5">
-                  <span className="text-sm w-14 shrink-0 font-medium"
+                  <span className="text-xs w-10 shrink-0 font-medium"
                     style={{ color: "var(--color-text-hint)" }}>
                     {row.label}
                   </span>
-                  <div className="h-1.5 rounded-full overflow-hidden max-w-[80px] flex-1"
+                  {/* Bar fills ~80% of remaining column width */}
+                  <div className="h-2 rounded-full overflow-hidden flex-1"
                     style={{ background: "rgba(255,255,255,0.08)" }}>
                     <div className="h-full rounded-full"
                       style={{
@@ -179,12 +180,12 @@ export default function NameCardComponent({
                         background: row.value >= 7 ? "#4ade80" : row.value >= 4 ? "#f59e0b" : "#f87171",
                       }} />
                   </div>
-                  <span className="text-sm font-bold tabular-nums w-6 text-right"
+                  <span className="text-xs font-bold tabular-nums w-5 text-right"
                     style={{ color: "var(--color-text-primary)" }}>{row.value}</span>
                 </div>
               ))}
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-sm w-14 font-medium" style={{ color: "var(--color-text-hint)" }}>Risk</span>
+                <span className="text-xs w-10 font-medium" style={{ color: "var(--color-text-hint)" }}>Risk</span>
                 {riskBadge(card.score.squatter_risk)}
               </div>
             </div>
@@ -204,19 +205,20 @@ export default function NameCardComponent({
               { label: "404",   value: card.voice_samples?.not_found_message },
             ].filter(s => s.value).map(s => (
               <div key={s.label}>
-                <span className="text-sm font-bold" style={{ color: "#67e8f9" }}>{s.label}: </span>
-                <span className="text-sm italic" style={{ color: "var(--color-text-secondary)" }}>"{s.value}"</span>
+                <span className="text-xs font-bold" style={{ color: "#67e8f9" }}>{s.label}: </span>
+                <span className="text-xs italic" style={{ color: "var(--color-text-secondary)" }}>"{s.value}"</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-row lg:flex-col justify-center flex-wrap px-4 py-3 gap-2">
+        {/* Actions — buttons span ~80% width within their column */}
+        <div className="flex flex-col justify-center px-4 py-3 gap-2">
 
           <button type="button" onClick={() => onLike(card.name)}
-            className="w-full py-2 rounded-lg text-sm font-bold transition-all text-center"
+            className="py-2 rounded-lg text-xs font-bold transition-all text-center"
             style={{
+              width: "80%",
               background: isLiked ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.06)",
               border: isLiked ? "1px solid rgba(74,222,128,0.50)" : "1px solid rgba(255,255,255,0.12)",
               color: isLiked ? "#4ade80" : "var(--color-text-secondary)",
@@ -228,8 +230,8 @@ export default function NameCardComponent({
 
           {!isRejected && !showRejectBox && (
             <button type="button" onClick={() => setShowRejectBox(true)}
-              className="w-full py-2 rounded-lg text-sm font-bold transition-all"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--color-text-secondary)" }}
+              className="py-2 rounded-lg text-xs font-bold transition-all"
+              style={{ width: "80%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--color-text-secondary)" }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(248,113,113,0.12)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.40)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--color-text-secondary)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}>
               ✕ Pass
@@ -238,8 +240,9 @@ export default function NameCardComponent({
 
           {!isRejected && (
             <button type="button" onClick={() => onSelect(card.name)}
-              className="w-full py-2 rounded-lg text-sm font-black transition-all"
+              className="py-2 rounded-lg text-xs font-black transition-all"
               style={{
+                width: "80%",
                 background: "linear-gradient(135deg, rgba(109,40,217,0.88) 0%, rgba(30,90,180,0.85) 100%)",
                 border: "1px solid rgba(139,92,246,0.45)",
                 color: "#fff",
@@ -252,10 +255,10 @@ export default function NameCardComponent({
           )}
 
           {isRejected && (
-            <div className="flex flex-col gap-1.5 items-center">
-              <span className="text-sm font-bold" style={{ color: "#f87171" }}>✕ Passed</span>
+            <div className="flex flex-col gap-1.5 items-start">
+              <span className="text-xs font-bold" style={{ color: "#f87171" }}>✕ Passed</span>
               <button type="button" onClick={() => onLike(card.name)}
-                className="text-sm font-bold transition-colors"
+                className="text-xs font-bold transition-colors"
                 style={{ color: "var(--color-text-hint)" }}
                 onMouseEnter={e => { e.currentTarget.style.color = "var(--color-signal)"; }}
                 onMouseLeave={e => { e.currentTarget.style.color = "var(--color-text-hint)"; }}>

@@ -14,7 +14,6 @@ interface VisualIdentityPanelProps {
   onBack: () => void;
   onStartOver: () => void;
   onRegenerateLogos: () => void;
-  /** Called when the user picks a logo and advances — triggers targeted mood board regen */
   onRegenerateMoodboard: (logoKey: string, logoStyle: string) => void;
   generatingLogos?: boolean;
   generatingMoodboard?: boolean;
@@ -22,12 +21,13 @@ interface VisualIdentityPanelProps {
 
 const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-// Map logo key → human-readable style string passed to mood board prompt
 const LOGO_STYLE_LABELS: Record<string, string> = {
   profile:  "flat geometric Bauhaus mark — bold shapes, strong negative space, minimal palette",
   app:      "vibrant gradient icon — deep colour depth, glassmorphism, neon glow accent",
   business: "horizontal wordmark lockup — clean white background, corporate typography, single accent colour",
 };
+
+const YEAR = new Date().getFullYear();
 
 export default function VisualIdentityPanel({
   brandName, card, intake, sessionId, visuals,
@@ -72,8 +72,7 @@ export default function VisualIdentityPanel({
     }
   }
 
-  // CSS concept placeholders shown when Imagen 3 is unavailable (no GOOGLE_AI_API_KEY).
-  // Each uses a distinct visual style so user can genuinely pick a direction.
+  // CSS concept placeholders — each with a distinct visual style
   const logoItems = useMemo(() => [
     {
       key: "profile",
@@ -108,43 +107,17 @@ export default function VisualIdentityPanel({
         textColor: "#1a0a2e",
       },
     },
-  ], [visuals.logo_profile, visuals.logo_app, visuals.logo_business, brandName]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [visuals.logo_profile, visuals.logo_app, visuals.logo_business, brandName]);
 
-  // ── Shared header (no logo-as-button; step label is large and prominent) ────
-  function Header({ step }: { step: string }) {
+  // Copyright footer — shown on all visual steps
+  function Footer() {
     return (
-      <div className="flex items-center justify-between px-6 py-4 border-b"
-        style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest mb-0.5"
-            style={{ color: "var(--color-pulse)" }}>{step}</p>
-          <p className="text-xl font-black tracking-tight leading-none"
-            style={{ color: "var(--color-text-primary)" }}>{brandName}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onBack}
-            className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-            style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.10)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
-            ← Names
-          </button>
-          <button type="button" onClick={onStartOver}
-            className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-            style={{ border: "1px solid rgba(157,48,96,0.55)", color: "#e040a0", background: "transparent" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,64,160,0.10)"; e.currentTarget.style.borderColor = "#e040a0"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(157,48,96,0.55)"; }}>
-            ⟳ Start Over
-          </button>
-          <button type="button" onClick={handleExport} disabled={exporting}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-black transition-all disabled:opacity-50"
-            style={{
-              background: "linear-gradient(135deg,rgba(109,40,217,0.85) 0%,rgba(30,90,180,0.80) 100%)",
-              border: "1px solid rgba(139,92,246,0.40)", color: "#fff",
-            }}>
-            {exporting ? "⏳ Exporting…" : "⬇ Export Pack"}
-          </button>
-        </div>
+      <div className="px-6 py-3 border-t text-center"
+        style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(5,7,15,0.40)" }}>
+        <p className="text-[11px]" style={{ color: "var(--color-text-hint)" }}>
+          © {YEAR} c-annabel · Developed with IBM Bob · NomVox Brand Identity Platform
+        </p>
       </div>
     );
   }
@@ -183,14 +156,35 @@ export default function VisualIdentityPanel({
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
         <div className="rounded-2xl border overflow-hidden"
           style={{ background: "rgba(18,22,42,0.97)", borderColor: "rgba(99,210,255,0.22)", boxShadow: "0 24px 64px rgba(5,7,15,0.7)" }}>
-          <Header step="Visual Identity — Step 1/3" />
-          <StepTabs />
 
-          {exportError && (
-            <div className="px-6 py-2 text-xs" style={{ background: "rgba(248,113,113,0.07)", color: "#fca5a5" }}>
-              Export failed: {exportError}
+          {/* Header — Names + Start Over only (no Export here) */}
+          <div className="flex items-center justify-between px-6 py-4 border-b"
+            style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-0.5"
+                style={{ color: "var(--color-pulse)" }}>Visual Identity — Step 1/3</p>
+              <p className="text-xl font-black tracking-tight leading-none"
+                style={{ color: "var(--color-text-primary)" }}>{brandName}</p>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={onBack}
+                className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.10)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                ← Names
+              </button>
+              <button type="button" onClick={onStartOver}
+                className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={{ border: "1px solid rgba(157,48,96,0.55)", color: "#e040a0", background: "transparent" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,64,160,0.10)"; e.currentTarget.style.borderColor = "#e040a0"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(157,48,96,0.55)"; }}>
+                ⟳ Start Over
+              </button>
+            </div>
+          </div>
+
+          <StepTabs />
 
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -214,7 +208,7 @@ export default function VisualIdentityPanel({
               </button>
             </div>
 
-            {/* 3 logo columns — always selectable; CSS placeholder when Imagen unavailable */}
+            {/* 3 logo columns */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {logoItems.map(({ key, label, uri, hint, placeholder }) => {
                 const isSelected = selectedLogoType === key;
@@ -239,7 +233,6 @@ export default function VisualIdentityPanel({
                         </p>
                       </div>
                     ) : (
-                      // CSS concept placeholder — always shows, always selectable
                       <div className="w-full aspect-square flex flex-col items-center justify-center gap-3 p-6"
                         style={placeholder.style}>
                         <div className="font-black text-3xl tracking-tight" style={{ color: placeholder.textColor }}>
@@ -274,7 +267,7 @@ export default function VisualIdentityPanel({
               })}
             </div>
 
-            {/* CTA to next step — triggers targeted mood board regen with logo context */}
+            {/* CTA — only when logo selected */}
             {selectedLogoType && (
               <div className="mt-8 flex justify-end">
                 <button type="button" onClick={() => {
@@ -292,61 +285,84 @@ export default function VisualIdentityPanel({
               </div>
             )}
           </div>
+          <Footer />
         </div>
       </div>
     );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // STEP 2 — MOOD BOARD
+  // STEP 2 — MOOD BOARD (single presentation image)
   // ══════════════════════════════════════════════════════════════════════════
   if (visualStep === "moodboard") {
+    // Show the first mood board image only — one full presentation
+    const moodImg = visuals.mood_board && visuals.mood_board.length > 0 ? visuals.mood_board[0] : null;
+
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
         <div className="rounded-2xl border overflow-hidden"
           style={{ background: "rgba(18,22,42,0.97)", borderColor: "rgba(99,210,255,0.22)", boxShadow: "0 24px 64px rgba(5,7,15,0.7)" }}>
-          <Header step="Visual Identity — Step 2/3" />
+
+          {/* Header — Names + Start Over only (no Export) */}
+          <div className="flex items-center justify-between px-6 py-4 border-b"
+            style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-0.5"
+                style={{ color: "var(--color-pulse)" }}>Visual Identity — Step 2/3</p>
+              <p className="text-xl font-black tracking-tight leading-none"
+                style={{ color: "var(--color-text-primary)" }}>{brandName}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={onBack}
+                className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.10)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                ← Names
+              </button>
+              <button type="button" onClick={onStartOver}
+                className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={{ border: "1px solid rgba(157,48,96,0.55)", color: "#e040a0", background: "transparent" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,64,160,0.10)"; e.currentTarget.style.borderColor = "#e040a0"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(157,48,96,0.55)"; }}>
+                ⟳ Start Over
+              </button>
+            </div>
+          </div>
+
           <StepTabs />
 
           <div className="p-6">
             <p className="text-lg font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Mood Board</p>
-            <p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
-              Visual world of <strong>{brandName}</strong> — colour palette, textures, and atmosphere.
+            <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
+              Visual world of <strong>{brandName}</strong> — how the logo lives across platforms and contexts.
             </p>
 
             {generatingMoodboard ? (
-              <div className="grid grid-cols-2 gap-3">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="rounded-xl aspect-square flex items-center justify-center"
-                    style={{ border: "1px solid rgba(139,92,246,0.18)", background: "rgba(139,92,246,0.06)" }}>
-                    <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
-                      Generating<span className="nv-dot1">.</span><span className="nv-dot2">.</span><span className="nv-dot3">.</span>
-                    </p>
-                  </div>
-                ))}
+              <div className="rounded-xl aspect-video flex items-center justify-center"
+                style={{ border: "1px solid rgba(139,92,246,0.18)", background: "rgba(139,92,246,0.06)" }}>
+                <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
+                  Generating mood board<span className="nv-dot1">.</span><span className="nv-dot2">.</span><span className="nv-dot3">.</span>
+                </p>
               </div>
-            ) : visuals.mood_board && visuals.mood_board.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                {visuals.mood_board.map((uri, i) => (
-                  <div key={i} className="rounded-xl overflow-hidden aspect-square"
-                    style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={uri} alt={`Mood board panel ${i + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
+            ) : moodImg ? (
+              <div className="rounded-xl overflow-hidden"
+                style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={moodImg} alt="Brand mood board" className="w-full h-auto object-cover" />
               </div>
             ) : (
               <div className="rounded-xl p-12 text-center"
                 style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
                 <p className="text-sm" style={{ color: "var(--color-text-hint)" }}>
-                  Mood board not generated yet — select a logo on step 1 and click "Next: Mood Board".
+                  Mood board not generated yet — go back to Logo Concepts, choose a logo, then click "Next: Mood Board".
                 </p>
               </div>
             )}
 
             {/* Brand persona card */}
             {visuals.persona && (
-              <div className="mt-8">
+              <div className="mt-6">
                 <p className="text-base font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Brand Persona</p>
                 <p className="text-sm mb-3" style={{ color: "var(--color-text-secondary)" }}>
                   {brandName} as a person
@@ -355,11 +371,11 @@ export default function VisualIdentityPanel({
               </div>
             )}
 
-            <div className="mt-8 flex justify-between">
+            <div className="mt-6 flex justify-between">
               <button type="button" onClick={() => setVisualStep("logos")}
                 className="px-6 py-2 rounded-lg text-sm font-bold transition-all"
                 style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}>
-                ← Back to Logos
+                ← Back to Logo Concepts
               </button>
               <button type="button" onClick={() => setVisualStep("mockup")}
                 className="flex items-center gap-2 px-8 py-3 rounded-xl text-base font-black transition-all"
@@ -372,20 +388,73 @@ export default function VisualIdentityPanel({
               </button>
             </div>
           </div>
+          <Footer />
         </div>
       </div>
     );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // STEP 3 — LANDING PAGE MOCKUP (always visible, no collapse)
+  // STEP 3 — LANDING PAGE MOCKUP
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
       <div className="rounded-2xl border overflow-hidden"
         style={{ background: "rgba(18,22,42,0.97)", borderColor: "rgba(99,210,255,0.22)", boxShadow: "0 24px 64px rgba(5,7,15,0.7)" }}>
-        <Header step="Visual Identity — Step 3/3" />
+
+        {/* Header — ← Back to Mood Board left, Names + Start Over + Export right */}
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
+          {/* Left: back nav + step label + name */}
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setVisualStep("moodboard")}
+              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+              style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.10)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+              ← Mood Board
+            </button>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-0.5"
+                style={{ color: "var(--color-pulse)" }}>Visual Identity — Step 3/3</p>
+              <p className="text-xl font-black tracking-tight leading-none"
+                style={{ color: "var(--color-text-primary)" }}>{brandName}</p>
+            </div>
+          </div>
+          {/* Right: Names + Start Over + Export */}
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={onBack}
+              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+              style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.10)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+              ← Names
+            </button>
+            <button type="button" onClick={onStartOver}
+              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+              style={{ border: "1px solid rgba(157,48,96,0.55)", color: "#e040a0", background: "transparent" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,64,160,0.10)"; e.currentTarget.style.borderColor = "#e040a0"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(157,48,96,0.55)"; }}>
+              ⟳ Start Over
+            </button>
+            <button type="button" onClick={handleExport} disabled={exporting}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-black transition-all disabled:opacity-50"
+              style={{
+                background: "linear-gradient(135deg,rgba(109,40,217,0.85) 0%,rgba(30,90,180,0.80) 100%)",
+                border: "1px solid rgba(139,92,246,0.40)", color: "#fff",
+              }}>
+              {exporting ? "⏳ Exporting…" : "⬇ Export Pack"}
+            </button>
+          </div>
+        </div>
+
         <StepTabs />
+
+        {exportError && (
+          <div className="px-6 py-2 text-xs" style={{ background: "rgba(248,113,113,0.07)", color: "#fca5a5" }}>
+            Export failed: {exportError}
+          </div>
+        )}
 
         <div className="p-6">
           <p className="text-lg font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Landing Page Mockup</p>
@@ -394,12 +463,14 @@ export default function VisualIdentityPanel({
           </p>
 
           {visuals.mockup_html ? (
+            /* Shorter iframe — fits without scrolling, matches mood board card height */
             <div className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid rgba(255,255,255,0.12)", height: 640 }}>
+              style={{ border: "1px solid rgba(255,255,255,0.12)", height: 380 }}>
               <iframe
                 srcDoc={visuals.mockup_html}
                 title={`${brandName} landing page mockup`}
                 className="w-full h-full border-0"
+                style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133%", height: "133%" }}
                 sandbox="allow-same-origin"
               />
             </div>
@@ -411,30 +482,8 @@ export default function VisualIdentityPanel({
               </p>
             </div>
           )}
-
-          <div className="mt-6 flex justify-between">
-            <button type="button" onClick={() => setVisualStep("moodboard")}
-              className="px-6 py-2 rounded-lg text-sm font-bold transition-all"
-              style={{ border: "1px solid rgba(99,210,255,0.30)", color: "var(--color-signal)", background: "transparent" }}>
-              ← Back to Mood Board
-            </button>
-            <div className="flex gap-3">
-              <button type="button" onClick={onStartOver}
-                className="px-5 py-2 rounded-lg text-sm font-bold transition-all"
-                style={{ border: "1px solid rgba(157,48,96,0.55)", color: "#e040a0", background: "transparent" }}>
-                ⟳ Start Over
-              </button>
-              <button type="button" onClick={handleExport} disabled={exporting}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-black disabled:opacity-50"
-                style={{
-                  background: "linear-gradient(135deg,rgba(109,40,217,0.90) 0%,rgba(30,90,180,0.85) 100%)",
-                  border: "1px solid rgba(139,92,246,0.50)", color: "#fff",
-                }}>
-                {exporting ? "⏳ Exporting…" : "⬇ Export Full Pack"}
-              </button>
-            </div>
-          </div>
         </div>
+        <Footer />
       </div>
     </div>
   );
@@ -446,15 +495,9 @@ function PersonaCard({ persona }: { persona: BrandPersona }) {
     <div className="rounded-xl p-5"
       style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.22)" }}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div>
-          <Label>Age</Label><Value>{persona.age}</Value>
-        </div>
-        <div>
-          <Label>Occupation</Label><Value>{persona.occupation}</Value>
-        </div>
-        <div className="sm:col-span-2">
-          <Label>Brand Voice</Label><Value>{persona.voice}</Value>
-        </div>
+        <div><Label>Age</Label><Value>{persona.age}</Value></div>
+        <div><Label>Occupation</Label><Value>{persona.occupation}</Value></div>
+        <div className="sm:col-span-2"><Label>Brand Voice</Label><Value>{persona.voice}</Value></div>
         {persona.core_values?.length > 0 && (
           <div>
             <Label>Core Values</Label>
@@ -469,9 +512,7 @@ function PersonaCard({ persona }: { persona: BrandPersona }) {
           </div>
         )}
         {persona.reads?.length > 0 && (
-          <div>
-            <Label>Reads</Label><Value>{persona.reads.join(", ")}</Value>
-          </div>
+          <div><Label>Reads</Label><Value>{persona.reads.join(", ")}</Value></div>
         )}
         {persona.never_says?.length > 0 && (
           <div className="sm:col-span-2">

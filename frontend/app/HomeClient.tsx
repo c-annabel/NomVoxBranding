@@ -413,7 +413,7 @@ export default function HomeClient() {
             SCREEN 1 — INTAKE
         ══════════════════════════════════════════════════════ */}
         {!isResultsScreen && step !== "visuals-loading" && step !== "visuals" && (
-          <div className="w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl">
+          <div className="w-full max-w-3xl lg:max-w-5xl xl:max-w-6xl">
 
             {/* ── Return-to-results banner — shown when user navigated back from results */}
             {cardStates.length > 0 && (
@@ -499,7 +499,7 @@ export default function HomeClient() {
             SCREEN 3 — RESULTS / CLARIFYING / SELECTED
         ══════════════════════════════════════════════════════ */}
         {(step === "results" || step === "clarifying" || step === "selected") && (cardStates.length > 0 || availabilityMsg) && (
-          <div className="w-full max-w-full xl:max-w-[1400px]">
+          <div className="w-full max-w-3xl lg:max-w-5xl xl:max-w-6xl">
 
             {/* ── Results panel wrapper — brighter bg to distinguish ── */}
             <div className="rounded-2xl border overflow-hidden"
@@ -623,10 +623,10 @@ export default function HomeClient() {
                 </div>
               )}
 
-              {/* ── Style DNA Sliders ──────────────────────────── */}
+              {/* ── Style DNA Sliders — full-width ─────────────── */}
               <div className="px-6 py-4 border-b"
                 style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(14,18,32,0.40)" }}>
-                <StyleDNASlider dna={styleDNA} onChange={setStyleDNA} />
+                <StyleDNASlider dna={styleDNA} onChange={setStyleDNA} fullWidth />
               </div>
 
               {/* ── Name cards — full-width table rows ────────── */}
@@ -708,6 +708,14 @@ export default function HomeClient() {
             generatingLogos={generatingLogos}
           />
         )}
+
+      {/* ── Global copyright footer — visible on all screens ─── */}
+      <footer className="w-full text-center py-4 mt-auto"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <p className="text-[11px]" style={{ color: "var(--color-text-hint)" }}>
+          © {new Date().getFullYear()} c-annabel · Developed with IBM Bob · NomVox Brand Identity Platform
+        </p>
+      </footer>
 
       </main>
     </>

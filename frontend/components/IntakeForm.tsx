@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import type { IntakePayload } from "@/lib/types";
 import { EMPTY_INTAKE } from "@/lib/types";
-import PromptRichnessMeter from "./PromptRichnessMeter";
 
 const schema = z.object({
   core_idea: z.string().min(2, "Please describe your core idea (at least 2 characters)."),
@@ -63,7 +62,6 @@ const EXAMPLES: Partial<IntakePayload>[] = [
   },
 ];
 
-// Field definitions — core_idea is index 0 (required), rest are 1-indexed optional
 const FIELDS: {
   key: keyof IntakePayload;
   label: string;
@@ -71,6 +69,7 @@ const FIELDS: {
   hint: string;
   placeholder: string;
   span?: "full";
+  multiline?: boolean;
 }[] = [
   {
     key: "core_idea",
@@ -79,6 +78,7 @@ const FIELDS: {
     hint: "What does this brand do or sell?",
     placeholder: "e.g. eco-friendly coffee · indie game studio · online tutoring for kids",
     span: "full",
+    multiline: true,
   },
   {
     key: "target_audience",
@@ -128,7 +128,6 @@ const FIELDS: {
 interface IntakeFormProps {
   onSubmit: (payload: IntakePayload) => void;
   loading?: boolean;
-  /** When provided, the form seeds from these values (used when navigating back from results). */
   initialValues?: IntakePayload;
 }
 
@@ -137,19 +136,10 @@ export default function IntakeForm({ onSubmit, loading = false, initialValues }:
   const [errors, setErrors] = useState<Partial<Record<keyof IntakePayload, string>>>({});
   const [exampleIdx, setExampleIdx] = useState(0);
 
-  // Re-seed the form if the parent passes updated initialValues (e.g. navigating back
-  // from results after the user had already submitted once). Only fires when
-  // initialValues reference changes — not on every render.
   useEffect(() => {
-    if (initialValues) {
-      setValues(initialValues);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (initialValues) setValues(initialValues);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialValues]);
-
-  const filledOptionalCount = FIELDS.filter(
-    (f) => !f.required && values[f.key].trim() !== ""
-  ).length;
 
   function handleChange(key: keyof IntakePayload, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -176,7 +166,6 @@ export default function IntakeForm({ onSubmit, loading = false, initialValues }:
     onSubmit(values);
   }
 
-  // Question numbers: core_idea = Q1, rest = Q2–Q8
   const questionNumber = (idx: number) => idx + 1;
 
   return (
@@ -188,90 +177,90 @@ export default function IntakeForm({ onSubmit, loading = false, initialValues }:
           style={{ color: "var(--color-text-primary)" }}>
           Describe your brand idea
         </h2>
-        <p className="mt-1 text-base" style={{ color: "var(--color-text-secondary)" }}>
-          One required field — the rest sharpen the result.
-        </p>
+        {/* Subtitle and richness meter removed as requested */}
       </div>
-
-      {/* ── Richness meter ─────────────────────────────────────── */}
-      <PromptRichnessMeter filledCount={filledOptionalCount} totalOptional={7} />
 
       {/* ── Fields grid ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {FIELDS.map((field, idx) => {
           const isCoreIdea = field.key === "core_idea";
+          const isFirst = idx === 0;
           return (
-            <div key={field.key} className={field.span === "full" ? "sm:col-span-2" : ""}>
+            <div key={field.key}
+              className={field.span === "full" ? "sm:col-span-2" : ""}
+              style={isFirst ? { marginBottom: "12px" } : {}}>
 
               {/* Question number + label row */}
-              <div className="flex items-center gap-2 mb-1">
-                {/* Number badge */}
+              <div className="flex items-center gap-2 mb-1"
+                style={isFirst ? { marginBottom: "8px" } : {}}>
                 <span
                   className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black"
                   style={{
-                    background: isCoreIdea
-                      ? "rgba(251,146,60,0.20)"
-                      : "rgba(139,92,246,0.18)",
+                    background: isCoreIdea ? "rgba(251,146,60,0.20)" : "rgba(139,92,246,0.18)",
                     color: isCoreIdea ? "#fb923c" : "var(--color-pulse)",
-                    border: isCoreIdea
-                      ? "1px solid rgba(251,146,60,0.35)"
-                      : "1px solid rgba(139,92,246,0.30)",
-                  }}
-                >
+                    border: isCoreIdea ? "1px solid rgba(251,146,60,0.35)" : "1px solid rgba(139,92,246,0.30)",
+                  }}>
                   {questionNumber(idx)}
                 </span>
-
-                {/* Label */}
                 <label
                   htmlFor={field.key}
                   className="text-sm font-bold uppercase tracking-widest"
                   style={{
-                    // Core idea label uses orange gradient text
                     color: isCoreIdea ? "transparent" : "var(--color-pulse)",
-                    background: isCoreIdea
-                      ? "linear-gradient(90deg, #fb923c, #f97316)"
-                      : "none",
+                    background: isCoreIdea ? "linear-gradient(90deg, #fb923c, #f97316)" : "none",
                     WebkitBackgroundClip: isCoreIdea ? "text" : undefined,
                     backgroundClip: isCoreIdea ? "text" : undefined,
-                  }}
-                >
+                  }}>
                   {field.label}
                 </label>
-
                 {field.required && (
-                  <span className="text-xs font-bold" style={{ color: "var(--color-signal)" }}>
-                    required
-                  </span>
+                  <span className="text-xs font-bold" style={{ color: "var(--color-signal)" }}>required</span>
                 )}
               </div>
 
-              {/* Hint text */}
-              <p className="text-sm mb-2 leading-snug ml-8" style={{ color: "var(--color-text-secondary)" }}>
+              {/* Hint text — extra spacing below Q1 to visually separate */}
+              <p className="text-sm mb-2 leading-snug ml-8"
+                style={{
+                  color: "var(--color-text-secondary)",
+                  ...(isFirst ? { marginBottom: "10px" } : {}),
+                }}>
                 {field.hint}
               </p>
 
-              {/* Input — core_idea gets orange-gradient border */}
-              <input
-                id={field.key}
-                type="text"
-                value={values[field.key]}
-                onChange={(e) => handleChange(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                disabled={loading}
-                className={`nv-input${errors[field.key] ? " nv-input-error" : ""}${isCoreIdea ? " nv-input-core" : ""}`}
-                style={isCoreIdea ? {
-                  borderColor: "rgba(251,146,60,0.55)",
-                  boxShadow: "0 0 0 1px rgba(251,146,60,0.12) inset",
-                } : {}}
-                onFocus={isCoreIdea ? (e) => {
-                  e.currentTarget.style.borderColor = "#fb923c";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(251,146,60,0.18), 0 0 16px rgba(251,146,60,0.12)";
-                } : undefined}
-                onBlur={isCoreIdea ? (e) => {
-                  e.currentTarget.style.borderColor = "rgba(251,146,60,0.55)";
-                  e.currentTarget.style.boxShadow = "0 0 0 1px rgba(251,146,60,0.12) inset";
-                } : undefined}
-              />
+              {/* Input — core_idea uses textarea with 3 rows */}
+              {field.multiline ? (
+                <textarea
+                  id={field.key}
+                  rows={3}
+                  value={values[field.key]}
+                  onChange={(e) => handleChange(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  disabled={loading}
+                  className={`nv-input resize-none${errors[field.key] ? " nv-input-error" : ""}`}
+                  style={{
+                    borderColor: "rgba(251,146,60,0.55)",
+                    boxShadow: "0 0 0 1px rgba(251,146,60,0.12) inset",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#fb923c";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(251,146,60,0.18), 0 0 16px rgba(251,146,60,0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(251,146,60,0.55)";
+                    e.currentTarget.style.boxShadow = "0 0 0 1px rgba(251,146,60,0.12) inset";
+                  }}
+                />
+              ) : (
+                <input
+                  id={field.key}
+                  type="text"
+                  value={values[field.key]}
+                  onChange={(e) => handleChange(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  disabled={loading}
+                  className={`nv-input${errors[field.key] ? " nv-input-error" : ""}`}
+                />
+              )}
 
               {errors[field.key] && (
                 <p className="mt-1 text-sm font-medium text-red-400">{errors[field.key]}</p>
@@ -281,9 +270,11 @@ export default function IntakeForm({ onSubmit, loading = false, initialValues }:
         })}
       </div>
 
+      {/* ── Divider before sub-fields ───────────────────────────────── */}
+      <div className="nv-rule" />
+
       {/* ── Actions ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        {/* Generate — dimmed purple-blue matching logo V+X */}
         <button
           type="submit"
           disabled={loading}
@@ -296,69 +287,30 @@ export default function IntakeForm({ onSubmit, loading = false, initialValues }:
             border: "1px solid rgba(139,92,246,0.40)",
             boxShadow: loading ? "none" : "0 0 18px rgba(80,50,180,0.30)",
           }}
-          onMouseEnter={e => {
-            if (!loading) {
-              e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.90) 0%, rgba(34,150,220,0.85) 100%)";
-              e.currentTarget.style.boxShadow = "0 0 28px rgba(100,60,220,0.45)";
-            }
-          }}
-          onMouseLeave={e => {
-            if (!loading) {
-              e.currentTarget.style.background = "linear-gradient(135deg, rgba(109,40,217,0.85) 0%, rgba(30,90,180,0.80) 100%)";
-              e.currentTarget.style.boxShadow = "0 0 18px rgba(80,50,180,0.30)";
-            }
-          }}
-        >
+          onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.90) 0%, rgba(34,150,220,0.85) 100%)"; e.currentTarget.style.boxShadow = "0 0 28px rgba(100,60,220,0.45)"; }}}
+          onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = "linear-gradient(135deg, rgba(109,40,217,0.85) 0%, rgba(30,90,180,0.80) 100%)"; e.currentTarget.style.boxShadow = "0 0 18px rgba(80,50,180,0.30)"; }}}>
           {loading ? "Generating…" : "Generate Names"}
         </button>
 
-        {/* Inspire me — border matches core idea orange */}
         <button
           type="button"
           onClick={handleInspire}
           disabled={loading}
           className="px-5 py-3 rounded-lg text-base font-semibold transition-all disabled:opacity-50"
-          style={{
-            border: "1px solid rgba(251,146,60,0.45)",
-            color: "#fb923c",
-            background: "transparent",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.borderColor = "#fb923c";
-            e.currentTarget.style.background = "rgba(251,146,60,0.08)";
-            e.currentTarget.style.boxShadow = "0 0 12px rgba(251,146,60,0.20)";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.borderColor = "rgba(251,146,60,0.45)";
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.boxShadow = "none";
-          }}
-        >
+          style={{ border: "1px solid rgba(251,146,60,0.45)", color: "#fb923c", background: "transparent" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#fb923c"; e.currentTarget.style.background = "rgba(251,146,60,0.08)"; e.currentTarget.style.boxShadow = "0 0 12px rgba(251,146,60,0.20)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(251,146,60,0.45)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.boxShadow = "none"; }}>
           Inspire me ✦
         </button>
 
-        {/* Clear — dark pink / magenta hover */}
         <button
           type="button"
           onClick={() => { setValues(EMPTY_INTAKE); setErrors({}); }}
           disabled={loading}
           className="px-5 py-3 rounded-lg text-base font-semibold transition-all disabled:opacity-50"
-          style={{
-            border: "1px solid #9d3060",
-            color: "#c4607a",
-            background: "transparent",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.borderColor = "#e040a0";
-            e.currentTarget.style.color = "#e040a0";
-            e.currentTarget.style.background = "rgba(224,64,160,0.08)";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.borderColor = "#9d3060";
-            e.currentTarget.style.color = "#c4607a";
-            e.currentTarget.style.background = "transparent";
-          }}
-        >
+          style={{ border: "1px solid #9d3060", color: "#c4607a", background: "transparent" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#e040a0"; e.currentTarget.style.color = "#e040a0"; e.currentTarget.style.background = "rgba(224,64,160,0.08)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#9d3060"; e.currentTarget.style.color = "#c4607a"; e.currentTarget.style.background = "transparent"; }}>
           Clear ✕
         </button>
       </div>

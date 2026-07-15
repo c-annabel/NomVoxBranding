@@ -5,11 +5,12 @@ import type { StyleDNA } from "@/lib/types";
 interface Props {
   dna: StyleDNA;
   onChange: (dna: StyleDNA) => void;
+  fullWidth?: boolean;
 }
 
-export default function StyleDNASlider({ dna, onChange }: Props) {
+export default function StyleDNASlider({ dna, onChange, fullWidth }: Props) {
   return (
-    <div className="w-full max-w-xl rounded-xl px-5 py-4"
+    <div className={`w-full ${fullWidth ? "" : "max-w-xl"} rounded-xl px-5 py-4`}
       style={{
         background: "rgba(139,92,246,0.06)",
         border: "1px solid rgba(139,92,246,0.22)",
