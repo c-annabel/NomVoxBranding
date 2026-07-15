@@ -92,15 +92,7 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("visuals: svg logo %s: %v", logoType, err)
 			return ""
 		}
-		// Strip any markdown fences around SVG output
-		raw = stripMDFences(raw)
-		// If LLM wrapped in ```svg or ```xml fences, strip those too
-		for _, fence := range []string{"```svg", "```xml"} {
-			if idx := strings.Index(raw, fence); idx != -1 {
-				raw = raw[idx+len(fence):]
-			}
-		}
-		raw = strings.TrimSpace(raw)
+		raw = stripSVGFences(raw)
 		uri := ai.SVGToDataURI(raw)
 		if uri == "" {
 			log.Printf("visuals: svg logo %s: SVGToDataURI returned empty (raw len=%d)", logoType, len(raw))
@@ -108,14 +100,11 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 		return uri
 	}
 
-	// ── Task 1: Mood board ───────────────────────────────────────────────────
-	// Attempt 1a: Gemini image generation (4 PNG images).
-	// Attempt 1b: watsonx SVG mood board grid (4 SVG tiles, concatenated as one data URI each).
+	// ── Phase 1: logos + mood board + persona (all concurrent) ──────────────
+	// Task 1: Mood board
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		// 1a — Gemini image generation
 		if imagenErr == nil {
 			prompt := ai.MoodBoardPrompt(req.Card, req.Intake, visionCtx, req.SelectedLogoKey, req.SelectedLogoStyle)
 			imgs, err := imagenClient.GenerateImages(r.Context(), prompt, 4, "1:1")
@@ -127,147 +116,93 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 				if len(uris) > 0 {
-					mu.Lock()
-					resp.MoodBoard = uris
-					mu.Unlock()
+					mu.Lock(); resp.MoodBoard = uris; mu.Unlock()
 					return
 				}
 			}
 			log.Printf("visuals: mood board (gemini): %v — falling back to SVG", err)
 		}
-
-		// 1b — SVG mood board tiles via watsonx (4 distinct brand tiles)
 		if graniteErr != nil {
 			return
 		}
 		moodTiles := ai.BuildSVGMoodBoardPrompts(req.Card, req.Intake)
 		svgURIs := make([]string, 0, len(moodTiles))
 		for i, tilePrompt := range moodTiles {
-			sys := ai.BuildSVGTileSystemPrompt()
-			raw, err := graniteClient.Generate(r.Context(), sys, tilePrompt)
+			raw, err := graniteClient.Generate(r.Context(), ai.BuildSVGTileSystemPrompt(), tilePrompt)
 			if err != nil {
 				log.Printf("visuals: svg mood tile %d: %v", i, err)
 				continue
 			}
-			raw = stripMDFences(raw)
-			for _, fence := range []string{"```svg", "```xml"} {
-				if idx := strings.Index(raw, fence); idx != -1 {
-					raw = raw[idx+len(fence):]
-				}
-			}
-			raw = strings.TrimSpace(raw)
+			raw = stripSVGFences(raw)
 			if uri := ai.SVGToDataURI(raw); uri != "" {
 				svgURIs = append(svgURIs, uri)
 			}
 		}
 		if len(svgURIs) > 0 {
-			mu.Lock()
-			resp.MoodBoard = svgURIs
-			mu.Unlock()
+			mu.Lock(); resp.MoodBoard = svgURIs; mu.Unlock()
 		}
 	}()
 
-	// ── Task 2a: Logo — profile ──────────────────────────────────────────────
+	// Task 2a: Logo — profile
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		// Try Gemini PNG first
 		if imagenErr == nil {
-			prompt := ai.LogoConceptPrompt(req.Card, req.Intake, "profile")
-			imgs, err := imagenClient.GenerateImages(r.Context(), prompt, 1, "1:1")
+			imgs, err := imagenClient.GenerateImages(r.Context(), ai.LogoConceptPrompt(req.Card, req.Intake, "profile"), 1, "1:1")
 			if err == nil && len(imgs) > 0 {
 				if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
-					mu.Lock()
-					resp.LogoProfile = uri
-					mu.Unlock()
-					return
+					mu.Lock(); resp.LogoProfile = uri; mu.Unlock(); return
 				}
 			}
 			log.Printf("visuals: logo profile (gemini): %v — falling back to SVG", err)
 		}
-		// Fallback: SVG via watsonx
 		if uri := generateSVGLogo("profile"); uri != "" {
-			mu.Lock()
-			resp.LogoProfile = uri
-			mu.Unlock()
+			mu.Lock(); resp.LogoProfile = uri; mu.Unlock()
 		}
 	}()
 
-	// ── Task 2b: Logo — app icon ─────────────────────────────────────────────
+	// Task 2b: Logo — app icon
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if imagenErr == nil {
-			prompt := ai.LogoConceptPrompt(req.Card, req.Intake, "app")
-			imgs, err := imagenClient.GenerateImages(r.Context(), prompt, 1, "1:1")
+			imgs, err := imagenClient.GenerateImages(r.Context(), ai.LogoConceptPrompt(req.Card, req.Intake, "app"), 1, "1:1")
 			if err == nil && len(imgs) > 0 {
 				if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
-					mu.Lock()
-					resp.LogoApp = uri
-					mu.Unlock()
-					return
+					mu.Lock(); resp.LogoApp = uri; mu.Unlock(); return
 				}
 			}
 			log.Printf("visuals: logo app (gemini): %v — falling back to SVG", err)
 		}
 		if uri := generateSVGLogo("app"); uri != "" {
-			mu.Lock()
-			resp.LogoApp = uri
-			mu.Unlock()
+			mu.Lock(); resp.LogoApp = uri; mu.Unlock()
 		}
 	}()
 
-	// ── Task 2c: Logo — business card ────────────────────────────────────────
+	// Task 2c: Logo — business card
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if imagenErr == nil {
-			prompt := ai.LogoConceptPrompt(req.Card, req.Intake, "business")
-			imgs, err := imagenClient.GenerateImages(r.Context(), prompt, 1, "16:9")
+			imgs, err := imagenClient.GenerateImages(r.Context(), ai.LogoConceptPrompt(req.Card, req.Intake, "business"), 1, "16:9")
 			if err == nil && len(imgs) > 0 {
 				if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
-					mu.Lock()
-					resp.LogoBusiness = uri
-					mu.Unlock()
-					return
+					mu.Lock(); resp.LogoBusiness = uri; mu.Unlock(); return
 				}
 			}
 			log.Printf("visuals: logo business (gemini): %v — falling back to SVG", err)
 		}
 		if uri := generateSVGLogo("business"); uri != "" {
-			mu.Lock()
-			resp.LogoBusiness = uri
-			mu.Unlock()
+			mu.Lock(); resp.LogoBusiness = uri; mu.Unlock()
 		}
 	}()
 
-	// ── Task 3: Landing page HTML mockup (Granite) ───────────────────────────
+	// Task 4: Brand persona (Granite) — runs concurrently with logos
 	if graniteErr == nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			sysPrompt := ai.BuildMockupSystemPrompt()
-			userPrompt := ai.BuildMockupUserPrompt(req.Card, req.Intake, req.SelectedLogoKey, req.SelectedLogoStyle)
-			html, err := graniteClient.Generate(r.Context(), sysPrompt, userPrompt)
-			if err != nil {
-				log.Printf("visuals: mockup html: %v", err)
-				return
-			}
-			html = stripMDFences(html)
-			mu.Lock()
-			resp.MockupHTML = html
-			mu.Unlock()
-		}()
-	}
-
-	// ── Task 4: Brand persona (Granite) ──────────────────────────────────────
-	if graniteErr == nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			sysPrompt := ai.BuildPersonaSystemPrompt()
-			userPrompt := ai.BuildPersonaUserPrompt(req.Card, req.Intake)
-			raw, err := graniteClient.Generate(r.Context(), sysPrompt, userPrompt)
+			raw, err := graniteClient.Generate(r.Context(), ai.BuildPersonaSystemPrompt(), ai.BuildPersonaUserPrompt(req.Card, req.Intake))
 			if err != nil {
 				log.Printf("visuals: persona: %v", err)
 				return
@@ -277,13 +212,42 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("visuals: persona parse: %v", err)
 				return
 			}
-			mu.Lock()
-			resp.Persona = persona
-			mu.Unlock()
+			mu.Lock(); resp.Persona = persona; mu.Unlock()
 		}()
 	}
 
+	// Wait for logos + mood board + persona to finish before building mockup.
 	wg.Wait()
+
+	// ── Phase 2: Landing page mockup (sequential, after logos are ready) ─────
+	// Now logos are resolved — pick the right one to embed in the mockup.
+	if graniteErr == nil {
+		chosenLogoURI := ""
+		switch req.SelectedLogoKey {
+		case "profile":
+			chosenLogoURI = resp.LogoProfile
+		case "app":
+			chosenLogoURI = resp.LogoApp
+		case "business":
+			chosenLogoURI = resp.LogoBusiness
+		}
+		if chosenLogoURI == "" {
+			for _, u := range []string{resp.LogoProfile, resp.LogoApp, resp.LogoBusiness} {
+				if u != "" {
+					chosenLogoURI = u
+					break
+				}
+			}
+		}
+		sysPrompt := ai.BuildMockupSystemPrompt()
+		userPrompt := ai.BuildMockupUserPromptWithLogo(req.Card, req.Intake, req.SelectedLogoKey, req.SelectedLogoStyle, chosenLogoURI)
+		html, err := graniteClient.Generate(r.Context(), sysPrompt, userPrompt)
+		if err != nil {
+			log.Printf("visuals: mockup html: %v", err)
+		} else {
+			resp.MockupHTML = stripMDFences(html)
+		}
+	}
 
 	// Persist visuals to session.
 	if req.SessionID != "" {
@@ -307,7 +271,7 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp) //nolint:errcheck
 }
 
-// stripMDFences removes markdown code fences from a string.
+// stripMDFences removes markdown HTML code fences from a string.
 func stripMDFences(s string) string {
 	s = strings.TrimSpace(s)
 	for _, fence := range []string{"```html", "```"} {
@@ -315,6 +279,23 @@ func stripMDFences(s string) string {
 			s = s[idx+len(fence):]
 		}
 	}
+	if idx := strings.LastIndex(s, "```"); idx != -1 {
+		s = s[:idx]
+	}
+	return strings.TrimSpace(s)
+}
+
+// stripSVGFences strips markdown/code fences from SVG output and returns
+// a clean string starting with <svg.
+func stripSVGFences(s string) string {
+	s = strings.TrimSpace(s)
+	// Strip opening fences: ```svg, ```xml, ```
+	for _, fence := range []string{"```svg", "```xml", "```"} {
+		if idx := strings.Index(s, fence); idx != -1 {
+			s = s[idx+len(fence):]
+		}
+	}
+	// Strip closing fence
 	if idx := strings.LastIndex(s, "```"); idx != -1 {
 		s = s[:idx]
 	}

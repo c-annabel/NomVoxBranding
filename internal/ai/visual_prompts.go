@@ -196,33 +196,72 @@ func LogoConceptPrompt(card models.NameCard, intake models.IntakePayload, logoTy
 	}
 }
 
-// ── SVG Logo Generation (Granite / watsonx fallback) ─────────────────────────
+// ── SVG Logo Generation (Granite / watsonx) ──────────────────────────────────
 //
-// When Gemini image generation is unavailable, watsonx generates inline SVG logos.
-// Each logoType receives a distinct prompt that produces valid, self-contained SVG.
+// These prompts must faithfully reflect the user's intake inputs (colour_mood,
+// personality, industry, tagline). The AI must NOT use generic brand colours.
 
 // BuildSVGLogoSystemPrompt returns the system prompt for SVG logo generation.
 func BuildSVGLogoSystemPrompt() string {
-	return `You are NomVox, a brand design AI specialising in vector logo design.
-Generate a SINGLE self-contained SVG logo based on the brand description.
+	return `You are NomVox, a precision brand design AI. Generate a self-contained SVG logo.
 
-STRICT RULES:
-- Return ONLY the raw SVG markup starting with <svg — no markdown, no explanation, no code fences.
-- The SVG must be fully self-contained: all styles inline, no external references.
-- viewBox="0 0 200 200" for square logos (profile, app). viewBox="0 0 400 200" for landscape (business).
-- No <image> tags, no foreignObject, no scripts.
-- Use only SVG primitives: <rect>, <circle>, <ellipse>, <path>, <polygon>, <polyline>, <text>, <g>, <defs>, <linearGradient>, <radialGradient>, <filter>.
-- Maximum 80 lines of SVG.
-- The result must render correctly in a browser <img> tag with src="data:image/svg+xml;base64,..."`
+ABSOLUTE RULES — follow exactly or the output is invalid:
+1. Return ONLY raw SVG starting with <svg — zero markdown, zero explanation, zero code fences.
+2. The SVG must be fully self-contained. No <image>, no foreignObject, no scripts, no external hrefs.
+3. viewBox="0 0 200 200" for square formats. viewBox="0 0 400 200" for landscape wordmark.
+4. COLOUR RULE: You MUST use the EXACT colours described in the user prompt. Do NOT substitute generic purple/indigo. If the user says "deep navy, white, teal" — use deep navy for background, white for text, teal for accents.
+5. Use only: <rect>, <circle>, <ellipse>, <path>, <polygon>, <text>, <g>, <defs>, <linearGradient>, <radialGradient>.
+6. Maximum 80 lines of SVG output.
+7. The SVG must render correctly in an <img> src="data:image/svg+xml;base64,..." tag.`
+}
+
+// buildColourContext extracts colour guidance from user intake.
+// It always returns a specific, usable colour description even when the field is empty.
+// colourRole returns (background, primary, accent) colour descriptions.
+func buildColourContext(intake models.IntakePayload) (bg, primary, accent string) {
+	raw := strings.TrimSpace(intake.ColorMood)
+	if raw == "" {
+		return "#0d1b2a", "#ffffff", "#00bcd4"
+	}
+	lower := strings.ToLower(raw)
+	// Try to extract named colours and map them to usable hints
+	bg = "#0d1b2a"     // default dark bg
+	primary = "#ffffff" // default white text
+	accent = "#00bcd4"  // default teal
+
+	if strings.Contains(lower, "navy") || strings.Contains(lower, "dark blue") {
+		bg = "#0a1628"
+	}
+	if strings.Contains(lower, "teal") || strings.Contains(lower, "cyan") {
+		accent = "#009688"
+	} else if strings.Contains(lower, "gold") || strings.Contains(lower, "amber") {
+		accent = "#f59e0b"
+	} else if strings.Contains(lower, "coral") || strings.Contains(lower, "orange") {
+		accent = "#f97316"
+	} else if strings.Contains(lower, "green") || strings.Contains(lower, "emerald") {
+		accent = "#10b981"
+	} else if strings.Contains(lower, "purple") || strings.Contains(lower, "violet") {
+		accent = "#8B5CF6"
+	} else if strings.Contains(lower, "red") || strings.Contains(lower, "crimson") {
+		accent = "#ef4444"
+	} else if strings.Contains(lower, "pink") || strings.Contains(lower, "rose") {
+		accent = "#ec4899"
+	}
+	if strings.Contains(lower, "white") || strings.Contains(lower, "light") {
+		primary = "#ffffff"
+	}
+	return bg, primary, accent
 }
 
 // BuildSVGLogoUserPrompt returns the user turn for SVG logo generation.
 // logoType: "profile" | "app" | "business"
 func BuildSVGLogoUserPrompt(card models.NameCard, intake models.IntakePayload, logoType string) string {
-	colourHint := strings.TrimSpace(intake.ColorMood)
-	if colourHint == "" {
-		colourHint = "deep indigo #3b0764 and electric cyan #22d3ee"
+	colourMood := strings.TrimSpace(intake.ColorMood)
+	if colourMood == "" {
+		colourMood = "deep navy background, white text, teal/cyan accent"
 	}
+	bg, primary, accent := buildColourContext(intake)
+
 	personality := strings.TrimSpace(intake.Personality)
 	if personality == "" {
 		personality = "modern and distinctive"
@@ -231,8 +270,9 @@ func BuildSVGLogoUserPrompt(card models.NameCard, intake models.IntakePayload, l
 	if industry == "" {
 		industry = "technology"
 	}
+	tagline := strings.TrimSpace(card.Tagline)
 	initial := ""
-	if len(card.Name) > 0 {
+	if len([]rune(card.Name)) > 0 {
 		initial = string([]rune(card.Name)[:1])
 	}
 	initials := initial
@@ -240,48 +280,76 @@ func BuildSVGLogoUserPrompt(card models.NameCard, intake models.IntakePayload, l
 		initials = string([]rune(card.Name)[:2])
 	}
 
+	// Colour instruction — always explicit, always references user input
+	colourInstr := fmt.Sprintf(
+		`USER'S COLOUR PALETTE (you MUST use these — do not substitute):
+"%s"
+Translated: background = %s, text/marks = %s, accent/highlight = %s.
+Every colour decision MUST come from this palette.`,
+		colourMood, bg, primary, accent,
+	)
+
 	switch logoType {
 	case "profile":
 		return fmt.Sprintf(
-			`Create a square SVG logo mark (viewBox="0 0 200 200") for brand "%s" in the %s industry.
-Style: Bauhaus-inspired geometric abstract mark. Bold shapes, strong negative space.
-Brand personality: %s. Colour palette: %s.
-Design: Draw ONE central abstract geometric shape (hexagon, diamond, overlapping circles, or star) centred at 100,100.
-Fill with a gradient using the brand colours. Add a subtle outer ring or frame.
-Include the brand initial "%s" centred in the shape using a bold sans-serif font, white fill.
-Dark background (#0b0f19 or brand dark tone).
-NO brand name text below — only the mark and initial.`,
-			card.Name, industry, personality, colourHint, initial,
+			`Brand: "%s" · Tagline: "%s" · Industry: %s · Personality: %s
+
+%s
+
+Create a square SVG profile/social logo (viewBox="0 0 200 200"):
+- Background: fill the entire canvas with %s (the brand background colour).
+- Central mark: ONE bold geometric shape (hexagon, diamond, or interlocking circles) centred at 100,100.
+  Fill the shape with a gradient from %s to %s.
+- Brand initial "%s" centred in white (#ffffff), font-size="64", font-weight="bold", font-family="Arial, sans-serif".
+- Optional: one thin ring or orbit circle around the mark in %s at 25%% opacity.
+- NO brand name text anywhere — mark + initial only.
+- The design must feel like it was made specifically for this brand, not a generic monogram.`,
+			card.Name, tagline, industry, personality,
+			colourInstr, bg, accent, bg, initial, accent,
 		)
 	case "app":
 		return fmt.Sprintf(
-			`Create a square SVG app icon (viewBox="0 0 200 200") for brand "%s" — "%s". Industry: %s.
-Style: App store icon — rounded-rectangle frame with gradient background. Glassmorphic feel.
-Brand personality: %s. Colour palette: %s.
-Design: Draw a rounded rectangle (rx="36") filling most of the canvas with a gradient background.
-Inside: draw a bold abstract symbol or monogram "%s" centred, white or light coloured.
-Add a subtle radial gradient glow in the centre. Use deep rich colours for the background gradient.
-The icon should look premium and recognisable at 48×48px.`,
-			card.Name, card.Tagline, industry, personality, colourHint, initials,
+			`Brand: "%s" · Tagline: "%s" · Industry: %s · Personality: %s
+
+%s
+
+Create a square SVG app store icon (viewBox="0 0 200 200"):
+- Outer shape: rounded rectangle x="10" y="10" width="180" height="180" rx="40".
+  Fill: linear gradient from %s (top) to a slightly lighter version of %s (bottom).
+- Inside the rounded rect: monogram "%s" centred at 100,100 in %s (#ffffff or accent), font-size="72", font-weight="900".
+- Add a subtle radial gradient glow at cx="100" cy="100" r="60" from %s at 30%% opacity to transparent.
+- Border stroke on the rounded rect: %s at 40%% opacity, stroke-width="2".
+- The icon must be recognisable at 32×32px — keep it simple and bold.`,
+			card.Name, tagline, industry, personality,
+			colourInstr, bg, bg, initials, primary, accent, accent,
 		)
 	case "business":
 		return fmt.Sprintf(
-			`Create a landscape SVG wordmark lockup (viewBox="0 0 400 200") for brand "%s" — "%s".
-Industry: %s. Brand personality: %s. Colour palette: %s.
-Style: Clean horizontal lockup on white/light background for print (business cards, letterhead).
-Design:
-1. Left side (x=40): Draw a small abstract geometric icon mark (hexagon or diamond, 48×48) filled with brand colour gradient.
-2. Right of icon: Brand name "%s" in bold sans-serif, large (font-size="36"), dark colour (#1a0a2e or similar).
-3. Below brand name: tagline "%s" in lighter font (font-size="14"), brand accent colour, tracking-wide.
-4. Below everything: a thin horizontal rule line in brand accent colour.
-Light background (#faf9f7 or #f5f0f8). Total composition centred vertically in the canvas.`,
-			card.Name, card.Tagline, industry, personality, colourHint,
-			card.Name, card.Tagline,
+			`Brand: "%s" · Tagline: "%s" · Industry: %s · Personality: %s
+
+%s
+
+Create a landscape SVG wordmark lockup (viewBox="0 0 400 200"):
+- Background: fill entire canvas with %s (light background — if user palette has "white" or "light", use #f8fafc or #ffffff; if dark palette, use %s).
+- Left side (x=50, y=100 centred): small geometric mark (hexagon polygon or diamond, ~40×40px) filled with %s.
+- Brand name "%s": text element at x="110" y="95", font-size="38", font-weight="900", fill="%s" (dark text for light bg, white for dark bg), font-family="Arial, sans-serif".
+- Tagline "%s": text at x="112" y="120", font-size="13", font-weight="400", fill="%s", letter-spacing="0.08em", font-family="Arial, sans-serif".
+- Thin horizontal rule: line from x1="112" to x2="340" at y="132" stroke="%s" stroke-width="1".
+- IMPORTANT: if user colour has "navy" — use white (#ffffff) for brand name text and %s light background. If "white/light" — use dark (#0d1b2a) for brand name text.`,
+			card.Name, tagline, industry, personality,
+			colourInstr,
+			primary, bg,
+			accent,
+			card.Name, "#0d1b2a",
+			tagline, accent,
+			accent, "#f0f4f8",
 		)
 	default:
 		return fmt.Sprintf(
-			`Create a square SVG logo (viewBox="0 0 200 200") for brand "%s". %s colour palette. Geometric style.`,
-			card.Name, colourHint,
+			`Create a square SVG logo (viewBox="0 0 200 200") for brand "%s".
+%s
+Simple geometric mark, brand initial "%s", tailored to the palette above.`,
+			card.Name, colourInstr, initial,
 		)
 	}
 }
@@ -327,14 +395,13 @@ STRICT RULES:
 }
 
 // BuildSVGMoodBoardPrompts returns 4 distinct SVG tile prompts for the mood board.
-// Each tile represents a different facet of the brand's visual world.
+// CRITICAL: Must use the user's actual colour palette — not hardcoded brand colours.
 func BuildSVGMoodBoardPrompts(card models.NameCard, intake models.IntakePayload) []string {
-	colour1 := "#8B5CF6" // pulse purple
-	colour2 := "#22d3ee" // signal cyan
-	colour3 := "#0b0f19" // void
-	if c := strings.TrimSpace(intake.ColorMood); c != "" {
-		// Use the provided colour as a hint for accent
-		colour1 = "#8B5CF6"
+	// Extract actual colours from user input
+	bg, primary, accent := buildColourContext(intake)
+	colourMood := strings.TrimSpace(intake.ColorMood)
+	if colourMood == "" {
+		colourMood = "deep navy, white, teal"
 	}
 
 	personality := strings.TrimSpace(intake.Personality)
@@ -345,44 +412,54 @@ func BuildSVGMoodBoardPrompts(card models.NameCard, intake models.IntakePayload)
 	if industry == "" {
 		industry = "creative"
 	}
-
 	name := card.Name
+	tagline := strings.TrimSpace(card.Tagline)
+
+	// Colour context block used in every tile prompt
+	colourCtx := fmt.Sprintf(
+		`REQUIRED PALETTE from user input "%s": background=%s, marks=%s, accent=%s. Use ONLY these colours.`,
+		colourMood, bg, primary, accent,
+	)
 
 	return []string{
-		// Tile 1: Colour field / texture
+		// Tile 1: Colour atmosphere / gradient field
 		fmt.Sprintf(
-			`Create an abstract SVG mood tile (viewBox="0 0 300 300") for brand "%s" in %s industry.
-Style: Colour field — no shapes, pure gradient atmosphere.
-Use: deep background %s, radiating circles or concentric rings in %s and %s.
-Multiple overlapping semi-transparent ellipses/circles creating depth and texture.
-NO text, NO letters. Pure abstract colour study.`,
-			name, industry, colour3, colour1, colour2,
+			`Abstract SVG mood tile (viewBox="0 0 300 300") for brand "%s" — %s industry.
+%s
+Style: Pure colour atmosphere. Fill canvas with %s. Add 4–6 overlapping ellipses/circles
+in %s and %s at 15–35%% opacity, varying sizes, suggesting depth and warmth.
+No text, no letters. Evoke the feeling: "%s".`,
+			name, industry, colourCtx, bg, accent, primary, personality,
 		),
-		// Tile 2: Geometric pattern
+		// Tile 2: Geometric pattern grid
 		fmt.Sprintf(
-			`Create an abstract SVG geometric pattern tile (viewBox="0 0 300 300") for brand "%s".
-Style: Repeating geometric forms — hexagons, triangles, or diamonds in a grid.
-Colours: %s background, %s and %s shapes with varying opacity (0.3 to 0.9).
-Brand personality: %s. Pure geometry, no text, no letters.
-Create visual rhythm through size variation and overlapping.`,
-			name, colour3, colour1, colour2, personality,
+			`Abstract SVG geometric pattern tile (viewBox="0 0 300 300") for brand "%s".
+%s
+Style: Repeating geometric grid — use hexagons or diamonds tiled across the canvas.
+Background: %s. Shape fill: %s at 40–70%% opacity. Accent stroke: %s.
+Create a structured, purposeful pattern. Brand personality: %s.
+No text, no letters.`,
+			name, colourCtx, bg, accent, primary, personality,
 		),
-		// Tile 3: Abstract marks / motion
+		// Tile 3: Motion lines / flow
 		fmt.Sprintf(
-			`Create an abstract SVG motion tile (viewBox="0 0 300 300") for brand "%s".
-Style: Flowing curves or diagonal lines suggesting motion and energy.
-Use curved <path> elements, arcs, and bezier curves.
-Colours: %s background, %s and %s strokes of varying width (1px to 8px).
-No text, no letters. Express brand personality: %s.`,
-			name, colour3, colour1, colour2, personality,
+			`Abstract SVG motion tile (viewBox="0 0 300 300") for brand "%s".
+%s
+Style: Flowing diagonal lines or curves suggesting movement and energy.
+Background: %s. Use <path> bezier curves and arcs.
+Line colours: %s (2px) and %s (1px) alternating, varying opacity 0.4–0.9.
+The motion should feel: %s. No text, no letters.`,
+			name, colourCtx, bg, accent, primary, personality,
 		),
-		// Tile 4: Brand mark echo
+		// Tile 4: Focal brand mark echo — uses tagline as context
 		fmt.Sprintf(
-			`Create an abstract SVG brand echo tile (viewBox="0 0 300 300") for brand "%s" in %s.
-Style: Central focal point — one large central shape (circle or hexagon) filled with gradient %s→%s.
-Surrounded by diminishing rings or orbits in lighter tones.
-Dark background %s. No text, no letters. Aspirational, premium feel.`,
-			name, industry, colour1, colour2, colour3,
+			`Abstract SVG focal tile (viewBox="0 0 300 300") for brand "%s" — "%s".
+%s
+Style: Single dominant focal shape expressing the brand essence.
+Background: %s. Central circle or hexagon radius 80, filled with linear gradient %s→%s.
+Surrounded by 3 concentric rings at radius 95, 110, 125 in %s at decreasing opacity (30%%, 20%%, 10%%).
+The composition should feel %s and aspirational. No text, no letters.`,
+			name, tagline, colourCtx, bg, accent, bg, accent, personality,
 		),
 	}
 }
@@ -461,23 +538,32 @@ Rules:
 - Inline ALL CSS in a <style> block; no external stylesheets, no CDN links, no Google Fonts imports.
 - No JavaScript.
 - Use system fonts: font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif.
-- The design MUST visually reflect the exact brand colours and style described — do not use generic dark/grey.
-- Include: nav bar (brand name as text logo), large hero headline, tagline subheading, short description paragraph, one CTA button.
-- The hero section should fill the viewport height with a strong branded background colour.
-- Use the provided personality and style to drive ALL design decisions: layout, typography weight, spacing, border-radius, button style.
-- If "playful" or "bold" — use large fonts, bright accents, rounded corners.
-- If "minimal" or "premium" — use thin fonts, lots of whitespace, clean lines.
-- If "earthy" or "organic" — use warm tones, soft backgrounds, natural textures via CSS gradients.
-- Max 250 lines of HTML. Must render correctly in a sandboxed iframe.`
+- The design MUST use the EXACT hex colours provided — never substitute generic black/dark-grey.
+- If a logo data URI is provided, embed it with <img src="LOGO_DATA_URI" alt="logo"> in the nav bar.
+- Include: nav bar with logo, large hero headline (H1), italic tagline, short description, one CTA button.
+- The hero section fills viewport height with the specified background gradient using the brand colours.
+- Use the provided personality to drive ALL decisions: font weight, spacing, border-radius, CTA shape.
+- If "playful" or "bold" — large fonts, bright accent, rounded corners (border-radius: 32px on CTA).
+- If "minimal" or "premium" — thin fonts, generous whitespace, sharp lines (border-radius: 4px on CTA).
+- If "earthy" or "organic" — warm gradients, soft radii, natural tones.
+- If "edgy" or "dark" — high contrast, angular shapes, electric accent on dark bg.
+- Include an inline SVG accent shape in the hero (a decorative circle, hexagon, or abstract path)
+  that reuses the brand's accent colour — this makes the page feel visually designed not plain text.
+- Max 200 lines of HTML. Must render correctly in a sandboxed iframe at 75% scale.`
 }
 
 // BuildMockupUserPrompt returns the user turn for landing page generation.
-// selectedLogoKey ("profile"|"app"|"business") and selectedLogoStyle are optional;
-// when provided they add logo context to the design directives.
+// selectedLogoKey, selectedLogoStyle, and selectedLogoDataURI are optional;
+// when a data URI is provided it is embedded directly into the nav <img> tag.
 func BuildMockupUserPrompt(card models.NameCard, intake models.IntakePayload, selectedLogoKey, selectedLogoStyle string) string {
-	colourHint := intake.ColorMood
+	return BuildMockupUserPromptWithLogo(card, intake, selectedLogoKey, selectedLogoStyle, "")
+}
+
+// BuildMockupUserPromptWithLogo is the full version that accepts a logo data URI.
+func BuildMockupUserPromptWithLogo(card models.NameCard, intake models.IntakePayload, selectedLogoKey, selectedLogoStyle, logoDataURI string) string {
+	colourHint := strings.TrimSpace(intake.ColorMood)
 	if colourHint == "" {
-		colourHint = "deep navy background, white text, electric blue accent"
+		colourHint = "deep indigo #3b0764 as background, electric cyan #22d3ee as accent, white text"
 	}
 	personality := strings.TrimSpace(intake.Personality)
 	if personality == "" {
@@ -488,48 +574,65 @@ func BuildMockupUserPrompt(card models.NameCard, intake models.IntakePayload, se
 		styleHint = "minimal wordmark"
 	}
 
-	// Derive logo context clause
-	logoCtx := ""
+	// Derive logo style description
 	logoStyle := strings.TrimSpace(selectedLogoStyle)
 	if logoStyle == "" {
 		logoStyle = logoStyleDescription(selectedLogoKey)
 	}
-	if logoStyle != "" && logoStyle != "clean modern mark" {
-		logoCtx = fmt.Sprintf("\n- Logo style chosen: %s — echo this aesthetic in nav typography, button shape, and icon use.", logoStyle)
+
+	// Logo clause — embed data URI if available, otherwise use text logo
+	logoClause := fmt.Sprintf(`In the nav bar, display the brand name "%s" as a bold text logo on the left.`, card.Name)
+	if logoDataURI != "" {
+		logoClause = fmt.Sprintf(
+			`In the nav bar, display this logo image on the left: <img src="%s" alt="%s logo" style="height:40px;width:auto;object-fit:contain;vertical-align:middle"> followed by the brand name "%s" in bold text. The logo style is: %s.`,
+			logoDataURI, card.Name, card.Name, logoStyle,
+		)
 	}
+
+	// Colour extraction for explicit hex usage
+	colourInstructions := fmt.Sprintf(
+		`CRITICAL: Use these exact colours — do NOT default to black or generic grey.
+Primary background: derive a rich gradient from "%s".
+All headings: white or the lightest colour from the palette.
+CTA button: the most vibrant accent colour from the palette as background, white text.
+Decorative SVG element: the accent colour at 30%% opacity.`,
+		colourHint,
+	)
 
 	return fmt.Sprintf(
 		`Create a hero landing page for brand "%s".
 
+%s
+
 Brand details:
 - Tagline: "%s"
 - Short description: %s
-- Long description: %s
 - Industry: %s
 - Colour palette: %s
 - Brand personality: %s
-- Visual style: %s
-- Target audience: %s%s
+- Visual style: %s (logo aesthetic) — echo this in typography weight, button shape, and spacing.
+- Target audience: %s
+
+%s
 
 Design requirements:
-- Background colour must directly use the specified colour palette (not generic dark grey).
-- Typography weight and style must match the personality (%s).
-- CTA button label: "%s — Get Started"
-- Navigation: brand name "%s" as text logo on the left, two placeholder nav links on the right.
-- Hero layout: centred content, large H1 in brand font, italic tagline, short description, CTA button.
-- Include a subtle brand-coloured gradient or background pattern that reflects the industry and style.`,
+1. BACKGROUND: rich CSS gradient using the brand colour palette — NO pure black (#000), NO generic grey.
+2. NAV BAR: %s — two nav links ("About", "Get Started") on the right in the accent colour.
+3. HERO: large H1 brand name, italic tagline below, short description (max 20 words), CTA button.
+4. SVG DECORATION: include one inline SVG shape (60px circle or hexagon) in accent colour at 25%% opacity, floating to the side of the hero text.
+5. CTA BUTTON: label "%s — Get Started", background = accent colour, white text, border-radius matches personality.
+6. Ensure the page looks DESIGNED not plain — use gradients, letter-spacing on tagline, subtle text-shadow on H1.`,
 		card.Name,
+		logoClause,
 		card.Tagline,
 		card.ShortDesc,
-		card.LongDesc,
 		strings.TrimSpace(intake.Industry),
 		colourHint,
 		personality,
-		styleHint,
+		logoStyle,
 		strings.TrimSpace(intake.TargetAudience),
-		logoCtx,
-		personality,
-		card.Name,
+		colourInstructions,
+		logoClause,
 		card.Name,
 	)
 }

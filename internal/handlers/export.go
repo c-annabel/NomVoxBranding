@@ -69,34 +69,48 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		writeZipEntry(zw, slug+"/landing-page.html", []byte(req.MockupHTML))
 	}
 
-	// ── mood-board/*.png ─────────────────────────────────────────────
+	// ── mood-board — supports SVG or PNG data URIs ────────────────────
 	for i, uri := range req.MoodBoard {
+		ext := dataURIExt(uri)
+		if ext == "" {
+			continue
+		}
 		if data := dataURIToBytes(uri); len(data) > 0 {
-			writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.png", slug, i+1), data)
+			writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.%s", slug, i+1, ext), data)
 		}
 	}
 
-	// ── logos/*.png ──────────────────────────────────────────────────
+	// ── logos — supports SVG or PNG ──────────────────────────────────
 	logoMap := map[string]string{
 		"profile":  req.LogoProfile,
 		"app":      req.LogoApp,
 		"business": req.LogoBusiness,
 	}
-	fileNames := map[string]string{
-		"profile":  "logo-profile.png",
-		"app":      "logo-app-icon.png",
-		"business": "logo-business-card.png",
+	baseNames := map[string]string{
+		"profile":  "logo-profile",
+		"app":      "logo-app-icon",
+		"business": "logo-business-card",
 	}
 	for key, uri := range logoMap {
+		if uri == "" {
+			continue
+		}
+		ext := dataURIExt(uri)
+		if ext == "" {
+			continue
+		}
 		if data := dataURIToBytes(uri); len(data) > 0 {
-			writeZipEntry(zw, slug+"/logos/"+fileNames[key], data)
+			writeZipEntry(zw, slug+"/logos/"+baseNames[key]+"."+ext, data)
 		}
 	}
-	// Write the selected logo as a dedicated file so it's easy to find
+	// Write the selected logo as a dedicated easy-to-find file
 	if req.SelectedLogoKey != "" {
-		if uri, ok := logoMap[req.SelectedLogoKey]; ok {
-			if data := dataURIToBytes(uri); len(data) > 0 {
-				writeZipEntry(zw, slug+"/logos/selected-logo.png", data)
+		if uri, ok := logoMap[req.SelectedLogoKey]; ok && uri != "" {
+			ext := dataURIExt(uri)
+			if ext != "" {
+				if data := dataURIToBytes(uri); len(data) > 0 {
+					writeZipEntry(zw, slug+"/logos/selected-logo."+ext, data)
+				}
 			}
 		}
 	}
@@ -124,8 +138,28 @@ func writeZipEntry(zw *zip.Writer, name string, data []byte) {
 	f.Write(data) //nolint:errcheck
 }
 
-// dataURIToBytes decodes a data URI (data:image/png;base64,…) to raw bytes.
-// Imagen 3 returns URL-safe base64, so we try multiple decoders.
+// dataURIExt returns the file extension for a data URI based on its MIME type.
+// Returns "svg", "png", "jpg", or "webp". Returns "" if the URI is empty or unrecognised.
+func dataURIExt(uri string) string {
+	if uri == "" {
+		return ""
+	}
+	lower := strings.ToLower(uri)
+	switch {
+	case strings.HasPrefix(lower, "data:image/svg"):
+		return "svg"
+	case strings.HasPrefix(lower, "data:image/png"):
+		return "png"
+	case strings.HasPrefix(lower, "data:image/jpeg"), strings.HasPrefix(lower, "data:image/jpg"):
+		return "jpg"
+	case strings.HasPrefix(lower, "data:image/webp"):
+		return "webp"
+	}
+	return ""
+}
+
+// dataURIToBytes decodes a data URI (data:image/…;base64,… or data:image/svg+xml;base64,…)
+// to raw bytes. Supports PNG (binary base64) and SVG (base64 encoded UTF-8 text).
 func dataURIToBytes(uri string) []byte {
 	if uri == "" {
 		return nil
@@ -134,18 +168,28 @@ func dataURIToBytes(uri string) []byte {
 	if comma == -1 {
 		return nil
 	}
-	b64 := uri[comma+1:]
-	// Try URL-safe (no padding) — Imagen 3 primary format
-	if data, err := base64.RawURLEncoding.DecodeString(b64); err == nil {
+	payload := uri[comma+1:]
+	header := strings.ToLower(uri[:comma])
+
+	// SVG can also be stored as plain text after the comma (not base64).
+	// Check if the header says base64 — if not, treat payload as raw text.
+	if strings.Contains(header, "image/svg") && !strings.Contains(header, "base64") {
+		return []byte(payload)
+	}
+
+	// Standard base64 decode — try all variants.
+	if data, err := base64.StdEncoding.DecodeString(payload); err == nil {
 		return data
 	}
-	// Try standard (no padding)
-	if data, err := base64.RawStdEncoding.DecodeString(b64); err == nil {
+	if data, err := base64.RawStdEncoding.DecodeString(payload); err == nil {
 		return data
 	}
-	// Try standard with padding — legacy fallback
-	if data, err := base64.StdEncoding.DecodeString(b64); err == nil {
+	if data, err := base64.RawURLEncoding.DecodeString(payload); err == nil {
 		return data
+	}
+	// For SVG data URIs that failed base64 — return as raw text (the SVG markup itself).
+	if strings.Contains(header, "image/svg") {
+		return []byte(payload)
 	}
 	return nil
 }
@@ -235,8 +279,9 @@ func buildReadme(req exportRequest) string {
 	b.WriteString("brand-brief.json    — Machine-readable full brand brief\n")
 	b.WriteString("brand-brief.html    — Human-readable brand brief (open in browser)\n")
 	b.WriteString("landing-page.html   — AI hero section mockup (open in browser)\n")
-	b.WriteString("mood-board/         — 4 mood board panels (PNG)\n")
-	b.WriteString("logos/              — 3 logo concepts + selected-logo.png (PNG)\n")
+	b.WriteString("mood-board/         — Brand mood board panels (SVG vector files)\n")
+	b.WriteString("logos/              — 3 logo concepts + selected-logo (SVG vector)\n")
+	b.WriteString("                      Open .svg files in any browser or Figma\n")
 
 	b.WriteString("\n── Legal ───────────────────────────────────────\n")
 	b.WriteString("These assets were generated by AI and are intended as creative inspiration.\n")

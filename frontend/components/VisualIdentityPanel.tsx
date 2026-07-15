@@ -368,9 +368,6 @@ export default function VisualIdentityPanel({
   // STEP 2 — MOOD BOARD (single presentation image)
   // ══════════════════════════════════════════════════════════════════════════
   if (visualStep === "moodboard") {
-    // Show the first mood board image only — one full presentation
-    const moodImg = visuals.mood_board && visuals.mood_board.length > 0 ? visuals.mood_board[0] : null;
-
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
         <div className="rounded-2xl border overflow-hidden"
@@ -408,115 +405,95 @@ export default function VisualIdentityPanel({
           <div className="p-6">
             <p className="text-lg font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Mood Board</p>
             <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
-              Visual world of <strong>{brandName}</strong> — how the logo lives across platforms and contexts.
+              Visual world of <strong>{brandName}</strong> — how your selected logo lives across platforms and contexts.
             </p>
 
+            {/* ── Selected logo showcase — always shown above mood board ── */}
+            {(() => {
+              const logoURI = selectedLogoType === "profile" ? visuals.logo_profile
+                : selectedLogoType === "app" ? visuals.logo_app
+                : selectedLogoType === "business" ? visuals.logo_business
+                : (visuals.logo_profile || visuals.logo_app || visuals.logo_business || "");
+              return logoURI ? (
+                <div className="flex flex-col items-center mb-5 gap-2">
+                  <p className="text-xs font-black uppercase tracking-widest"
+                    style={{ color: "var(--color-pulse)" }}>
+                    Selected Logo — {selectedLogoType || "Brand Mark"}
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logoURI} alt={`${brandName} selected logo`}
+                    className="rounded-xl"
+                    style={{
+                      maxHeight: 120, maxWidth: "60%", objectFit: "contain",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(139,92,246,0.30)",
+                      padding: "12px",
+                    }} />
+                  <p className="text-xs italic" style={{ color: "var(--color-text-hint)" }}>
+                    {card.tagline}
+                  </p>
+                </div>
+              ) : null;
+            })()}
+
+            {/* ── Mood board: 2×2 SVG tile grid ─────────────────────────── */}
+            <div style={{ height: 420, position: "relative" }}>
             {generatingMoodboard ? (
-              <div className="rounded-xl aspect-video flex items-center justify-center"
+              <div className="rounded-xl h-full flex items-center justify-center"
                 style={{ border: "1px solid rgba(139,92,246,0.18)", background: "rgba(139,92,246,0.06)" }}>
                 <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
                   Generating mood board<span className="nv-dot1">.</span><span className="nv-dot2">.</span><span className="nv-dot3">.</span>
                 </p>
               </div>
-            ) : moodImg ? (
-              <div className="rounded-xl overflow-hidden"
-                style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={moodImg} alt="Brand mood board" className="w-full h-auto object-cover" />
+            ) : visuals.mood_board && visuals.mood_board.length > 0 ? (
+              /* Show AI-generated SVG/PNG tiles in a 2×2 grid */
+              <div className="rounded-xl overflow-hidden h-full"
+                style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
+                <div className="grid grid-cols-2 h-full" style={{ gap: 2, background: "rgba(255,255,255,0.04)" }}>
+                  {visuals.mood_board.slice(0, 4).map((tile, i) => (
+                    <div key={i} className="overflow-hidden rounded-sm" style={{ background: "#0b0f19" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={tile}
+                        alt={`Mood board tile ${i + 1}`}
+                        className="w-full h-full object-cover"
+                        style={{ display: "block" }}
+                      />
+                    </div>
+                  ))}
+                  {/* Fill remaining slots if fewer than 4 tiles */}
+                  {Array.from({ length: Math.max(0, 4 - (visuals.mood_board?.length ?? 0)) }).map((_, i) => (
+                    <div key={`empty-${i}`} className="flex items-center justify-center"
+                      style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
+                      <p className="text-xs" style={{ color: "rgba(139,92,246,0.40)" }}>Generating…</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
-              /* ── CSS Brand Board — shown when Imagen is unavailable ─── */
-              <div className="rounded-xl overflow-hidden"
-                style={{ border: "1px solid rgba(139,92,246,0.20)" }}>
-                {/* Top section — colour story + brand name */}
-                <div className="grid grid-cols-2 gap-0" style={{ minHeight: 180 }}>
-                  {/* Left — colour field */}
-                  <div className="flex flex-col justify-between p-6 relative overflow-hidden"
-                    style={{ background: "linear-gradient(160deg, #0f0f1e 0%, #1c0a3a 55%, #0a1f3e 100%)" }}>
-                    {/* Ambient glow */}
-                    <div className="absolute inset-0" style={{
-                      background: "radial-gradient(ellipse 80% 60% at 30% 40%, rgba(139,92,246,0.25) 0%, transparent 70%)",
-                      pointerEvents: "none",
-                    }} />
-                    <p className="text-xs font-black uppercase tracking-widest relative"
-                      style={{ color: "rgba(139,92,246,0.70)" }}>Colour World</p>
-                    <div>
-                      <p className="font-black text-2xl tracking-tight relative leading-none mb-1"
-                        style={{ color: "#e6e8f0" }}>{brandName}</p>
-                      <p className="text-xs italic relative" style={{ color: "rgba(196,181,253,0.70)" }}>
-                        {card.tagline || "Brand Identity Concept"}
-                      </p>
-                    </div>
-                    {/* Colour swatches */}
-                    <div className="flex gap-2 mt-3 relative">
-                      {["#8B5CF6","#22d3ee","#1e3a5f","#e6e8f0","#0b0f19"].map((c, i) => (
-                        <div key={i} className="rounded-full" style={{ width: 20, height: 20, background: c, border: "1px solid rgba(255,255,255,0.15)" }} />
-                      ))}
-                    </div>
-                  </div>
-                  {/* Right — typography taster */}
-                  <div className="flex flex-col justify-center p-6 gap-3"
-                    style={{ background: "rgba(255,255,255,0.03)", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-                    <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--color-pulse)" }}>
-                      Typography Scale
-                    </p>
-                    <p className="font-black tracking-tight leading-none" style={{ fontSize: "1.6rem", color: "#e6e8f0" }}>
-                      Aa
-                    </p>
-                    <p className="text-sm font-bold" style={{ color: "rgba(230,232,240,0.75)" }}>
-                      Bold · Black
-                    </p>
-                    <p className="text-xs" style={{ color: "rgba(230,232,240,0.45)", letterSpacing: "0.05em" }}>
-                      Regular · Hint text
-                    </p>
-                    <div className="mt-2 px-3 py-1.5 rounded-md text-xs font-black self-start"
-                      style={{ background: "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff" }}>
-                      CTA Button
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom section — platform mockups */}
-                <div className="grid grid-cols-3 gap-0"
-                  style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                  {/* Social / Avatar frame */}
-                  <div className="flex flex-col items-center justify-center gap-2 p-4"
-                    style={{ background: "rgba(139,92,246,0.05)", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div className="rounded-full flex items-center justify-center font-black"
-                      style={{ width: 44, height: 44, background: "linear-gradient(135deg,#7c3aed,#1d4ed8)", color: "#fff", fontSize: "1rem" }}>
-                      {initials.slice(0,1)}
-                    </div>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-hint)" }}>
-                      Social
-                    </p>
-                  </div>
-                  {/* App icon frame */}
-                  <div className="flex flex-col items-center justify-center gap-2 p-4"
-                    style={{ background: "rgba(34,211,238,0.03)", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div className="flex items-center justify-center font-black"
-                      style={{ width: 44, height: 44, background: "linear-gradient(145deg,#1a0554,#0a2240)", color: "#fff", fontSize: "0.85rem",
-                        borderRadius: "22%", border: "1px solid rgba(255,255,255,0.12)" }}>
-                      {initials}
-                    </div>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-hint)" }}>
-                      App
-                    </p>
-                  </div>
-                  {/* Business card frame */}
-                  <div className="flex flex-col items-center justify-center gap-2 p-4"
-                    style={{ background: "rgba(255,255,255,0.02)" }}>
-                    <div className="flex items-center gap-1 px-2 py-1 rounded"
-                      style={{ background: "#faf9f7", fontSize: "0.55rem", fontWeight: 900, color: "#1a0a2e", border: "1px solid rgba(139,92,246,0.20)" }}>
-                      <div style={{ width: 8, height: 8, background: "#7c3aed", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)" }} />
-                      {brandName}
-                    </div>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-hint)" }}>
-                      Print
-                    </p>
-                  </div>
-                </div>
+              /* Fallback when mood board hasn't been generated yet */
+              <div className="rounded-xl h-full flex flex-col items-center justify-center gap-3"
+                style={{ border: "1px dashed rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.04)" }}>
+                <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
+                  Mood board generating…
+                </p>
+                <p className="text-xs text-center px-8" style={{ color: "var(--color-text-hint)" }}>
+                  AI is creating 4 abstract brand tiles in your colour palette.
+                </p>
               </div>
             )}
+            </div>
+
+            {/* ── Disclaimer — improved visibility ─────────────────────── */}
+            <div className="mt-3 px-4 py-2 rounded-lg flex items-start gap-2"
+              style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.20)" }}>
+              <span style={{ color: "var(--color-pulse)", fontSize: "0.85rem", lineHeight: 1 }}>✦</span>
+              <p className="text-xs leading-relaxed" style={{ color: "rgba(230,232,240,0.65)" }}>
+                <strong style={{ color: "#c4b5fd" }}>Free-tier AI generation</strong> — SVG vector artwork
+                generated by IBM watsonx AI using your brand palette and description.
+                Photo-quality raster images require Gemini image credits (planned for a future release).
+              </p>
+            </div>
 
             {/* Brand persona card */}
             {visuals.persona && (
@@ -616,29 +593,45 @@ export default function VisualIdentityPanel({
         <div className="p-6">
           <p className="text-lg font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Landing Page Mockup</p>
           <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
-            AI-generated hero section styled for <strong>{brandName}</strong> — based on your brand inputs.
+            AI-generated hero section for <strong>{brandName}</strong> — brand colours, selected logo, and personality applied.
           </p>
 
+          {/* Fixed height 420px — matches mood board */}
+          <div style={{ height: 420, position: "relative" }}>
           {visuals.mockup_html ? (
-            /* Shorter iframe — fits without scrolling, matches mood board card height */
-            <div className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid rgba(255,255,255,0.12)", height: 380 }}>
+            <div className="rounded-xl overflow-hidden h-full"
+              style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
               <iframe
                 srcDoc={visuals.mockup_html}
                 title={`${brandName} landing page mockup`}
-                className="w-full h-full border-0"
-                style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133%", height: "133%" }}
+                className="w-full border-0"
+                style={{
+                  height: "133%", width: "133%",
+                  transform: "scale(0.75)", transformOrigin: "top left",
+                }}
                 sandbox="allow-same-origin"
               />
             </div>
           ) : (
-            <div className="rounded-xl p-12 text-center"
+            <div className="rounded-xl p-12 text-center h-full flex items-center justify-center"
               style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
               <p className="text-sm" style={{ color: "var(--color-text-hint)" }}>
-                Landing page mockup was not generated. Check WATSONX_API_KEY is set.
+                Landing page mockup was not generated — check WATSONX_API_KEY.
               </p>
             </div>
           )}
+          </div>
+
+          {/* ── Free-tier disclaimer — card style matching mood board ──────── */}
+          <div className="mt-3 px-4 py-2 rounded-lg flex items-start gap-2"
+            style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.20)" }}>
+            <span style={{ color: "var(--color-pulse)", fontSize: "0.85rem", lineHeight: 1 }}>✦</span>
+            <p className="text-xs leading-relaxed" style={{ color: "rgba(230,232,240,0.65)" }}>
+              <strong style={{ color: "#c4b5fd" }}>Free-tier mockup</strong> — HTML/CSS hero section
+              generated by IBM watsonx AI, styled with your brand palette and selected logo.
+              High-fidelity Figma-quality exports are planned for a future release.
+            </p>
+          </div>
         </div>
       </div>
     </div>

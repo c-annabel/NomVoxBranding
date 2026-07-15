@@ -372,8 +372,12 @@ export default function HomeClient() {
           selected_logo_style: logoStyle,
         }),
       });
-      // Merge — only update mood_board; keep existing logos
-      setVisuals(prev => prev ? { ...prev, mood_board: v.mood_board } : v);
+      // Merge — update mood_board + mockup_html (now has logo embedded); keep existing logos
+      setVisuals(prev => prev ? {
+        ...prev,
+        mood_board: v.mood_board,
+        mockup_html: v.mockup_html || prev.mockup_html,
+      } : v);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setVisualsError(msg);
@@ -709,10 +713,17 @@ export default function HomeClient() {
           />
         )}
 
-      {/* ── Global copyright footer — visible on all screens ─── */}
-      <footer className="w-full text-center py-4 mt-auto"
+      {/* ── Global footer ─────────────────────────────────────── */}
+      <footer className="w-full text-center py-5 mt-auto"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        <p className="text-sm" style={{ color: "var(--color-text-hint)" }}>
+        {/* Judge-facing line */}
+        <p className="text-sm font-semibold mb-1"
+          style={{ color: "rgba(196,181,253,0.70)", letterSpacing: "0.01em" }}>
+          A prototype built for the{" "}
+          <span style={{ color: "var(--color-pulse)" }}>IBM SkillsBuild AI Builders Challenge — July 2026</span>
+          {" "}· Creative Industries theme · We hope you enjoy the experience.
+        </p>
+        <p className="text-xs" style={{ color: "var(--color-text-hint)" }}>
           © {new Date().getFullYear()} c-annabel · Developed with IBM Bob · NomVox Brand Identity Platform
         </p>
       </footer>

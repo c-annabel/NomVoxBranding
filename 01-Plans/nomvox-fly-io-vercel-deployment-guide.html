@@ -1,0 +1,309 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NomVox Deploy Guide</title>
+<style>
+  :root{--bg:#0b0f19;--card:#12162a;--border:rgba(139,92,246,0.22);--pulse:#8B5CF6;--cyan:#22d3ee;--text:#e6e8f0;--hint:rgba(230,232,240,0.55);--green:#4ade80;--amber:#f59e0b;--red:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.6;padding:24px}
+  h1{font-size:1.6rem;font-weight:900;letter-spacing:-.03em;background:linear-gradient(135deg,var(--pulse),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .sub{color:var(--hint);font-size:.85rem;margin-bottom:28px}
+  h2{font-size:1rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--pulse);margin:28px 0 10px;padding-left:8px;border-left:3px solid var(--pulse)}
+  h3{font-size:.9rem;font-weight:700;color:var(--cyan);margin:16px 0 6px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+  .step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
+  .num{background:var(--pulse);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;flex-shrink:0;margin-top:1px}
+  .num.green{background:var(--green);color:#0b0f19}
+  .num.amber{background:var(--amber);color:#0b0f19}
+  code{background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.30);border-radius:4px;padding:2px 7px;font-family:"Fira Code",Consolas,monospace;font-size:.82rem;color:#c4b5fd;word-break:break-all}
+  pre{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 16px;overflow-x:auto;font-family:"Fira Code",Consolas,monospace;font-size:.8rem;color:#e6e8f0;margin:8px 0 12px;line-height:1.7}
+  pre .c{color:rgba(230,232,240,0.40)}
+  pre .k{color:var(--cyan)}
+  pre .v{color:#a3e635}
+  .tag{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:6px}
+  .tag.req{background:rgba(248,113,113,0.15);color:var(--red);border:1px solid rgba(248,113,113,0.30)}
+  .tag.opt{background:rgba(139,92,246,0.12);color:#c4b5fd;border:1px solid rgba(139,92,246,0.30)}
+  .tag.free{background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.30)}
+  table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:.82rem}
+  th{text-align:left;padding:7px 10px;background:rgba(139,92,246,0.12);color:#c4b5fd;font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:top}
+  td:first-child{font-family:"Fira Code",Consolas,monospace;font-size:.8rem;color:#c4b5fd;white-space:nowrap}
+  .note{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:10px 14px;color:var(--amber);font-size:.82rem;margin:8px 0}
+  .tip{background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.22);border-radius:8px;padding:10px 14px;color:var(--green);font-size:.82rem;margin:8px 0}
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .sep{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:24px 0}
+  .pill{display:inline-block;background:rgba(34,211,238,0.10);color:var(--cyan);border:1px solid rgba(34,211,238,0.25);border-radius:20px;font-size:.72rem;font-weight:700;padding:2px 10px;margin-right:4px}
+</style>
+</head>
+<body>
+<h1>🚀 NomVox Deployment Guide</h1>
+<p class="sub">Fly.io (Go backend) + Vercel (Next.js frontend) · IBM SkillsBuild AI Builders Challenge July 2026</p>
+
+
+<h2>Architecture Overview</h2>
+<div class="card">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <p style="color:var(--pulse);font-weight:700;margin-bottom:6px">🪰 Fly.io — Go API Server</p>
+      <ul style="color:var(--hint);font-size:.82rem;list-style:none;line-height:1.9">
+        <li>📦 Go 1.22 binary · <code>nomvox-api</code> app</li>
+        <li>🔑 Holds secret env vars (API keys)</li>
+        <li>🌍 Region: <code>iad</code> (US East, changeable)</li>
+        <li>💤 Auto-stop when idle (free tier friendly)</li>
+      </ul>
+    </div>
+    <div>
+      <p style="color:var(--cyan);font-weight:700;margin-bottom:6px">▲ Vercel — Next.js Frontend</p>
+      <ul style="color:var(--hint);font-size:.82rem;list-style:none;line-height:1.9">
+        <li>⚛️ Next.js 16 · React 19 · Tailwind v4</li>
+        <li>🔧 One env var: <code>NEXT_PUBLIC_API_URL</code></li>
+        <li>🆓 Free Hobby plan sufficient</li>
+        <li>🔗 Points to Fly.io backend URL</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<h2>Prerequisites — Install These First</h2>
+<div class="card">
+  <div class="step"><span class="num">1</span><div>Install <strong>Fly CLI</strong>: <a href="https://fly.io/docs/hands-on/install-flyctl/" target="_blank">fly.io/docs/hands-on/install-flyctl</a><br />
+  <pre><span class="c"># Windows (PowerShell)</span>
+<span class="k">iwr</span> https://fly.io/install.ps1 -useb | iex
+<span class="c"># macOS</span>
+<span class="k">brew</span> install flyctl</pre></div></div>
+  <div class="step"><span class="num">2</span><div>Install <strong>Vercel CLI</strong>:<pre><span class="k">npm</span> install -g vercel</pre></div></div>
+  <div class="step"><span class="num">3</span><div>Install <strong>Docker Desktop</strong> (required by Fly for builds):<br /><a href="https://docs.docker.com/desktop/install/windows-install/" target="_blank">docs.docker.com/desktop</a> — must be running during <code>fly deploy</code></div></div>
+  <div class="step"><span class="num">4</span><div>Sign up / log in:<pre><span class="k">fly auth login</span>       <span class="c"># opens browser → fly.io account</span>
+<span class="k">vercel login</span>          <span class="c"># opens browser → Vercel account (GitHub recommended)</span></pre></div></div>
+</div>
+
+
+<h2>All Environment Variables — What They Are &amp; Where To Find Them</h2>
+<div class="card">
+<table>
+  <tr><th>Variable</th><th>Required?</th><th>Where to find it</th></tr>
+  <tr>
+    <td>WATSONX_API_KEY</td>
+    <td><span class="tag req">Required</span></td>
+    <td>
+      <a href="https://cloud.ibm.com/iam/apikeys" target="_blank">cloud.ibm.com/iam/apikeys</a> → "Create an IBM Cloud API key" → Copy the key immediately (shown once).<br />
+      <span style="color:var(--hint);font-size:.78rem">Must have watsonx.ai service access. The key is ~44 alphanumeric chars.</span>
+    </td>
+  </tr>
+  <tr>
+    <td>WATSONX_PROJECT_ID</td>
+    <td><span class="tag req">Required</span></td>
+    <td>
+      <a href="https://dataplatform.cloud.ibm.com/wx/home" target="_blank">dataplatform.cloud.ibm.com</a> → Open your watsonx project → Settings tab → Copy "Project ID" (UUID format: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>)
+    </td>
+  </tr>
+  <tr>
+    <td>WATSONX_URL</td>
+    <td><span class="tag req">Required</span></td>
+    <td>Your watsonx region endpoint. Usually <code>https://us-south.ml.cloud.ibm.com</code> or <code>https://ca-tor.ml.cloud.ibm.com</code>. Check your watsonx project's "API" tab for the correct regional URL.</td>
+  </tr>
+  <tr>
+    <td>GOOGLE_AI_API_KEY</td>
+    <td><span class="tag req">Required</span></td>
+    <td>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> → "Create API key" → Select a Google Cloud project → Copy key.<br />
+      <span style="color:var(--amber);font-size:.78rem">⚠️ Note: Image generation (Gemini Flash Image) requires billing credits. Text/SVG generation works on the free tier.</span>
+    </td>
+  </tr>
+  <tr>
+    <td>REDIS_URL</td>
+    <td><span class="tag req">Required</span></td>
+    <td>
+      <a href="https://upstash.com" target="_blank">upstash.com</a> → Create a Redis database → "Connect" tab → Copy the <code>UPSTASH_REDIS_URL</code> (starts with <code>rediss://default:…</code>).<br />
+      <span style="color:var(--hint);font-size:.78rem">Free plan: 10,000 commands/day — sufficient for demo.</span>
+    </td>
+  </tr>
+  <tr>
+    <td style="color:var(--amber)">VERCEL_BLOB_TOKEN</td>
+    <td><span class="tag opt">Optional</span></td>
+    <td>
+      <strong>This is for Vercel Blob storage (image uploads) — NomVox does not currently use it.</strong><br />
+      If you see it in <code>.env.example</code>, it was added for future use. <strong>You do NOT need it for deployment.</strong><br />
+      <span style="color:var(--hint);font-size:.78rem">If needed later: Vercel Dashboard → Your Project → Storage tab → "Connect Store" → Create Blob store → the token appears as <code>BLOB_READ_WRITE_TOKEN</code> in env vars.</span>
+    </td>
+  </tr>
+  <tr>
+    <td>ALLOWED_ORIGINS</td>
+    <td><span class="tag req">Required on Fly</span></td>
+    <td>Your Vercel deployment URL, e.g. <code>https://nomvox.vercel.app</code>. Prevents CORS errors. Set this after you know the Vercel URL (Step 10).</td>
+  </tr>
+  <tr>
+    <td>NEXT_PUBLIC_API_URL</td>
+    <td><span class="tag req">Required on Vercel</span></td>
+    <td>Your Fly.io backend URL, e.g. <code>https://nomvox-api.fly.dev</code>. Set this in Vercel project settings (Step 9).</td>
+  </tr>
+</table>
+</div>
+
+
+<h2>Part 1 — Deploy Go Backend to Fly.io</h2>
+
+<h3>Step 1 — Add a Dockerfile (if not present)</h3>
+<div class="card">
+  <p style="color:var(--hint);font-size:.82rem;margin-bottom:8px">Check: a <code>Dockerfile</code> should already exist at the project root. If not, create it:</p>
+<pre><span class="k">FROM</span> golang:1.22-alpine AS builder
+<span class="k">WORKDIR</span> /app
+<span class="k">COPY</span> go.mod go.sum ./
+<span class="k">RUN</span>  go mod download
+<span class="k">COPY</span> . .
+<span class="k">RUN</span>  go build -o nomvox-server ./cmd/server
+
+<span class="k">FROM</span> alpine:3.20
+<span class="k">WORKDIR</span> /app
+<span class="k">COPY</span> --from=builder /app/nomvox-server .
+<span class="k">EXPOSE</span> 8080
+<span class="k">CMD</span>  ["./nomvox-server"]</pre>
+</div>
+
+<h3>Step 2 — Create the Fly.io app (first time only)</h3>
+<div class="card">
+<pre><span class="c"># Run from the repo root (where fly.toml is)</span>
+<span class="k">fly apps create</span> nomvox-api   <span class="c"># creates the app on Fly.io</span></pre>
+<p style="color:var(--hint);font-size:.82rem">The <code>fly.toml</code> already has <code>app = "nomvox-api"</code> — no changes needed.</p>
+</div>
+
+<h3>Step 3 — Set all secret environment variables</h3>
+<div class="card">
+<pre><span class="k">fly secrets set</span> <span class="v">\</span>
+  WATSONX_API_KEY=<span class="v">"your-44-char-ibm-api-key"</span> <span class="v">\</span>
+  WATSONX_PROJECT_ID=<span class="v">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span> <span class="v">\</span>
+  WATSONX_URL=<span class="v">"https://ca-tor.ml.cloud.ibm.com"</span> <span class="v">\</span>
+  GOOGLE_AI_API_KEY=<span class="v">"your-google-api-key"</span> <span class="v">\</span>
+  REDIS_URL=<span class="v">"rediss://default:your-token@your-host.upstash.io:6379"</span> <span class="v">\</span>
+  ALLOWED_ORIGINS=<span class="v">"https://nomvox.vercel.app"</span>
+<span class="c"># Note: ALLOWED_ORIGINS will be updated after Vercel deploy (Step 10)</span></pre>
+<div class="tip">✓ Secrets are encrypted — never appear in logs or code. Verify with: <code>fly secrets list</code></div>
+</div>
+
+<h3>Step 4 — Deploy to Fly.io</h3>
+<div class="card">
+<pre><span class="c"># Make sure Docker Desktop is running first!</span>
+<span class="k">fly deploy</span>
+<span class="c"># First deploy takes 3-5 minutes (builds Docker image, uploads)</span>
+<span class="c"># Subsequent deploys take ~60 seconds</span></pre>
+<p style="color:var(--hint);font-size:.82rem;margin-top:8px">After deploy, your backend is live at: <code>https://nomvox-api.fly.dev</code></p>
+</div>
+
+<h3>Step 5 — Test the backend</h3>
+<div class="card">
+<pre><span class="c"># Health check</span>
+<span class="k">Invoke-RestMethod</span> https://nomvox-api.fly.dev/api/ping
+
+<span class="c"># Expected: {"status":"ok","service":"nomvox"}</span>
+
+<span class="c"># Full visual debug (tests watsonx SVG logos + Gemini)</span>
+<span class="k">Invoke-RestMethod</span> https://nomvox-api.fly.dev/api/debug-visuals | ConvertTo-Json</pre>
+</div>
+
+
+<hr class="sep" />
+<h2>Part 2 — Deploy Next.js Frontend to Vercel</h2>
+
+<h3>Step 6 — Push to GitHub (required for Vercel)</h3>
+<div class="card">
+<pre><span class="k">git add</span> -A
+<span class="k">git commit</span> -m "feat: production deploy"
+<span class="k">git push origin main</span></pre>
+<div class="note">⚠️ Make sure <code>.env</code> is in <code>.gitignore</code> — never commit real API keys!</div>
+</div>
+
+<h3>Step 7 — Create Vercel project (first time only)</h3>
+<div class="card">
+  <div class="step"><span class="num">A</span><div>Go to <a href="https://vercel.com/new" target="_blank">vercel.com/new</a></div></div>
+  <div class="step"><span class="num">B</span><div>Click "Import" next to your <code>NomVoxBranding</code> GitHub repo</div></div>
+  <div class="step"><span class="num">C</span><div><strong>IMPORTANT</strong>: Set the <strong>Root Directory</strong> to <code>frontend</code><br />
+    <span style="color:var(--hint);font-size:.8rem">Vercel must point at the <code>frontend/</code> subdirectory, not the repo root.</span></div></div>
+  <div class="step"><span class="num">D</span><div>Framework preset: auto-detected as <strong>Next.js</strong> ✓</div></div>
+  <div class="step"><span class="num">E</span><div>Build Command: <code>npm run build</code> (auto-filled) ✓</div></div>
+</div>
+
+<h3>Step 8 — Add the NEXT_PUBLIC_API_URL environment variable</h3>
+<div class="card">
+  <p style="margin-bottom:8px">Before clicking Deploy, in the "Environment Variables" section add:</p>
+  <table>
+    <tr><th>Name</th><th>Value</th><th>Environment</th></tr>
+    <tr><td>NEXT_PUBLIC_API_URL</td><td><code>https://nomvox-api.fly.dev</code></td><td>Production, Preview, Development</td></tr>
+  </table>
+  <div class="tip">✓ This is the only env var the frontend needs — it tells Next.js where to call the Go API.</div>
+  <p style="color:var(--hint);font-size:.8rem;margin-top:6px">Then click <strong>Deploy</strong>. First deploy takes ~2 minutes.</p>
+</div>
+
+<h3>Step 9 — Get your Vercel URL and update Fly.io CORS</h3>
+<div class="card">
+  <p style="margin-bottom:8px">After deploy, Vercel shows your URL, e.g. <code>https://nomvox-abc123.vercel.app</code></p>
+  <div class="step"><span class="num">A</span><div>Optional: add a custom domain in Vercel → Domains → Add. Otherwise use the auto-generated URL.</div></div>
+  <div class="step"><span class="num">B</span><div>Update Fly.io CORS to allow your Vercel domain:
+<pre><span class="k">fly secrets set</span> ALLOWED_ORIGINS=<span class="v">"https://nomvox-abc123.vercel.app"</span>
+<span class="c"># If you have multiple domains:</span>
+<span class="k">fly secrets set</span> ALLOWED_ORIGINS=<span class="v">"https://nomvox.vercel.app,https://nomvox.app"</span></pre></div></div>
+</div>
+
+<h3>Step 10 — Verify end-to-end</h3>
+<div class="card">
+  <div class="step"><span class="num green">✓</span><div>Open your Vercel URL in a browser</div></div>
+  <div class="step"><span class="num green">✓</span><div>Type a brand idea (e.g. "eco coffee for young professionals") and hit Generate</div></div>
+  <div class="step"><span class="num green">✓</span><div>Names + availability check should return in ~20 seconds</div></div>
+  <div class="step"><span class="num green">✓</span><div>Click a name → Visual Identity should load with SVG logos + landing page mockup</div></div>
+</div>
+
+
+<hr class="sep" />
+<h2>Troubleshooting</h2>
+<div class="card">
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>CORS error in browser console</td><td>Run <code>fly secrets set ALLOWED_ORIGINS="https://your-vercel-url.vercel.app"</code> and redeploy</td></tr>
+  <tr><td>Names not generating (504 timeout)</td><td>watsonx is slow on first call. Check <code>fly logs</code> — look for WATSONX_API_KEY error. Also confirm WATSONX_PROJECT_ID is correct UUID.</td></tr>
+  <tr><td>Logos show CSS placeholders only</td><td>Normal on free tier — SVG logos via watsonx should still load (~30s). Check <code>/api/debug-visuals</code> for <code>svg_logo_ok: true</code>.</td></tr>
+  <tr><td>Vercel build fails "Cannot find module"</td><td>Ensure Root Directory is set to <code>frontend</code> in Vercel project settings.</td></tr>
+  <tr><td>fly deploy fails "no Dockerfile"</td><td>Check Dockerfile exists at repo root. Alternatively add <code>[build] dockerfile = "Dockerfile"</code> to fly.toml.</td></tr>
+  <tr><td>Redis errors in logs</td><td>Confirm REDIS_URL starts with <code>rediss://</code> (TLS, double-s). Upstash free tier requires TLS.</td></tr>
+  <tr><td>Landing page mockup is black/no colour</td><td>This is a new fix in current build. Rebuild <code>nomvox-server.exe</code> with <code>go build -o nomvox-server.exe ./cmd/server</code> and redeploy.</td></tr>
+</table>
+</div>
+
+
+<hr class="sep" />
+<h2>Quick Re-deploy Commands (after code changes)</h2>
+<div class="card">
+<pre><span class="c"># Backend (Go) — run from repo root</span>
+<span class="k">fly deploy</span>
+
+<span class="c"># Frontend (Next.js) — push to GitHub, Vercel auto-deploys</span>
+<span class="k">git push origin main</span>
+
+<span class="c"># OR force manual Vercel deploy</span>
+<span class="k">cd</span> frontend
+<span class="k">vercel --prod</span></pre>
+</div>
+
+
+<hr class="sep" />
+<h2>About VERCEL_BLOB_TOKEN</h2>
+<div class="card">
+  <div class="note">
+    <strong>You do NOT need VERCEL_BLOB_TOKEN for NomVox to work.</strong><br /><br />
+    It appears in <code>.env.example</code> as a placeholder for a planned future feature (uploading reference images to Vercel Blob storage for the vision analysis feature).<br /><br />
+    <strong>If you need it in the future:</strong><br />
+    1. Vercel Dashboard → Your Project → <strong>Storage</strong> tab (left sidebar)<br />
+    2. Click "Create Database" → Select "Blob"<br />
+    3. Give it a name → Create<br />
+    4. The token <code>BLOB_READ_WRITE_TOKEN</code> is automatically added to your project's env vars<br />
+    5. Copy it to your <code>.env</code> as <code>VERCEL_BLOB_TOKEN=…</code>
+  </div>
+</div>
+
+<p style="text-align:center;color:rgba(139,92,246,0.50);font-size:.75rem;margin-top:28px">
+  NomVox · IBM SkillsBuild AI Builders Challenge July 2026 · Built with IBM Bob
+</p>
+</body>
+</html>
