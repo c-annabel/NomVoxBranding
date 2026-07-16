@@ -374,54 +374,54 @@ export default function VisualIdentityPanel({
         <div style={{ flex: "0 0 40%", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
 
           {/* Social / Profile preview */}
-          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+          <div className="flex flex-col items-center justify-center gap-2 relative overflow-hidden"
             style={{ background: `${pal.bg}cc` }}>
-            {visuals.logo_profile && visuals.logo_profile.length > 50 ? (
+            {visuals.logo_profile && visuals.logo_profile.length > 200 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_profile} alt="profile" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: "50%" }} />
+              <img src={visuals.logo_profile} alt="profile" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: "50%" }} />
             ) : (
               <div className="flex items-center justify-center rounded-full"
-                style={{ width: 36, height: 36, background: pal.accent }}>
-                <span className="font-black text-sm" style={{ color: pal.bg }}>{initials.slice(0,1)}</span>
+                style={{ width: 64, height: 64, background: pal.accent, flexShrink: 0 }}>
+                <span style={{ fontWeight: 900, fontSize: "1.6rem", color: pal.bg }}>{initials.slice(0,1)}</span>
               </div>
             )}
-            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>Social</p>
+            <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: `${pal.accent}cc` }}>Social</p>
           </div>
 
           {/* App Icon preview */}
-          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+          <div className="flex flex-col items-center justify-center gap-2 relative overflow-hidden"
             style={{ background: `${pal.bg}cc` }}>
-            {visuals.logo_app && visuals.logo_app.length > 50 ? (
+            {visuals.logo_app && visuals.logo_app.length > 200 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_app} alt="app" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }} />
+              <img src={visuals.logo_app} alt="app" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 14 }} />
             ) : (
               <div className="flex items-center justify-center"
-                style={{ width: 36, height: 36, background: `linear-gradient(135deg,${pal.accent},${pal.accent2})`, borderRadius: 8 }}>
-                <span className="font-black text-sm" style={{ color: pal.bg }}>{initials}</span>
+                style={{ width: 64, height: 64, background: `linear-gradient(135deg,${pal.accent},${pal.accent2})`, borderRadius: 14, flexShrink: 0 }}>
+                <span style={{ fontWeight: 900, fontSize: "1.4rem", color: pal.bg }}>{initials}</span>
               </div>
             )}
-            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>App</p>
+            <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: `${pal.accent}cc` }}>App</p>
           </div>
 
           {/* Print / Business preview */}
-          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+          <div className="flex flex-col items-center justify-center gap-2 relative overflow-hidden px-3"
             style={{ background: `${pal.bg}cc` }}>
-            {visuals.logo_business && visuals.logo_business.length > 50 ? (
+            {visuals.logo_business && visuals.logo_business.length > 200 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_business} alt="business" style={{ width: 56, height: 28, objectFit: "contain", borderRadius: 4 }} />
+              <img src={visuals.logo_business} alt="business" style={{ width: "80%", maxWidth: 110, height: 48, objectFit: "contain", borderRadius: 4 }} />
             ) : (
-              <div className="flex items-center gap-1 px-2 py-1 rounded"
-                style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${pal.accent}44` }}>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg w-full justify-center"
+                style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${pal.accent}44` }}>
                 <div style={{
-                  width: 10, height: 10,
+                  width: 16, height: 16,
                   background: pal.accent,
                   clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
                   flexShrink: 0,
                 }} />
-                <span className="text-[9px] font-black" style={{ color: pal.text }}>{name}</span>
+                <span style={{ fontWeight: 900, fontSize: "0.85rem", color: pal.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
               </div>
             )}
-            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>Print</p>
+            <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: `${pal.accent}cc` }}>Print</p>
           </div>
         </div>
       </div>
@@ -498,42 +498,42 @@ export default function VisualIdentityPanel({
             {/* Left column: headline + tagline + description + CTA */}
             <div className="flex flex-col justify-center px-7 py-4" style={{ flex: "0 0 60%" }}>
               {/* Industry eyebrow */}
-              <p style={{ fontSize: "0.55rem", fontWeight: 900, textTransform: "uppercase",
-                letterSpacing: "0.14em", color: pal.accent, marginBottom: 6 }}>
+              <p style={{ fontSize: "0.7rem", fontWeight: 900, textTransform: "uppercase",
+                letterSpacing: "0.14em", color: pal.accent, marginBottom: 7 }}>
                 {industry}
               </p>
               {/* Brand name — large hero headline */}
-              <h1 style={{ fontSize: "2.2rem", fontWeight: 900, lineHeight: 0.95,
-                color: "#ffffff", letterSpacing: headingLS, marginBottom: 8 }}>
+              <h1 style={{ fontSize: "2.4rem", fontWeight: 900, lineHeight: 0.95,
+                color: "#ffffff", letterSpacing: headingLS, marginBottom: 9 }}>
                 {name}
               </h1>
               {/* Accent rule */}
-              <div style={{ width: 36, height: 3, background: pal.accent,
-                borderRadius: 2, marginBottom: 8 }} />
+              <div style={{ width: 40, height: 3, background: pal.accent,
+                borderRadius: 2, marginBottom: 9 }} />
               {/* Tagline */}
-              <p style={{ fontSize: "0.75rem", fontStyle: "italic", color: pal.accent,
-                marginBottom: 8, fontWeight: 600 }}>
+              <p style={{ fontSize: "0.88rem", fontStyle: "italic", color: pal.accent,
+                marginBottom: 9, fontWeight: 600 }}>
                 &ldquo;{tagline}&rdquo;
               </p>
               {/* Short description */}
               {desc && (
-                <p style={{ fontSize: "0.6rem", color: `${pal.text}88`, lineHeight: 1.6,
+                <p style={{ fontSize: "0.75rem", color: `${pal.text}88`, lineHeight: 1.6,
                   marginBottom: 14, maxWidth: "90%" }}>
-                  {desc.slice(0, 100)}{desc.length > 100 ? "…" : ""}
+                  {desc.slice(0, 90)}{desc.length > 90 ? "…" : ""}
                 </p>
               )}
               {/* CTA */}
-              <div style={{ display: "inline-flex", gap: 8 }}>
+              <div style={{ display: "inline-flex", gap: 10 }}>
                 <span style={{
-                  fontSize: "0.65rem", fontWeight: 900, color: pal.bg,
-                  background: pal.accent, padding: "6px 14px", borderRadius: btnRadius,
+                  fontSize: "0.78rem", fontWeight: 900, color: pal.bg,
+                  background: pal.accent, padding: "7px 16px", borderRadius: btnRadius,
                   boxShadow: `0 3px 12px ${pal.accent}55`,
                 }}>
                   Start with {name} →
                 </span>
                 <span style={{
-                  fontSize: "0.65rem", fontWeight: 700, color: pal.accent,
-                  border: `1px solid ${pal.accent}55`, padding: "6px 12px",
+                  fontSize: "0.78rem", fontWeight: 700, color: pal.accent,
+                  border: `1px solid ${pal.accent}55`, padding: "7px 14px",
                   borderRadius: btnRadius,
                 }}>
                   Learn More
@@ -549,19 +549,19 @@ export default function VisualIdentityPanel({
               }} />
               {/* Large geometric mark */}
               <div style={{
-                width: 80, height: 80,
+                width: 90, height: 90,
                 background: `linear-gradient(135deg, ${pal.accent}cc, ${pal.accent2}88)`,
                 clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                marginBottom: 10, position: "relative",
+                marginBottom: 12, position: "relative",
               }} />
-              {/* Brand initial */}
-              <p style={{ fontSize: "2.5rem", fontWeight: 900, color: `${pal.accent}22`,
-                position: "absolute", top: "30%", letterSpacing: "-0.05em" }}>
+              {/* Brand initial watermark */}
+              <p style={{ fontSize: "3rem", fontWeight: 900, color: `${pal.accent}22`,
+                position: "absolute", top: "28%", letterSpacing: "-0.05em" }}>
                 {name.slice(0, 2).toUpperCase()}
               </p>
-              {/* Small personality tag */}
-              <p style={{ fontSize: "0.5rem", fontWeight: 900, textTransform: "uppercase",
-                letterSpacing: "0.1em", color: `${pal.accent2}99`, position: "relative" }}>
+              {/* Personality tag — larger */}
+              <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase",
+                letterSpacing: "0.12em", color: `${pal.accent2}bb`, position: "relative", textAlign: "center", paddingInline: 8 }}>
                 {intake.personality || "brand identity"}
               </p>
             </div>
@@ -574,12 +574,12 @@ export default function VisualIdentityPanel({
           }}>
             {[industry, intake.personality || "Creative", intake.target_audience || "Everyone"].slice(0,3).map((feat, i) => (
               <div key={i} style={{
-                flex: 1, padding: "5px 8px", textAlign: "center",
-                borderRight: i < 2 ? `1px solid ${pal.accent}18` : "none",
+                flex: 1, padding: "6px 10px", textAlign: "center",
+                borderRight: i < 2 ? `1px solid ${pal.accent}22` : "none",
               }}>
-                <p style={{ fontSize: "0.5rem", fontWeight: 900, textTransform: "uppercase",
-                  letterSpacing: "0.1em", color: `${pal.accent}aa` }}>
-                  {feat.slice(0, 16)}
+                <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase",
+                  letterSpacing: "0.08em", color: `${pal.accent}cc` }}>
+                  {feat.slice(0, 20)}
                 </p>
               </div>
             ))}
