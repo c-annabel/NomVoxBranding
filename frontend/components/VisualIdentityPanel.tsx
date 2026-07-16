@@ -374,54 +374,54 @@ export default function VisualIdentityPanel({
         <div style={{ flex: "0 0 40%", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
 
           {/* Social / Profile preview */}
-          <div className="flex flex-col items-center justify-center gap-2 relative overflow-hidden"
+          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
             style={{ background: `${pal.bg}cc` }}>
-            {visuals.logo_profile && visuals.logo_profile.length > 200 ? (
+            {visuals.logo_profile && visuals.logo_profile.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_profile} alt="profile" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: "50%" }} />
+              <img src={visuals.logo_profile} alt="profile" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: "50%" }} />
             ) : (
               <div className="flex items-center justify-center rounded-full"
-                style={{ width: 64, height: 64, background: pal.accent, flexShrink: 0 }}>
-                <span style={{ fontWeight: 900, fontSize: "1.6rem", color: pal.bg }}>{initials.slice(0,1)}</span>
+                style={{ width: 36, height: 36, background: pal.accent }}>
+                <span className="font-black text-sm" style={{ color: pal.bg }}>{initials.slice(0,1)}</span>
               </div>
             )}
-            <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: `${pal.accent}cc` }}>Social</p>
+            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>Social</p>
           </div>
 
           {/* App Icon preview */}
-          <div className="flex flex-col items-center justify-center gap-2 relative overflow-hidden"
+          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
             style={{ background: `${pal.bg}cc` }}>
-            {visuals.logo_app && visuals.logo_app.length > 200 ? (
+            {visuals.logo_app && visuals.logo_app.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_app} alt="app" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 14 }} />
+              <img src={visuals.logo_app} alt="app" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }} />
             ) : (
               <div className="flex items-center justify-center"
-                style={{ width: 64, height: 64, background: `linear-gradient(135deg,${pal.accent},${pal.accent2})`, borderRadius: 14, flexShrink: 0 }}>
-                <span style={{ fontWeight: 900, fontSize: "1.4rem", color: pal.bg }}>{initials}</span>
+                style={{ width: 36, height: 36, background: `linear-gradient(135deg,${pal.accent},${pal.accent2})`, borderRadius: 8 }}>
+                <span className="font-black text-sm" style={{ color: pal.bg }}>{initials}</span>
               </div>
             )}
-            <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: `${pal.accent}cc` }}>App</p>
+            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>App</p>
           </div>
 
           {/* Print / Business preview */}
-          <div className="flex flex-col items-center justify-center gap-2 relative overflow-hidden px-3"
+          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
             style={{ background: `${pal.bg}cc` }}>
-            {visuals.logo_business && visuals.logo_business.length > 200 ? (
+            {visuals.logo_business && visuals.logo_business.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_business} alt="business" style={{ width: "80%", maxWidth: 110, height: 48, objectFit: "contain", borderRadius: 4 }} />
+              <img src={visuals.logo_business} alt="business" style={{ width: 56, height: 28, objectFit: "contain", borderRadius: 4 }} />
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg w-full justify-center"
-                style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${pal.accent}44` }}>
+              <div className="flex items-center gap-1 px-2 py-1 rounded"
+                style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${pal.accent}44` }}>
                 <div style={{
-                  width: 16, height: 16,
+                  width: 10, height: 10,
                   background: pal.accent,
                   clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
                   flexShrink: 0,
                 }} />
-                <span style={{ fontWeight: 900, fontSize: "0.85rem", color: pal.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+                <span className="text-[9px] font-black" style={{ color: pal.text }}>{name}</span>
               </div>
             )}
-            <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: `${pal.accent}cc` }}>Print</p>
+            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>Print</p>
           </div>
         </div>
       </div>
@@ -498,42 +498,42 @@ export default function VisualIdentityPanel({
             {/* Left column: headline + tagline + description + CTA */}
             <div className="flex flex-col justify-center px-7 py-4" style={{ flex: "0 0 60%" }}>
               {/* Industry eyebrow */}
-              <p style={{ fontSize: "0.7rem", fontWeight: 900, textTransform: "uppercase",
-                letterSpacing: "0.14em", color: pal.accent, marginBottom: 7 }}>
+              <p style={{ fontSize: "0.55rem", fontWeight: 900, textTransform: "uppercase",
+                letterSpacing: "0.14em", color: pal.accent, marginBottom: 6 }}>
                 {industry}
               </p>
               {/* Brand name — large hero headline */}
-              <h1 style={{ fontSize: "2.4rem", fontWeight: 900, lineHeight: 0.95,
-                color: "#ffffff", letterSpacing: headingLS, marginBottom: 9 }}>
+              <h1 style={{ fontSize: "2.2rem", fontWeight: 900, lineHeight: 0.95,
+                color: "#ffffff", letterSpacing: headingLS, marginBottom: 8 }}>
                 {name}
               </h1>
               {/* Accent rule */}
-              <div style={{ width: 40, height: 3, background: pal.accent,
-                borderRadius: 2, marginBottom: 9 }} />
+              <div style={{ width: 36, height: 3, background: pal.accent,
+                borderRadius: 2, marginBottom: 8 }} />
               {/* Tagline */}
-              <p style={{ fontSize: "0.88rem", fontStyle: "italic", color: pal.accent,
-                marginBottom: 9, fontWeight: 600 }}>
+              <p style={{ fontSize: "0.75rem", fontStyle: "italic", color: pal.accent,
+                marginBottom: 8, fontWeight: 600 }}>
                 &ldquo;{tagline}&rdquo;
               </p>
               {/* Short description */}
               {desc && (
-                <p style={{ fontSize: "0.75rem", color: `${pal.text}88`, lineHeight: 1.6,
+                <p style={{ fontSize: "0.6rem", color: `${pal.text}88`, lineHeight: 1.6,
                   marginBottom: 14, maxWidth: "90%" }}>
-                  {desc.slice(0, 90)}{desc.length > 90 ? "…" : ""}
+                  {desc.slice(0, 100)}{desc.length > 100 ? "…" : ""}
                 </p>
               )}
               {/* CTA */}
-              <div style={{ display: "inline-flex", gap: 10 }}>
+              <div style={{ display: "inline-flex", gap: 8 }}>
                 <span style={{
-                  fontSize: "0.78rem", fontWeight: 900, color: pal.bg,
-                  background: pal.accent, padding: "7px 16px", borderRadius: btnRadius,
+                  fontSize: "0.65rem", fontWeight: 900, color: pal.bg,
+                  background: pal.accent, padding: "6px 14px", borderRadius: btnRadius,
                   boxShadow: `0 3px 12px ${pal.accent}55`,
                 }}>
                   Start with {name} →
                 </span>
                 <span style={{
-                  fontSize: "0.78rem", fontWeight: 700, color: pal.accent,
-                  border: `1px solid ${pal.accent}55`, padding: "7px 14px",
+                  fontSize: "0.65rem", fontWeight: 700, color: pal.accent,
+                  border: `1px solid ${pal.accent}55`, padding: "6px 12px",
                   borderRadius: btnRadius,
                 }}>
                   Learn More
@@ -549,19 +549,19 @@ export default function VisualIdentityPanel({
               }} />
               {/* Large geometric mark */}
               <div style={{
-                width: 90, height: 90,
+                width: 80, height: 80,
                 background: `linear-gradient(135deg, ${pal.accent}cc, ${pal.accent2}88)`,
                 clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                marginBottom: 12, position: "relative",
+                marginBottom: 10, position: "relative",
               }} />
-              {/* Brand initial watermark */}
-              <p style={{ fontSize: "3rem", fontWeight: 900, color: `${pal.accent}22`,
-                position: "absolute", top: "28%", letterSpacing: "-0.05em" }}>
+              {/* Brand initial */}
+              <p style={{ fontSize: "2.5rem", fontWeight: 900, color: `${pal.accent}22`,
+                position: "absolute", top: "30%", letterSpacing: "-0.05em" }}>
                 {name.slice(0, 2).toUpperCase()}
               </p>
-              {/* Personality tag — larger */}
-              <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase",
-                letterSpacing: "0.12em", color: `${pal.accent2}bb`, position: "relative", textAlign: "center", paddingInline: 8 }}>
+              {/* Small personality tag */}
+              <p style={{ fontSize: "0.5rem", fontWeight: 900, textTransform: "uppercase",
+                letterSpacing: "0.1em", color: `${pal.accent2}99`, position: "relative" }}>
                 {intake.personality || "brand identity"}
               </p>
             </div>
@@ -574,12 +574,12 @@ export default function VisualIdentityPanel({
           }}>
             {[industry, intake.personality || "Creative", intake.target_audience || "Everyone"].slice(0,3).map((feat, i) => (
               <div key={i} style={{
-                flex: 1, padding: "6px 10px", textAlign: "center",
-                borderRight: i < 2 ? `1px solid ${pal.accent}22` : "none",
+                flex: 1, padding: "5px 8px", textAlign: "center",
+                borderRight: i < 2 ? `1px solid ${pal.accent}18` : "none",
               }}>
-                <p style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase",
-                  letterSpacing: "0.08em", color: `${pal.accent}cc` }}>
-                  {feat.slice(0, 20)}
+                <p style={{ fontSize: "0.5rem", fontWeight: 900, textTransform: "uppercase",
+                  letterSpacing: "0.1em", color: `${pal.accent}aa` }}>
+                  {feat.slice(0, 16)}
                 </p>
               </div>
             ))}
@@ -849,75 +849,55 @@ export default function VisualIdentityPanel({
                   IBM watsonx AI is crafting 4 brand tiles using your palette: <em>{intake.color_mood || "brand colours"}</em>
                 </p>
               </div>
-            ) : hasMoodBoard ? (
-              /* AI tiles — 2×2 grid; per-tile CSS fallback for any missing/broken tiles.
-                 We accept any non-empty mood_board array (even 1 tile) — CSS covers the rest. */
+            ) : hasMoodBoard && visuals.mood_board!.length >= 4 ? (
+              /* AI tiles — 2×2 grid with per-tile CSS fallback for broken images */
               <div className="rounded-xl overflow-hidden h-full"
                 style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
                 <div className="grid grid-cols-2 h-full" style={{ gap: 2, background: `${pal.bg}` }}>
-                  {/* Always render exactly 4 slots; pad with empty string if fewer tiles returned */}
-                  {Array.from({ length: 4 }, (_, i) => visuals.mood_board![i] ?? "").map((tile, i) => {
+                  {visuals.mood_board!.slice(0, 4).map((tile, i) => {
                     const isValid = tile && tile.startsWith("data:") && tile.length > 200;
-                    // Per-tile CSS fallbacks — each has a clearly visible distinct theme.
-                    // All backgrounds use solid/strongly-contrasting colours so tiles are
-                    // never invisible against the dark grid background.
+                    // Per-tile CSS fallbacks — each has a distinct theme
                     const tileFallbacks = [
-                      // Tile 0: Colour World — accent gradient bg, always vivid
-                      <div key={`f0`} className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
-                        style={{ background: `linear-gradient(135deg, ${pal.accent}cc 0%, ${pal.accent2}99 100%)` }}>
-                        <div style={{ position:"absolute",inset:0,background:`radial-gradient(ellipse at 30% 35%,rgba(255,255,255,0.18) 0%,transparent 60%)` }} />
-                        {/* Palette swatches */}
-                        <div style={{ display:"flex",gap:5,marginBottom:10 }}>
-                          {[pal.bg, pal.accent, pal.accent2, "#ffffff"].map((c,j)=>(
-                            <div key={j} style={{ width:16,height:16,borderRadius:"50%",background:c,border:"2px solid rgba(255,255,255,0.35)",boxShadow:"0 2px 6px rgba(0,0,0,0.4)" }} />
+                      // Tile 0: Colour atmosphere
+                      <div key={`f${i}`} className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
+                        style={{ background: `linear-gradient(135deg,${pal.bg} 0%,${pal.accent}30 100%)` }}>
+                        <div style={{ position:"absolute",inset:0,background:`radial-gradient(ellipse at 35% 40%,${pal.accent}40 0%,transparent 60%)` }} />
+                        <div style={{ width:60,height:60,borderRadius:"50%",background:`radial-gradient(circle,${pal.accent}77 0%,transparent 70%)`,marginBottom:8 }} />
+                        <p style={{ fontSize:"0.6rem",fontWeight:900,textTransform:"uppercase",letterSpacing:"0.12em",color:pal.accent }}>Colour World</p>
+                        <div style={{ display:"flex",gap:5,marginTop:6 }}>
+                          {[pal.bg,pal.accent,pal.accent2,"#ffffff"].map((c,j)=>(
+                            <div key={j} style={{ width:14,height:14,borderRadius:"50%",background:c,border:"1px solid rgba(255,255,255,0.2)" }} />
                           ))}
                         </div>
-                        <p style={{ fontSize:"0.65rem",fontWeight:900,textTransform:"uppercase",letterSpacing:"0.14em",color:"#ffffff",textShadow:"0 1px 4px rgba(0,0,0,0.6)" }}>Colour World</p>
-                        <p style={{ fontSize:"0.5rem",fontWeight:700,color:"rgba(255,255,255,0.75)",marginTop:3,letterSpacing:"0.08em" }}>{pal.accent} · {pal.accent2}</p>
                       </div>,
-                      // Tile 1: Brand Identity — semi-dark bg with strong accent overlay so text is legible
-                      <div key={`f1`} className="w-full h-full flex flex-col items-center justify-center px-4 relative overflow-hidden"
-                        style={{ background:`linear-gradient(160deg, ${pal.bg}f0 0%, ${pal.accent}55 100%)` }}>
-                        <div style={{ position:"absolute",inset:0,background:`radial-gradient(ellipse at 50% 60%,${pal.accent2}44,transparent 70%)` }} />
-                        <div style={{ width:36,height:36,background:`linear-gradient(135deg,${pal.accent},${pal.accent2})`,clipPath:"polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",marginBottom:10,boxShadow:`0 0 16px ${pal.accent}88`,flexShrink:0 }} />
-                        <p style={{ fontSize:"1.05rem",fontWeight:900,color:"#ffffff",textAlign:"center",lineHeight:1,textShadow:"0 1px 6px rgba(0,0,0,0.7)" }}>{brandName}</p>
-                        <div style={{ width:32,height:2,background:pal.accent,borderRadius:2,margin:"6px 0" }} />
-                        <p style={{ fontSize:"0.6rem",color:"rgba(255,255,255,0.85)",fontStyle:"italic",textAlign:"center",lineHeight:1.4 }}>&ldquo;{card.tagline}&rdquo;</p>
-                        <p style={{ fontSize:"0.52rem",color:"rgba(255,255,255,0.55)",marginTop:5,textAlign:"center",textTransform:"uppercase",letterSpacing:"0.1em" }}>{intake.personality||"modern brand"}</p>
+                      // Tile 1: Brand identity — name + tagline
+                      <div key={`f${i}`} className="w-full h-full flex flex-col items-center justify-center px-4 relative overflow-hidden"
+                        style={{ background:`${pal.bg}ee` }}>
+                        <div style={{ position:"absolute",inset:0,background:`linear-gradient(135deg,${pal.accent2}20,transparent)` }} />
+                        <div style={{ width:32,height:32,background:`linear-gradient(135deg,${pal.accent},${pal.accent2})`,clipPath:"polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",marginBottom:8 }} />
+                        <p style={{ fontSize:"1.1rem",fontWeight:900,color:"#ffffff",textAlign:"center",lineHeight:1 }}>{brandName}</p>
+                        <p style={{ fontSize:"0.6rem",color:pal.accent,fontStyle:"italic",textAlign:"center",marginTop:4 }}>&ldquo;{card.tagline}&rdquo;</p>
+                        <p style={{ fontSize:"0.55rem",color:`${pal.text}66`,marginTop:6,textAlign:"center" }}>{intake.personality||"modern brand"}</p>
                       </div>,
-                      // Tile 2: Pattern DNA — accent2 tinted bg so hexagons are clearly visible
-                      <div key={`f2`} className="w-full h-full relative overflow-hidden"
-                        style={{ background:`linear-gradient(160deg,${pal.bg}f0 0%,${pal.accent2}55 100%)` }}>
-                        {/* Grid of hexagonal shapes with high-contrast colours */}
+                      // Tile 2: Geometric / Pattern
+                      <div key={`f${i}`} className="w-full h-full relative overflow-hidden" style={{ background:pal.bg }}>
                         {Array.from({length:16}).map((_,j)=>(
-                          <div key={j} style={{
-                            position:"absolute",
-                            width:22,height:22,
-                            background:j%2===0?`${pal.accent}cc`:`${pal.accent2}99`,
-                            clipPath:"polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                            left:`${(j%4)*23+3}%`,
-                            top:`${Math.floor(j/4)*22+6}%`,
-                            transform:`rotate(${j*22}deg)`,
-                            boxShadow:`0 0 8px ${j%2===0?pal.accent:pal.accent2}66`,
-                          }} />
+                          <div key={j} style={{ position:"absolute",width:24,height:24,background:`${j%2===0?pal.accent:pal.accent2}${j%3===0?"55":"33"}`,clipPath:"polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",left:`${(j%4)*24+2}%`,top:`${Math.floor(j/4)*24+4}%`,transform:`rotate(${j*22}deg)` }} />
                         ))}
-                        <div style={{ position:"absolute",bottom:8,left:10,right:10 }}>
-                          <div style={{ height:1,background:`${pal.accent}66`,marginBottom:5 }} />
-                          <p style={{ fontSize:"0.55rem",fontWeight:900,textTransform:"uppercase",letterSpacing:"0.14em",color:"rgba(255,255,255,0.85)",textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}>Pattern DNA</p>
+                        <div style={{ position:"absolute",bottom:8,left:8 }}>
+                          <p style={{ fontSize:"0.55rem",fontWeight:900,textTransform:"uppercase",letterSpacing:"0.12em",color:`${pal.accent}bb` }}>Pattern DNA</p>
                         </div>
                       </div>,
-                      // Tile 3: Typography + CTA — accent tinted bg for maximum contrast
-                      <div key={`f3`} className="w-full h-full flex flex-col justify-between p-3 relative overflow-hidden"
-                        style={{ background:`linear-gradient(145deg,${pal.bg}f0 0%,${pal.accent}44 100%)` }}>
+                      // Tile 3: Typography + CTA
+                      <div key={`f${i}`} className="w-full h-full flex flex-col justify-between p-3 relative overflow-hidden"
+                        style={{ background:`linear-gradient(to bottom,${pal.bg},${pal.accent2}22)` }}>
                         <div>
-                          <p style={{ fontSize:"0.55rem",fontWeight:900,textTransform:"uppercase",letterSpacing:"0.14em",color:"rgba(255,255,255,0.7)",marginBottom:5 }}>Typography</p>
-                          <p style={{ fontSize:"2rem",fontWeight:900,color:"#ffffff",lineHeight:1,textShadow:`0 0 20px ${pal.accent}88` }}>Aa</p>
-                          <p style={{ fontSize:"0.55rem",fontWeight:700,color:"rgba(255,255,255,0.80)",marginTop:4,letterSpacing:"0.06em" }}>{(intake.style||"SPACE GROTESK").toUpperCase()}</p>
-                          <p style={{ fontSize:"0.5rem",color:"rgba(255,255,255,0.45)",marginTop:2 }}>Regular · Bold · Black</p>
+                          <p style={{ fontSize:"0.55rem",fontWeight:900,textTransform:"uppercase",letterSpacing:"0.12em",color:`${pal.accent}cc`,marginBottom:4 }}>Typography</p>
+                          <p style={{ fontSize:"1.6rem",fontWeight:900,color:"#ffffff",lineHeight:1 }}>Aa</p>
+                          <p style={{ fontSize:"0.55rem",fontWeight:700,color:pal.text,marginTop:2 }}>{(intake.style||"SPACE GROTESK").toUpperCase()}</p>
                         </div>
-                        {/* CTA pill — solid accent bg, very visible */}
-                        <div style={{ display:"inline-flex",alignItems:"center",padding:"5px 12px",background:pal.accent,borderRadius:6,boxShadow:`0 2px 10px ${pal.accent}66`,width:"fit-content" }}>
-                          <p style={{ fontSize:"0.6rem",fontWeight:900,color:pal.bg,whiteSpace:"nowrap" }}>CTA Button</p>
+                        <div style={{ display:"inline-flex",alignItems:"center",padding:"4px 10px",background:pal.accent,borderRadius:4 }}>
+                          <p style={{ fontSize:"0.55rem",fontWeight:900,color:pal.bg }}>CTA Button</p>
                         </div>
                       </div>,
                     ];
@@ -1067,35 +1047,22 @@ export default function VisualIdentityPanel({
             AI-generated hero section for <strong>{brandName}</strong> — brand colours, selected logo, and personality applied.
           </p>
 
-          <div style={{ height: 420, position: "relative", overflow: "hidden" }}>
-          {hasMockup ? (() => {
-            // Strip 100vh / min-height:100vh from AI HTML to prevent iframe scrollbar.
-            // The scaled iframe (0.75×) already handles viewport fitting; any 100vh
-            // in the AI HTML creates overflow inside the 420px container.
-            const cleanMockupHtml = (visuals.mockup_html ?? "")
-              .replace(/min-height\s*:\s*100vh/gi, "min-height: 100%")
-              .replace(/(?<![a-z-])height\s*:\s*100vh/gi, "height: 100%")
-              // Also inject overflow:hidden on html+body as a safety net
-              .replace(/<html([^>]*)>/i, "<html$1 style=\"overflow:hidden\">")
-              .replace(/<body([^>]*)>/i, "<body$1 style=\"overflow:hidden;margin:0\">");
-            return (
+          <div style={{ height: 420, position: "relative" }}>
+          {hasMockup ? (
             <div className="rounded-xl overflow-hidden h-full"
               style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
               <iframe
-                srcDoc={cleanMockupHtml}
+                srcDoc={visuals.mockup_html!}
                 title={`${brandName} landing page mockup`}
                 className="w-full border-0"
                 style={{
                   height: "133%", width: "133%",
                   transform: "scale(0.75)", transformOrigin: "top left",
-                  overflow: "hidden",
                 }}
                 sandbox="allow-same-origin"
               />
             </div>
-            );
-          })()
-          : (
+          ) : (
             /* CSS fallback hero — always shown when AI mockup is empty */
             <CSSLandingPageFallback />
           )}
