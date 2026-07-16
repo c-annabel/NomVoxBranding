@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NomVox — Full SDLC Plan v5 (Final)</title>
+<style>
+  :root {
+    --void:#05070f; --nebula:#0e1220; --pulse:#8B5CF6; --pulse-lo:#6d3fc0;
+    --signal:#22d3ee; --text:#EDEFFE; --text-2:#C4CBEA; --text-3:#8892B8;
+    --green:#4ade80; --amber:#f59e0b; --red:#f87171; --pink:#f472b6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--void);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6;padding:0 0 80px}
+  .hero{background:linear-gradient(135deg,#0a0518 0%,#0b0f19 40%,#06101a 100%);border-bottom:1px solid rgba(139,92,246,0.30);padding:52px 32px 40px;text-align:center;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,rgba(139,92,246,0.20) 0%,transparent 65%);pointer-events:none}
+  .hero-badge{display:inline-block;background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.40);color:#c4b5fd;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;padding:4px 14px;border-radius:9999px;margin-bottom:18px}
+  .hero h1{font-size:3rem;font-weight:900;letter-spacing:-1.5px;background:linear-gradient(135deg,#c4b5fd 0%,#22d3ee 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px}
+  .hero .tagline{color:var(--text-2);font-size:1.05rem;margin-bottom:6px}
+  .hero .sub{color:var(--text-3);font-size:.85rem}
+  .hero .badges{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .hero .hb{background:rgba(34,211,238,0.10);border:1px solid rgba(34,211,238,0.25);color:var(--signal);font-size:.72rem;font-weight:700;padding:4px 12px;border-radius:9999px}
+  .nav{position:sticky;top:0;z-index:100;background:rgba(5,7,15,0.96);border-bottom:1px solid rgba(255,255,255,0.06);padding:0 32px;display:flex;gap:0;overflow-x:auto;backdrop-filter:blur(12px)}
+  .nav a{display:inline-block;padding:14px 15px;font-size:.76rem;font-weight:700;text-decoration:none;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+  .nav a:hover{color:var(--signal);border-color:var(--signal)}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+  section{padding:52px 0 16px}
+  h2{font-size:1.5rem;font-weight:900;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  h2 .sec-num{font-size:.68rem;font-weight:900;background:rgba(139,92,246,0.22);color:#c4b5fd;border:1px solid rgba(139,92,246,0.40);padding:2px 8px;border-radius:9999px;letter-spacing:.10em;text-transform:uppercase}
+  .section-rule{height:1px;background:linear-gradient(90deg,var(--pulse),var(--signal),transparent);margin:10px 0 28px}
+  p{color:var(--text-2);margin-bottom:12px}
+  .card{background:rgba(14,18,32,0.95);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px 24px;margin-bottom:16px}
+  .card.warn{border-color:rgba(245,158,11,0.30);background:rgba(245,158,11,0.04)}
+  .card.info{border-color:rgba(34,211,238,0.25);background:rgba(34,211,238,0.04)}
+  .card.success{border-color:rgba(74,222,128,0.25);background:rgba(74,222,128,0.04)}
+  .card-title{font-size:.95rem;font-weight:800;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card-sub{font-size:.82rem;color:var(--text-3);margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px}
+  th{text-align:left;padding:10px 14px;background:rgba(139,92,246,0.10);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:#c4b5fd;border-bottom:1px solid rgba(139,92,246,0.20)}
+  td{padding:11px 14px;font-size:.84rem;color:var(--text-2);border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .badge{display:inline-block;padding:2px 10px;border-radius:9999px;font-size:.70rem;font-weight:800}
+  .badge.green{background:rgba(74,222,128,0.16);color:var(--green);border:1px solid rgba(74,222,128,0.30)}
+  .badge.amber{background:rgba(245,158,11,0.16);color:var(--amber);border:1px solid rgba(245,158,11,0.30)}
+  .badge.red{background:rgba(248,113,113,0.16);color:var(--red);border:1px solid rgba(248,113,113,0.30)}
+  .badge.pulse{background:rgba(139,92,246,0.18);color:#c4b5fd;border:1px solid rgba(139,92,246,0.35)}
+  .badge.cyan{background:rgba(34,211,238,0.14);color:var(--signal);border:1px solid rgba(34,211,238,0.30)}
+  .arch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:24px}
+  .arch-card{background:rgba(14,18,32,0.95);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px 18px}
+  .arch-card .ac-head{font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+  .arch-card ul{padding-left:16px}
+  .arch-card li{font-size:.80rem;color:var(--text-2);margin-bottom:4px}
+  .flow{display:flex;flex-direction:column;gap:0}
+  .flow-step{display:flex;gap:14px;padding:12px 0;border-left:2px solid rgba(139,92,246,0.25);margin-left:14px;padding-left:22px;position:relative}
+  .flow-step::before{content:"";position:absolute;left:-6px;top:18px;width:10px;height:10px;border-radius:50%;background:var(--pulse)}
+  .flow-step:last-child{border-left-color:transparent}
+  .flow-title{font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:3px}
+  .flow-desc{font-size:.80rem;color:var(--text-3)}
+  .roadmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  .roadmap-card{background:rgba(14,18,32,0.95);border-radius:10px;padding:16px 18px}
+  .roadmap-card.s1{border:1px solid rgba(139,92,246,0.35)}
+  .roadmap-card.s2{border:1px solid rgba(34,211,238,0.25)}
+  .roadmap-card.s3{border:1px solid rgba(74,222,128,0.20)}
+  .roadmap-card.s4{border:1px solid rgba(245,158,11,0.25)}
+  .roadmap-card .stage-label{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px}
+  .roadmap-card.s1 .stage-label{color:#c4b5fd}
+  .roadmap-card.s2 .stage-label{color:var(--signal)}
+  .roadmap-card.s3 .stage-label{color:var(--green)}
+  .roadmap-card.s4 .stage-label{color:var(--amber)}
+  .roadmap-card ul{padding-left:14px}
+  .roadmap-card li{font-size:.80rem;color:var(--text-2);margin-bottom:5px}
+  .feedback-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+  @media(max-width:640px){.feedback-grid{grid-template-columns:1fr}.hero h1{font-size:2rem}.arch-grid{grid-template-columns:1fr}}
+  .fb-card{background:rgba(14,18,32,0.95);border-radius:10px;padding:16px 18px}
+  .fb-card.good{border:1px solid rgba(74,222,128,0.25)}
+  .fb-card.bad{border:1px solid rgba(248,113,113,0.20)}
+  .fb-card h4{font-size:.88rem;font-weight:800;margin-bottom:8px}
+  .fb-card.good h4{color:var(--green)}
+  .fb-card.bad h4{color:var(--red)}
+  .fb-card ul{padding-left:14px}
+  .fb-card li{font-size:.78rem;color:var(--text-2);margin-bottom:4px}
+  .closing{background:linear-gradient(135deg,rgba(139,92,246,0.10) 0%,rgba(34,211,238,0.06) 100%);border:1px solid rgba(139,92,246,0.25);border-radius:16px;padding:32px 36px;text-align:center;margin-top:40px}
+  .closing .closing-title{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#c4b5fd,var(--signal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+  .closing p{color:var(--text-2);max-width:720px;margin:0 auto 10px}
+  code{font-family:ui-monospace,monospace;font-size:.82em;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:4px;color:var(--signal)}
+  pre{background:rgba(14,18,32,0.95);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:.80rem;color:var(--text-2);margin-bottom:16px;font-family:ui-monospace,monospace;line-height:1.6}
+  a{color:var(--signal);text-decoration:none}
+  a:hover{text-decoration:underline}
+  ul{padding-left:20px;color:var(--text-2)}
+  li{margin-bottom:5px;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ HERO ══════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-badge">IBM AI Builders Challenge · July 2026 · Creative Industries</div>
+  <h1>NomVox — Full SDLC Plan v5</h1>
+  <p class="tagline">From void to voice — your brand, synthesized.</p>
+  <p class="sub">Final plan · Prototype deployed · Submission in progress</p>
+  <div class="badges">
+    <span class="hb">Go 1.22 + chi v5</span>
+    <span class="hb">Next.js 16.2 + React 19</span>
+    <span class="hb">IBM watsonx.ai · Llama 3.3 70B</span>
+    <span class="hb">Fly.io + Vercel</span>
+    <span class="hb">Redis / Upstash</span>
+    <span class="hb">Primary tool: IBM Bob</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ NAV ═════════════════════════════════ -->
+<nav class="nav">
+  <a href="#overview">Overview</a>
+  <a href="#brand">Brand Identity</a>
+  <a href="#imagegen">Image Generation</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#filestructure">Files</a>
+  <a href="#deployment">Deployment</a>
+  <a href="#subtasks">Sub-Tasks</a>
+  <a href="#testing">Testing</a>
+  <a href="#notmade">Cuts</a>
+  <a href="#roadmap">Roadmap</a>
+  <a href="#videoscript">Demo Script</a>
+  <a href="#bobfeedback">IBM Bob Feedback</a>
+  <a href="#closing">Closing</a>
+</nav>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════ OVERVIEW ═════════════════════════════════ -->
+<section id="overview">
+  <h2><span class="sec-num">01</span> Project Overview</h2>
+  <div class="section-rule"></div>
+  <p>NomVox is an AI-powered brand identity platform that transforms a raw business concept into a complete, launch-ready brand universe — validated names, social/domain handles, logo assets, mood boards, and landing page mockups — through a conversational creative-partner loop that learns from every user reaction.</p>
+  <div class="arch-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Sprint</div><ul><li>15 days (completed)</li><li>Solo developer</li><li>Full SDLC end-to-end</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Backend</div><ul><li>Go 1.22 + chi v5</li><li>Fly.io (nomvox-api, iad)</li><li>shared-cpu-1x, auto-stop</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Frontend</div><ul><li>Next.js 16.2 + React 19</li><li>Tailwind CSS v4</li><li>Vercel (auto-deploy)</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">AI</div><ul><li>Llama 3.3 70B (watsonx)</li><li>ca-tor.ml.cloud.ibm.com</li><li>CSS/SVG visual system</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Session</div><ul><li>Redis / Upstash</li><li>2-hour TTL</li><li>UUID v4 session IDs</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Dev Tool</div><ul><li>IBM Bob (primary)</li><li>Required for challenge</li><li>Used across full SDLC</li></ul></div>
+  </div>
+  <table>
+    <tr><th>Feature</th><th>Description</th><th>Status</th></tr>
+    <tr><td>AI Name Generation</td><td>4 coined names per pass — invented vocabulary, never real words</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Origin Stories</td><td>Etymology of each invented name, naming strategy explained</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Brand Score</td><td>Memorability, Spellability, Global Safety, Squatter Risk</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Brand Voice Samples</td><td>Instagram caption, Email subject, 404 page message</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Availability Engine</td><td>RDAP domain check + 5 social platform probes in parallel</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>60% Availability Gate</td><td>Names must clear domain + handle availability threshold</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Zero-pass Fallback</td><td>Top-2 partials shown with amber banner if no name fully passes</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Session Memory</td><td>Liked/rejected/notes injected into every AI call</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Style DNA Sliders</td><td>Playful↔Premium + Abstract↔Descriptive influence next batch</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Anti-Name Reasoning</td><td>AI asks clarifying question after each rejection</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Competitor Radar</td><td>Semantic brand clash detection via second watsonx call</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Logo Concepts (CSS/SVG)</td><td>3 styles: Geometric Bauhaus · Glassmorphic · Horizontal Wordmark</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Mood Board (CSS)</td><td>4-panel palette-responsive visual board (2×2 grid)</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Brand Persona Card</td><td>"Brand as a person" — age, occupation, voice, never-says, values</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Landing Page Mockup</td><td>AI HTML hero section + CSS fallback, iframe 75% scale</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>Export ZIP</td><td>brand-brief.json, logos/, mood-board/, landing-page.html, README.txt</td><td><span class="badge green">✓ Live</span></td></tr>
+    <tr><td>AI Image Generation</td><td>Imagen 3 (Google) — credits exhausted; CSS/SVG primary path</td><td><span class="badge amber">⚠ Depleted</span></td></tr>
+    <tr><td>Handle Screenshots</td><td>Puppeteer — Fly.io Chrome binary constraints</td><td><span class="badge red">🚫 Cut</span></td></tr>
+  </table>
+</section>
+
+<!-- ══════════════════════════════ BRAND IDENTITY ════════════════════════════ -->
+<section id="brand">
+  <h2><span class="sec-num">02</span> Brand Identity</h2>
+  <div class="section-rule"></div>
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Etymology</div>
+      <ul>
+        <li><strong style="color:#c4b5fd">NOM</strong> — Latin <em>nomen</em>: name, law, system</li>
+        <li><strong style="color:var(--signal)">VOX</strong> — Latin: voice; Alpha Vulpeculae (Anser)</li>
+        <li>Structure meets expression. Identity meets voice.</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Taglines</div>
+      <ul>
+        <li>"From void to voice — your brand, synthesized."</li>
+        <li>"Signal sent. Brand received."</li>
+        <li>"NAME IT. CLAIM IT. LAUNCH IT."</li>
+        <li>"Your idea has a name. The universe just hasn't heard it yet."</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Colour Palette</div>
+      <ul>
+        <li><span style="color:#8B5CF6">●</span> <code>#0B0F19</code> void — primary bg</li>
+        <li><span style="color:#8B5CF6">●</span> <code>#141824</code> nebula — cards</li>
+        <li><span style="color:#8B5CF6">●</span> <code>#8B5CF6</code> pulse — CTAs, accent</li>
+        <li><span style="color:#22d3ee">●</span> <code>#22d3ee</code> signal — links, badges</li>
+        <li><span style="color:#E6E8F0">●</span> <code>#E6E8F0</code> lunar — text</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Typography</div>
+      <ul>
+        <li>Display: <strong>Space Grotesk</strong></li>
+        <li>Body: Space Grotesk Regular/Medium</li>
+        <li>Mono: JetBrains Mono (badges, scores)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ IMAGE GENERATION DECISION ═════════════════════ -->
+<section id="imagegen">
+  <h2><span class="sec-num">03</span> Image Generation Decision — Imagen → CSS/SVG</h2>
+  <div class="section-rule"></div>
+  <div class="card warn">
+    <div class="card-title">⚠ Why Imagen 3 Was Replaced</div>
+    <div class="card-sub">The original architecture relied on Google AI Studio free-tier image generation. Three compounding problems made it non-viable for the production demo.</div>
+    <ul>
+      <li><strong>Google AI Studio credits exhausted permanently</strong> — Free-tier prepaid credits for Imagen/Gemini image generation depleted. Re-enabling requires billing on Google Cloud. Not an option for a hackathon prototype.</li>
+      <li><strong>IBM has no native image generation model on watsonx.ai</strong> — IBM Granite is excellent for text. There is no IBM-equivalent of DALL-E, Imagen, or Stable Diffusion accessible through the same watsonx interface.</li>
+      <li><strong>Fallback SVG from LLM hits 429 too</strong> — watsonx free tier = 2 req/s. NomVox sends 7 concurrent visual calls simultaneously. All fail with <code>429 RESOURCE_EXHAUSTED</code>. Made sequential with delays = 20+ second generation wait.</li>
+    </ul>
+  </div>
+  <div class="card success">
+    <div class="card-title">✦ What Was Built Instead — CSS/SVG Visual System</div>
+    <div class="card-sub"><code>extractPalette()</code> parses the user's <code>color_mood</code> field (bigram matching: "bright orange", "sky blue", etc.) and derives <code>bg</code>, <code>accent</code>, <code>accent2</code>, <code>text</code> tokens. Every visual component renders exclusively from these tokens.</div>
+    <table>
+      <tr><th>Visual Component</th><th>Implementation</th><th>Palette-responsive</th></tr>
+      <tr><td>Logo — Profile/Social</td><td>Geometric hexagonal mark, orbital ring, corner accent dots</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Logo — App Icon</td><td>Glassmorphic rounded-square card, ambient glow blobs</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Logo — Business/Print</td><td>Horizontal wordmark lockup, icon mark, tagline rule</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Mood Board Tile 0</td><td>Colour World — full-saturation accent gradient, palette swatches</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Mood Board Tile 1</td><td>Brand Identity — semi-dark bg, hex mark, brand name + tagline</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Mood Board Tile 2</td><td>Pattern DNA — hexagonal shape grid, accent-tinted bg</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Mood Board Tile 3</td><td>Typography + CTA — type scale display, solid CTA pill</td><td><span class="badge green">Yes</span></td></tr>
+      <tr><td>Landing Page Hero</td><td>Nav + 2-col hero + feature strip, personality-driven radius</td><td><span class="badge green">Yes</span></td></tr>
+    </table>
+  </div>
+  <div class="card info">
+    <div class="card-title">Future Path</div>
+    <p>When IBM watsonx.ai releases a native image generation model, or when a paid Stability AI / Replicate / Together.ai integration is scoped, CSS components are designed for drop-in replacement at the same JSX insertion points in <code>VisualIdentityPanel.tsx</code>.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ ARCHITECTURE ═════════════════════════════ -->
+<section id="architecture">
+  <h2><span class="sec-num">04</span> Architecture — Production Stack</h2>
+  <div class="section-rule"></div>
+  <pre>User Browser (nomvox.vercel.app)
+    │ HTTPS
+    ▼
+Vercel Edge — Next.js 16.2, React 19, Tailwind v4
+    │  HomeClient.tsx — 5-screen state machine
+    │  VisualIdentityPanel.tsx — visual identity steps 1-3
+    │
+    │ HTTPS REST (NEXT_PUBLIC_API_URL=https://nomvox-api.fly.dev)
+    ▼
+Fly.io shared-cpu-1x — Go 1.22, chi v5, port 8080
+    │  cmd/server/main.go — all routes registered
+    │  internal/handlers/ — generate, visuals, export, session, availability
+    │
+    ├──► Upstash Redis (session store, availability cache, IAM token cache)
+    │
+    ├──► IBM watsonx.ai ca-tor (Llama 3.3 70B)
+    │       IAM token: iam.cloud.ibm.com/identity/token  (50-min cache)
+    │       POST /ml/v1/text/generation
+    │       Rate limit: 2 req/s — sequential with delay in visual phase
+    │
+    ├──► Verisign RDAP API — domain availability (no key required)
+    │       GET https://rdap.org/domain/{name}.com
+    │
+    └──► Social platform HEAD probes (parallel goroutines)
+            instagram.com/{h} · x.com/{h} · tiktok.com/@{h}
+            threads.net/@{h} · youtube.com/@{h}</pre>
+  <div class="arch-grid">
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Session Flow</div><ul><li>UUID v4 session on first generate call</li><li>Liked/rejected/notes stored in Redis</li><li>All generation calls inject full session state</li><li>Names in AllGenerated[] never repeated</li><li>2-hour TTL; graceful expiry UI</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Availability Scoring</div><ul><li>Domain (RDAP): 2 points</li><li>Instagram: 1 point</li><li>X (Twitter): 1 point</li><li>TikTok: 1 point</li><li>Threads: 0.5 pt · YouTube: 0.5 pt</li><li>Total: 6 pts — threshold: 3.6 (60%)</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Visual Pipeline</div><ul><li>Phase 1: logos + moodboard tiles (concurrent)</li><li>Phase 2: persona + mockup (sequential)</li><li>watsonx delay: 600ms between calls</li><li>CSS/SVG fallback: always shown (primary)</li><li>AI SVG: overlaid if valid data URI &gt;200 chars</li></ul></div>
+    <div class="arch-card"><div class="ac-head" style="color:var(--pulse)">Export ZIP</div><ul><li>archive/zip streamed (no temp files)</li><li>SVG-aware: inline SVG written as .svg</li><li>Includes: brand-brief.json, .html, logos/, mood-board/, README.txt</li><li>Content-Disposition: attachment</li></ul></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ FILE STRUCTURE ══════════════════════════════ -->
+<section id="filestructure">
+  <h2><span class="sec-num">05</span> Complete File Structure</h2>
+  <div class="section-rule"></div>
+  <pre>NomVoxBranding/
+│
+├── cmd/
+│   ├── server/main.go              ← Go entry point, all chi routes registered
+│   ├── testllm/main.go             ← watsonx.ai IAM connection test
+│   └── diagnose-imagen/main.go     ← Imagen 3 diagnostic (archived)
+│
+├── internal/
+│   ├── ai/
+│   │   ├── granite.go              ← watsonx.ai client, IAM token cache (50 min)
+│   │   ├── imagen.go               ← Imagen 3 client (legacy — 429 in prod)
+│   │   ├── prompts.go              ← Name gen, persona, competitor radar prompts
+│   │   ├── visual_prompts.go       ← SVG prompts + buildColourContext() bigram rules
+│   │   └── ai_test.go
+│   │
+│   ├── availability/
+│   │   ├── checker.go              ← RDAP + social HEAD probes, 60% gate, zero-pass
+│   │   └── availability_test.go
+│   │
+│   ├── handlers/
+│   │   ├── generate.go             ← POST /api/generate (4 names, gate, competitor radar)
+│   │   ├── visuals.go              ← POST /api/visuals (2-phase: logos+tiles → persona+mockup)
+│   │   ├── export.go               ← POST /api/export (ZIP stream, SVG-aware)
+│   │   ├── session.go              ← GET/PATCH /api/session/*
+│   │   ├── availability.go         ← POST /api/availability
+│   │   ├── debug_llm.go            ← Dev debug endpoint
+│   │   ├── debug_visuals.go        ← Dev debug endpoint
+│   │   └── diagnose.go             ← System diagnose endpoint
+│   │
+│   ├── models/types.go             ← All shared Go structs
+│   └── session/
+│       ├── store.go                ← Redis CRUD (Upstash, 2-hr TTL)
+│       └── session_test.go
+│
+├── frontend/
+│   ├── app/
+│   │   ├── layout.tsx              ← Root layout, metadata, favicon config
+│   │   ├── page.tsx                ← Server Component wrapper
+│   │   ├── HomeClient.tsx          ← 5-screen state machine + all API calls
+│   │   ├── globals.css             ← Brand tokens, animations, nv-dot keyframes
+│   │   ├── icon.png                ← App Router favicon (auto-generates link rel=icon)
+│   │   └── favicon.ico             ← Legacy/fallback favicon
+│   │
+│   ├── components/
+│   │   ├── IntakeForm.tsx           ← 8-field form (Q1–Q8) + richness meter
+│   │   ├── NameCardComponent.tsx    ← Card: like/pass/choose, score, voice, origin
+│   │   ├── NameCardSkeleton.tsx     ← Loading skeleton (pulse animation)
+│   │   ├── AvailabilityBadges.tsx   ← Platform badge row (✓/✗/?)
+│   │   ├── BrandScoreCard.tsx       ← Memorability/Spellability/Safety/Squatter
+│   │   ├── RejectionDialog.tsx      ← Anti-name reasoning + AI clarifying question
+│   │   ├── StyleDNASlider.tsx       ← Playful↔Premium / Abstract↔Descriptive
+│   │   ├── PromptRichnessMeter.tsx  ← Intake richness progress bar
+│   │   ├── ErrorBoundary.tsx        ← React error boundary wrapper
+│   │   └── VisualIdentityPanel.tsx  ← Step 1 logos / Step 2 moodboard / Step 3 landing
+│   │
+│   ├── lib/
+│   │   ├── types.ts                ← TypeScript interfaces (mirrors Go structs exactly)
+│   │   ├── schemas.ts              ← Zod validation schemas
+│   │   └── api.ts                  ← Typed fetch wrappers
+│   │
+│   ├── public/
+│   │   ├── favicon.ico · nomvox-icon.png · nomvox-logo.png · nomvox-bg.png
+│   │
+│   └── vercel.json                 ← Cache-Control headers for favicon assets
+│
+├── 01-Plans/                       ← SDLC plan history (v1–v5 HTML)
+├── 00-SkillBuildLab/               ← IBM SkillsBuild certificates
+├── developer-bob-feedback.md       ← Candid IBM Bob dev feedback
+├── Dockerfile                      ← Multi-stage Go build for Fly.io
+├── fly.toml                        ← Fly.io config (nomvox-api, iad, shared-cpu-1x)
+├── go.mod                          ← module github.com/c-annabel/NomVoxBranding
+├── go.sum · .env.example · DesignDoc.md · nomvox-plan.md · README.md</pre>
+</section>
+
+<!-- ══════════════════════════════ DEPLOYMENT ════════════════════════════════ -->
+<section id="deployment">
+  <h2><span class="sec-num">06</span> Fly.io + Vercel Deployment</h2>
+  <div class="section-rule"></div>
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Fly.io — Go API</div>
+      <ul>
+        <li>Multi-stage Dockerfile: <code>golang:1.22-alpine</code> build + <code>alpine:3.20</code> runtime</li>
+        <li><code>fly launch --name nomvox-api --region iad</code></li>
+        <li>Secrets: <code>WATSONX_API_KEY</code>, <code>WATSONX_PROJECT_ID</code>, <code>WATSONX_URL</code>, <code>REDIS_URL</code>, <code>ALLOWED_ORIGIN</code></li>
+        <li><code>fly deploy</code> — builds on Fly infra, zero local Docker needed</li>
+        <li>Verify: <a href="https://nomvox-api.fly.dev/api/ping">nomvox-api.fly.dev/api/ping</a></li>
+        <li><strong>Cold start:</strong> <code>auto_stop_machines = stop</code> → 2–4s first-request wake</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Vercel — Next.js</div>
+      <ul>
+        <li><code>cd frontend &amp;&amp; npx vercel --prod</code></li>
+        <li>Set <code>NEXT_PUBLIC_API_URL=https://nomvox-api.fly.dev</code></li>
+        <li>Auto-deploy on every push to GitHub <code>main</code></li>
+        <li><code>vercel.json</code>: cache headers for <code>/favicon.ico</code></li>
+        <li><code>app/icon.png</code>: App Router favicon — registered as <code>/icon.png</code> route</li>
+        <li>Verify: <a href="https://nomvox.vercel.app">nomvox.vercel.app</a></li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">CORS Configuration</div>
+      <ul>
+        <li><code>ALLOWED_ORIGIN</code> env var on Fly.io</li>
+        <li>Set to <code>https://nomvox.vercel.app</code> in production</li>
+        <li>Set to <code>http://localhost:3000</code> in development</li>
+        <li>Updated on every new Vercel deployment domain</li>
+        <li>Go middleware: <code>Access-Control-Allow-Origin</code> header check</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <div class="ac-head" style="color:var(--pulse)">Key Adaptations</div>
+      <ul>
+        <li>Fly.io <code>auto_stop = stop</code>: zero cost at idle, 2–4s cold start</li>
+        <li>Upstash Redis: handles Fly.io machine wake/sleep connection teardown</li>
+        <li>IAM token cached in Redis (not in-memory) to survive machine restarts</li>
+        <li>Sequential watsonx calls with 600ms delay to avoid 429 rate limit</li>
+        <li>Next.js App Router: <code>app/icon.png</code> for favicon (not Pages Router approach)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ SUB-TASKS ══════════════════════════════════ -->
+<section id="subtasks">
+  <h2><span class="sec-num">07</span> Sub-Task Status</h2>
+  <div class="section-rule"></div>
+  <table>
+    <tr><th>ST</th><th>Title</th><th>Status</th><th>Notes</th></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-01</td><td>Environment, scaffold, repo</td><td><span class="badge green">✅ Complete</span></td><td>Module: <code>github.com/c-annabel/NomVoxBranding</code></td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-02</td><td>Keyword intake form</td><td><span class="badge green">✅ Complete</span></td><td>8 fields, richness meter, inspire-me button, Q1–Q8 labels</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-03</td><td>LLM core — name gen, scores, voice</td><td><span class="badge green">✅ Complete</span></td><td>4 names/pass, full NameCard JSON, Zod validation</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-04</td><td>Session memory + anti-name reasoning</td><td><span class="badge green">✅ Complete</span></td><td>Redis/Upstash, clarifying Q loop, direction notes</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-05</td><td>Availability engine + 60% gate</td><td><span class="badge green">✅ Complete</span></td><td>RDAP + 5 social HEAD probes, zero-pass fallback (top-2 partial)</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-06</td><td>Select/reject/reproduce state machine</td><td><span class="badge green">✅ Complete</span></td><td>Like / Pass / Choose + regenerate loop</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-07</td><td>Style DNA sliders</td><td><span class="badge green">✅ Complete</span></td><td>2-axis: Playful↔Premium + Abstract↔Descriptive</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-08</td><td>Visual identity pipeline</td><td><span class="badge green">✅ Complete</span></td><td>CSS/SVG logos + 4-panel mood board + brand persona card</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-09</td><td>Landing page mockup</td><td><span class="badge green">✅ Complete</span></td><td>AI HTML + CSS fallback; iframe 75% scale; 100vh strip</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-10</td><td>Export ZIP</td><td><span class="badge green">✅ Complete</span></td><td>SVG-aware archive stream, no temp files</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-11</td><td>QA, unit tests, error states</td><td><span class="badge green">✅ Complete</span></td><td><code>tsc --noEmit</code> 0 errors · <code>go test</code> 23/23 pass</td></tr>
+    <tr><td style="color:var(--signal);font-weight:700">ST-12</td><td>Deployment + submission</td><td><span class="badge amber">🔄 In Progress</span></td><td>Fly.io + Vercel live; demo video + cert pending</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════ TESTING ══════════════════════════════════ -->
+<section id="testing">
+  <h2><span class="sec-num">08</span> Testing Results</h2>
+  <div class="section-rule"></div>
+  <div class="arch-grid">
+    <div class="arch-card success" style="border-color:rgba(74,222,128,0.30);background:rgba(74,222,128,0.04)">
+      <div class="ac-head" style="color:var(--green)">Go Tests</div>
+      <ul><li><code>go test ./...</code> → 23/23 pass</li><li>availability_test.go: RDAP + social mocks</li><li>session_test.go: Redis CRUD + TTL</li><li>ai_test.go: prompt builders</li></ul>
+    </div>
+    <div class="arch-card success" style="border-color:rgba(74,222,128,0.30);background:rgba(74,222,128,0.04)">
+      <div class="ac-head" style="color:var(--green)">TypeScript</div>
+      <ul><li><code>npx tsc --noEmit</code> → 0 errors</li><li>All interfaces match Go structs</li><li>Zod schemas validated at runtime</li></ul>
+    </div>
+    <div class="arch-card success" style="border-color:rgba(74,222,128,0.30);background:rgba(74,222,128,0.04)">
+      <div class="ac-head" style="color:var(--green)">Next.js Build</div>
+      <ul><li><code>npx next build</code> → Compiled successfully</li><li>Turbopack: 1831ms</li><li>5 static pages generated</li><li>/icon.png route registered</li></ul>
+    </div>
+    <div class="arch-card success" style="border-color:rgba(74,222,128,0.30);background:rgba(74,222,128,0.04)">
+      <div class="ac-head" style="color:var(--green)">Production</div>
+      <ul><li>nomvox-api.fly.dev/api/ping → ok</li><li>nomvox.vercel.app → loads correctly</li><li>End-to-end: intake → names → visuals → export</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ CUTS + REASONS ══════════════════════════════ -->
+<section id="notmade">
+  <h2><span class="sec-num">09</span> What Didn't Make It (and Why)</h2>
+  <div class="section-rule"></div>
+  <table>
+    <tr><th>Feature</th><th>Original Plan</th><th>Outcome</th><th>Reason</th></tr>
+    <tr><td>Imagen 3 image generation</td><td>Logos + mood board tiles as real PNG images</td><td><span class="badge amber">CSS/SVG system</span></td><td>Google free-tier credits exhausted permanently; no IBM equivalent</td></tr>
+    <tr><td>Puppeteer handle screenshots</td><td>Show screenshot of taken profile URL</td><td><span class="badge red">Cut</span></td><td>Chrome binary constraints on Fly.io shared-cpu container — multiple approaches failed</td></tr>
+    <tr><td>Gemini vision upload</td><td>Palette extraction from uploaded reference image</td><td><span class="badge red">Deferred</span></td><td>Gemini API credits also depleted; same cost barrier as Imagen</td></tr>
+    <tr><td>PDF brand brief export</td><td>Styled HTML → PDF via chromedp/wkhtmltopdf</td><td><span class="badge red">Deferred</span></td><td>Adds significant container size; Fly.io shared-cpu too constrained</td></tr>
+    <tr><td>80% availability gate</td><td>Names must score ≥80% to display</td><td><span class="badge amber">Reduced to 60%</span></td><td>80% threshold filtered too many names; degraded UX with too few results</td></tr>
+    <tr><td>Framer Motion transitions</td><td>Smooth animated section transitions</td><td><span class="badge amber">CSS only</span></td><td>Package size and Turbopack incompatibility; CSS transitions used instead</td></tr>
+    <tr><td>shadcn/ui component library</td><td>Original scaffold included shadcn</td><td><span class="badge amber">Removed</span></td><td>Custom CSS components fit brand identity better; shadcn defaults conflict with dark theme</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════ ROADMAP ══════════════════════════════════ -->
+<section id="roadmap">
+  <h2><span class="sec-num">10</span> Future Roadmap &amp; Revenue Potential</h2>
+  <div class="section-rule"></div>
+  <div class="roadmap-grid">
+    <div class="roadmap-card s1">
+      <div class="stage-label">Stage 1 — Submission Sprint (Immediate)</div>
+      <ul>
+        <li>Record + publish 3-minute demo video (YouTube)</li>
+        <li>IBM SkillsBuild certificate upload</li>
+        <li>Complete submission platform page</li>
+        <li>Tag v1.0.0 on GitHub</li>
+        <li>Confirm favicon on deployed Vercel URL</li>
+      </ul>
+    </div>
+    <div class="roadmap-card s2">
+      <div class="stage-label">Stage 2 — Post-Submission Enhancements</div>
+      <ul>
+        <li>Real AI image gen: Stability AI / Replicate drop-in at CSS fallback points</li>
+        <li>Puppeteer screenshot service (separate container, not Fly.io)</li>
+        <li>Gemini vision upload: palette extraction when credits restored</li>
+        <li>Editable brand descriptions + per-field regen</li>
+        <li>"Download HTML" button for landing page mockup</li>
+      </ul>
+    </div>
+    <div class="roadmap-card s3">
+      <div class="stage-label">Stage 3 — Product Evolution</div>
+      <ul>
+        <li>User accounts: save + revisit brand sessions</li>
+        <li>Collaborative sessions: shareable session link</li>
+        <li>Full brand brief PDF export (headless Chrome)</li>
+        <li>Domain registration handoff (Namecheap/GoDaddy deep-link)</li>
+        <li>Handle availability notification (email alert)</li>
+        <li>Multi-language naming safety checks</li>
+      </ul>
+    </div>
+    <div class="roadmap-card s4">
+      <div class="stage-label">Stage 4 — Revenue Model</div>
+      <ul>
+        <li><strong>Freemium SaaS:</strong> 3 free/mo; $19/mo unlimited + AI images + PDF</li>
+        <li><strong>Agency white-label:</strong> Private-label API + frontend ($299/mo)</li>
+        <li><strong>Shopify / Squarespace plugin:</strong> Embedded in website builder onboarding</li>
+        <li><strong>IBM co-marketing:</strong> Reference implementation for Creative Industries</li>
+        <li><strong>Accelerator partnerships:</strong> YC / Techstars pre-cohort onboarding tool</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ DEMO VIDEO SCRIPT ═══════════════════════════ -->
+<section id="videoscript">
+  <h2><span class="sec-num">11</span> 3-Minute Demo Video Script</h2>
+  <div class="section-rule"></div>
+  <table>
+    <tr><th>Time</th><th>Segment</th><th>On Screen</th><th>Voiceover</th></tr>
+    <tr><td>0:00–0:20</td><td>Hook</td><td>NomVox landing page, void/signal animation</td><td>"Every great brand starts as a feeling you can't quite name. NomVox changes that."</td></tr>
+    <tr><td>0:20–0:50</td><td>Intake Form</td><td>Fill all 8 fields live; richness meter turns green</td><td>"Eight fields. That's all the engine needs. Watch the richness meter fill — the more you give it, the better the first pass."</td></tr>
+    <tr><td>0:50–1:20</td><td>Results + Gate</td><td>4 name cards stream in; 1–2 filtered; score badges visible</td><td>"Some names were filtered automatically — they didn't clear the availability threshold across domains and handles. These did."</td></tr>
+    <tr><td>1:20–1:40</td><td>Reject + Reasoning</td><td>Reject with note 'too corporate'; AI clarifying Q appears; user answers</td><td>"When I reject a name, NomVox doesn't just spin again. It asks what I actually meant."</td></tr>
+    <tr><td>1:40–2:10</td><td>Select + Visuals</td><td>Choose a name; logo concepts + mood board + persona render</td><td>"I choose a name. The engine builds the whole visual identity — three logo concepts, a mood board, and a brand persona."</td></tr>
+    <tr><td>2:10–2:30</td><td>Persona + Voice</td><td>Show persona card; voice samples panel</td><td>"This is the brand as a person. And here's how it writes an Instagram caption and a 404 page."</td></tr>
+    <tr><td>2:30–2:50</td><td>Export</td><td>Export Pack → ZIP downloads; briefly show contents</td><td>"One ZIP. Everything a founder needs to hand off to a developer, a printer, or a registrar."</td></tr>
+    <tr><td>2:50–3:00</td><td>Close</td><td>Architecture diagram (5 seconds)</td><td>"Built with IBM Granite, watsonx.ai, Go, and IBM Bob. NomVox — signal sent, brand received."</td></tr>
+  </table>
+</section>
+
+<!-- ══════════════════════════════ IBM BOB FEEDBACK ══════════════════════════ -->
+<section id="bobfeedback">
+  <h2><span class="sec-num">12</span> Developer Feedback on IBM Bob</h2>
+  <div class="section-rule"></div>
+  <p>Honest, constructive observations from building NomVox end-to-end with IBM Bob as the primary development tool. Full detailed feedback in <code>developer-bob-feedback.md</code>.</p>
+  <div class="feedback-grid">
+    <div class="fb-card good">
+      <h4>✦ What Bob Did Well</h4>
+      <ul>
+        <li><strong>Documentation friendly</strong> — README, SDLC plans, API tables: all publish-ready output, saved days of writing</li>
+        <li><strong>Debugging autonomy</strong> — methodical diagnosis, traces execution paths across multiple files simultaneously, explains reasoning clearly</li>
+        <li><strong>Teaching through doing</strong> — IBM watsonx IAM flow, Go goroutines, Next.js App Router hydration, archive/zip streaming — all genuinely understood post-build</li>
+        <li><strong>Multi-stack fluency</strong> — held Go, TypeScript, Redis, Fly.io, and Vercel config in context simultaneously without losing context</li>
+        <li><strong>Prompt engineering</strong> — 5-strategy naming system prompt, anti-name reasoning, brand persona card all produced noticeably better LLM output</li>
+      </ul>
+    </div>
+    <div class="fb-card bad">
+      <h4>✧ Friction Points</h4>
+      <ul>
+        <li><strong>watsonx.ai setup confusing</strong> — IAM token flow, WML service association, Project vs Space ID, regional endpoint differences all underdocumented</li>
+        <li><strong>IBM has no image generation model</strong> — serious gap for Creative Industries theme; Bob never resolved this, offered CSS fallback only after exhausting Imagen/SVG paths</li>
+        <li><strong>HTTP 429 — architectural, not a bug</strong> — ~40 bobcoins diagnosing concurrent watsonx calls before root cause accepted</li>
+        <li><strong>Favicon saga</strong> — ~40 bobcoins, 5+ approaches, final answer "it's correct, it will work on Vercel" — unsatisfying resolution</li>
+        <li><strong>Outdated patterns</strong> — Next.js 13 patterns, Tailwind v3 syntax, old Fly.io CLI flags all required correction rounds</li>
+        <li><strong>Unintended refactors</strong> — surgical requests for one change triggered rewrites of adjacent functioning code multiple times</li>
+        <li><strong>Bobcoin efficiency</strong> — simple questions triggered long reasoning chains; recap overhead within sessions; large file token fragmentation</li>
+        <li><strong>Training data ceiling</strong> — Puppeteer on Fly.io, Fly.io cold-start + Redis behavior: Bob's answers were generic when specificity was needed</li>
+      </ul>
+    </div>
+  </div>
+  <table>
+    <tr><th>Area</th><th>Rating</th><th>Notes</th></tr>
+    <tr><td>Documentation generation</td><td>⭐⭐⭐⭐⭐</td><td>Exceptional — publish-ready output</td></tr>
+    <tr><td>Debugging diagnosis</td><td>⭐⭐⭐⭐</td><td>Systematic and educational when it works</td></tr>
+    <tr><td>Multi-stack fluency</td><td>⭐⭐⭐⭐</td><td>Holds full stack in context well</td></tr>
+    <tr><td>Prompt engineering help</td><td>⭐⭐⭐⭐⭐</td><td>Major force multiplier</td></tr>
+    <tr><td>watsonx setup guidance</td><td>⭐⭐</td><td>IAM, WML association, region config gaps</td></tr>
+    <tr><td>Handling novel bugs</td><td>⭐⭐</td><td>Expensive and slow; training data limits visible</td></tr>
+    <tr><td>Following surgical instructions</td><td>⭐⭐⭐</td><td>Tendency to over-improve beyond scope</td></tr>
+    <tr><td>Bobcoin efficiency</td><td>⭐⭐</td><td>Simple Q&A disproportionately expensive</td></tr>
+    <tr><td>Up-to-date knowledge</td><td>⭐⭐⭐</td><td>Some outdated patterns (Next.js, Tailwind, Fly)</td></tr>
+    <tr><td>Image generation guidance</td><td>⭐⭐</td><td>IBM gap unaddressed; CSS fallback adequate but not ideal</td></tr>
+  </table>
+</section>
+
+<!-- ═════════════════════════════ CLOSING NOTE ═══════════════════════════════ -->
+<section id="closing">
+  <div class="closing">
+    <div class="closing-title">Signal Sent. Brand Received.</div>
+    <p>Building NomVox was a genuinely rewarding experience. In roughly 15 days, one developer went from a blank canvas to a deployed, full-stack AI web application — spanning Go backend, Next.js frontend, Redis session layer, real availability checking across 6 platforms, a conversational AI loop, and a complete visual identity system.</p>
+    <p>The process taught real lessons that no tutorial covers: the actual mechanics of IBM watsonx IAM authentication, why training data quality is the ceiling of LLM output, why concurrent goroutines need careful timeout management, how Next.js App Router handles hydration differently from the Pages Router, and why CSS fallbacks are a design decision, not a consolation prize.</p>
+    <p>IBM Bob made the journey possible. It was a genuine creative and technical partner — not perfect, not always the most efficient, but consistently present, consistently knowledgeable, and genuinely educational. The limitations are documented honestly. The value was real.</p>
+    <p>The name NomVox itself came from an AI-assisted creative session exactly like the ones this tool enables. <em>Nomen</em> (name) + <em>vox</em> (voice). The cosmos names things. Now so do you.</p>
+    <p style="margin-top:20px;font-size:.80rem;color:var(--text-3)">
+      © 2026 c-annabel · Developed with IBM Bob · IBM AI Builders Challenge · Creative Industries<br/>
+      <a href="https://nomvox.vercel.app">nomvox.vercel.app</a> · <a href="https://github.com/c-annabel/NomVoxBranding">github.com/c-annabel/NomVoxBranding</a>
+    </p>
+  </div>
+</section>
+
+</div><!-- /.wrap -->
+</body>
+</html>
