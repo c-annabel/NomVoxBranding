@@ -224,16 +224,25 @@ func buildColourContext(intake models.IntakePayload) (bg, primary, accent string
 		return "#0d1b2a", "#ffffff", "#00bcd4"
 	}
 	lower := strings.ToLower(raw)
-	// Try to extract named colours and map them to usable hints
-	bg = "#0d1b2a"     // default dark bg
-	primary = "#ffffff" // default white text
-	accent = "#00bcd4"  // default teal
-
+	// Background
+	bg = "#050810" // default very dark bg
 	if strings.Contains(lower, "navy") || strings.Contains(lower, "dark blue") {
 		bg = "#0a1628"
+	} else if strings.Contains(lower, "midnight") {
+		bg = "#0c0c1e"
+	} else if strings.Contains(lower, "dark") || strings.Contains(lower, "black") {
+		bg = "#050810"
 	}
-	if strings.Contains(lower, "teal") || strings.Contains(lower, "cyan") {
-		accent = "#009688"
+	// Primary text
+	primary = "#ffffff"
+	// Accent colour — ordered by specificity (longer/more specific first)
+	accent = "#3b82f6" // default electric blue
+	if strings.Contains(lower, "neon yellow") || strings.Contains(lower, "yellow") {
+		accent = "#facc15"
+	} else if strings.Contains(lower, "electric blue") || strings.Contains(lower, "electric") {
+		accent = "#3b82f6"
+	} else if strings.Contains(lower, "teal") || strings.Contains(lower, "cyan") {
+		accent = "#22d3ee"
 	} else if strings.Contains(lower, "gold") || strings.Contains(lower, "amber") {
 		accent = "#f59e0b"
 	} else if strings.Contains(lower, "coral") || strings.Contains(lower, "orange") {
@@ -246,9 +255,8 @@ func buildColourContext(intake models.IntakePayload) (bg, primary, accent string
 		accent = "#ef4444"
 	} else if strings.Contains(lower, "pink") || strings.Contains(lower, "rose") {
 		accent = "#ec4899"
-	}
-	if strings.Contains(lower, "white") || strings.Contains(lower, "light") {
-		primary = "#ffffff"
+	} else if strings.Contains(lower, "blue") {
+		accent = "#3b82f6"
 	}
 	return bg, primary, accent
 }

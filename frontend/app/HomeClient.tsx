@@ -714,16 +714,16 @@ export default function HomeClient() {
         )}
 
       {/* ── Global footer ─────────────────────────────────────── */}
-      <footer className="w-full text-center py-5 mt-auto"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <footer className="w-full text-center py-6 mt-auto"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         {/* Judge-facing line */}
-        <p className="text-sm font-semibold mb-1"
-          style={{ color: "rgba(196,181,253,0.70)", letterSpacing: "0.01em" }}>
+        <p className="text-base font-bold mb-1"
+          style={{ color: "rgba(196,181,253,0.90)", letterSpacing: "0.01em" }}>
           A prototype built for the{" "}
           <span style={{ color: "var(--color-pulse)" }}>IBM SkillsBuild AI Builders Challenge — July 2026</span>
           {" "}· Creative Industries theme · We hope you enjoy the experience.
         </p>
-        <p className="text-xs" style={{ color: "var(--color-text-hint)" }}>
+        <p className="text-sm font-semibold" style={{ color: "#22d3ee" }}>
           © {new Date().getFullYear()} c-annabel · Developed with IBM Bob · NomVox Brand Identity Platform
         </p>
       </footer>

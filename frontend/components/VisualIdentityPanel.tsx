@@ -27,6 +27,52 @@ const LOGO_STYLE_LABELS: Record<string, string> = {
   business: "horizontal wordmark lockup — clean white background, corporate typography, single accent colour",
 };
 
+// ── Colour extraction from intake ─────────────────────────────────────────────
+// Parses the user's colour_mood field and returns CSS-usable values for fallback renders.
+function extractPalette(colorMood: string): { bg: string; accent: string; text: string; accent2: string } {
+  const lower = (colorMood || "").toLowerCase();
+  let bg = "#0d1b2a";
+  let accent = "#22d3ee";
+  let accent2 = "#8B5CF6";
+  const text = "#ffffff";
+
+  if (lower.includes("dark") || lower.includes("black") || lower.includes("void")) bg = "#050810";
+  else if (lower.includes("navy") || lower.includes("dark blue")) bg = "#0a1628";
+  else if (lower.includes("midnight")) bg = "#0c0c1e";
+
+  if (lower.includes("neon yellow") || lower.includes("yellow")) accent = "#facc15";
+  else if (lower.includes("electric blue") || lower.includes("blue")) accent = "#3b82f6";
+  else if (lower.includes("teal") || lower.includes("cyan")) accent = "#22d3ee";
+  else if (lower.includes("gold") || lower.includes("amber")) accent = "#f59e0b";
+  else if (lower.includes("coral") || lower.includes("orange")) accent = "#f97316";
+  else if (lower.includes("green") || lower.includes("emerald")) accent = "#10b981";
+  else if (lower.includes("purple") || lower.includes("violet")) accent = "#8B5CF6";
+  else if (lower.includes("red") || lower.includes("crimson")) accent = "#ef4444";
+  else if (lower.includes("pink") || lower.includes("rose")) accent = "#ec4899";
+
+  // Second accent — look for 2nd colour keyword
+  const words = lower.split(/[,\s]+/);
+  let foundFirst = false;
+  for (const w of words) {
+    const hit =
+      w.includes("yellow") ? "#facc15" :
+      w.includes("blue") ? "#3b82f6" :
+      w.includes("teal") || w.includes("cyan") ? "#22d3ee" :
+      w.includes("gold") || w.includes("amber") ? "#f59e0b" :
+      w.includes("coral") || w.includes("orange") ? "#f97316" :
+      w.includes("green") || w.includes("emerald") ? "#10b981" :
+      w.includes("purple") || w.includes("violet") ? "#8B5CF6" :
+      w.includes("red") || w.includes("crimson") ? "#ef4444" :
+      w.includes("pink") || w.includes("rose") ? "#ec4899" : null;
+    if (hit) {
+      if (!foundFirst) { foundFirst = true; }
+      else { accent2 = hit; break; }
+    }
+  }
+
+  return { bg, accent, text, accent2 };
+}
+
 export default function VisualIdentityPanel({
   brandName, card, intake, sessionId, visuals,
   onBack, onStartOver, onRegenerateLogos, onRegenerateMoodboard,
@@ -36,6 +82,9 @@ export default function VisualIdentityPanel({
   const [selectedLogoType, setSelectedLogoType] = useState<string>("");
   const [exporting, setExporting]   = useState(false);
   const [exportError, setExportError] = useState("");
+
+  // Derived user palette for CSS fallbacks
+  const pal = useMemo(() => extractPalette(intake.color_mood ?? ""), [intake.color_mood]);
 
   async function handleExport() {
     setExporting(true);
@@ -70,14 +119,14 @@ export default function VisualIdentityPanel({
     }
   }
 
-  // CSS concept placeholders — each with a distinct visual style
-  // Derive initials for the CSS logo concepts (max 2 chars)
+  // Derive initials for CSS logo placeholders (max 2 chars)
   const initials = useMemo(() => {
     const parts = brandName.trim().split(/\s+/);
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return brandName.slice(0, 2).toUpperCase();
   }, [brandName]);
 
+  // ── CSS logo placeholders — adapt to user's brand palette ───────────────────
   const logoItems = useMemo(() => [
     {
       key: "profile",
@@ -85,36 +134,34 @@ export default function VisualIdentityPanel({
       uri: visuals.logo_profile,
       hint: "1:1 square — Twitter, Instagram, LinkedIn",
       placeholder: {
-        styleName: "Geometric Mark",
         render: () => (
-          /* Bauhaus-style geometric mark — bold hexagonal shape + initial */
           <div className="w-full aspect-square flex flex-col items-center justify-center relative overflow-hidden"
-            style={{ background: "linear-gradient(160deg, #0f0f1e 0%, #1c0a3a 50%, #0a0f1f 100%)" }}>
-            {/* Outer ring */}
+            style={{ background: `linear-gradient(160deg, ${pal.bg} 0%, ${pal.bg}cc 50%, ${pal.bg}ee 100%)` }}>
+            {/* Outer ring in accent colour */}
             <div className="absolute" style={{
               width: "58%", height: "58%",
-              border: "2px solid rgba(139,92,246,0.45)",
+              border: `2px solid ${pal.accent}66`,
               borderRadius: "50%",
-              background: "rgba(139,92,246,0.07)",
+              background: `${pal.accent}11`,
             }} />
             {/* Hexagonal accent shape */}
             <div className="absolute" style={{
               width: "42%", height: "42%",
-              background: "linear-gradient(135deg, rgba(139,92,246,0.6) 0%, rgba(34,211,238,0.35) 100%)",
+              background: `linear-gradient(135deg, ${pal.accent}99 0%, ${pal.accent2}55 100%)`,
               clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
             }} />
             {/* Brand initial */}
             <span className="relative z-10 font-black select-none"
-              style={{ fontSize: "clamp(1.5rem,6vw,2.2rem)", color: "#fff", letterSpacing: "-0.04em", textShadow: "0 0 20px rgba(139,92,246,0.8)" }}>
+              style={{ fontSize: "clamp(1.5rem,6vw,2.2rem)", color: pal.text, letterSpacing: "-0.04em", textShadow: `0 0 20px ${pal.accent}cc` }}>
               {initials.slice(0, 1)}
             </span>
             {/* Corner accent dots */}
             {[0, 90, 180, 270].map(deg => (
               <div key={deg} className="absolute" style={{
                 width: 6, height: 6, borderRadius: "50%",
-                background: "#22d3ee",
+                background: pal.accent,
                 transform: `rotate(${deg}deg) translateY(-36%)`,
-                opacity: 0.7,
+                opacity: 0.8,
               }} />
             ))}
           </div>
@@ -127,23 +174,18 @@ export default function VisualIdentityPanel({
       uri: visuals.logo_app,
       hint: "Rounded square — app stores",
       placeholder: {
-        styleName: "Gradient Icon",
         render: () => (
-          /* Vibrant app store icon — glassmorphic gradient + bold letterform */
           <div className="w-full aspect-square flex items-center justify-center relative overflow-hidden"
-            style={{
-              background: "linear-gradient(145deg, #0d1b3e 0%, #1a0554 40%, #0a2240 100%)",
-              borderRadius: "0", /* parent handles radius */
-            }}>
+            style={{ background: `linear-gradient(145deg, ${pal.bg} 0%, ${pal.bg}dd 40%, ${pal.bg}bb 100%)` }}>
             {/* Ambient glow blobs */}
             <div className="absolute" style={{
               width: "80%", height: "80%", borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(139,92,246,0.30) 0%, transparent 70%)",
+              background: `radial-gradient(circle, ${pal.accent}44 0%, transparent 70%)`,
               top: "10%", left: "10%",
             }} />
             <div className="absolute" style={{
               width: "50%", height: "50%", borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(34,211,238,0.20) 0%, transparent 70%)",
+              background: `radial-gradient(circle, ${pal.accent2}33 0%, transparent 70%)`,
               bottom: "5%", right: "5%",
             }} />
             {/* Glassmorphic card */}
@@ -152,12 +194,12 @@ export default function VisualIdentityPanel({
                 width: "62%", height: "62%",
                 background: "rgba(255,255,255,0.08)",
                 borderRadius: "22%",
-                border: "1.5px solid rgba(255,255,255,0.18)",
+                border: `1.5px solid ${pal.accent}44`,
                 backdropFilter: "blur(8px)",
-                boxShadow: "0 8px 32px rgba(139,92,246,0.30)",
+                boxShadow: `0 8px 32px ${pal.accent}44`,
               }}>
               <span className="font-black select-none"
-                style={{ fontSize: "clamp(1.2rem,5vw,1.8rem)", color: "#fff", letterSpacing: "-0.03em" }}>
+                style={{ fontSize: "clamp(1.2rem,5vw,1.8rem)", color: pal.text, letterSpacing: "-0.03em" }}>
                 {initials}
               </span>
             </div>
@@ -171,43 +213,40 @@ export default function VisualIdentityPanel({
       uri: visuals.logo_business,
       hint: "16:9 horizontal — business cards, letterhead",
       placeholder: {
-        styleName: "Wordmark Lockup",
         render: () => (
-          /* Clean horizontal lockup on light — corporate print quality */
+          /* Horizontal wordmark on brand bg (not generic white) */
           <div className="w-full aspect-square flex flex-col items-center justify-center gap-2 px-6 relative overflow-hidden"
-            style={{ background: "linear-gradient(160deg, #faf9f7 0%, #f0ecf8 100%)" }}>
-            {/* Subtle brand mark behind text */}
+            style={{ background: `linear-gradient(160deg, ${pal.bg} 0%, ${pal.bg}ee 100%)` }}>
             <div className="absolute" style={{
               width: "55%", height: "55%", borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)",
+              background: `radial-gradient(circle, ${pal.accent}18 0%, transparent 70%)`,
             }} />
             {/* Icon + wordmark row */}
             <div className="flex items-center gap-2.5 relative">
-              {/* Small geometric icon */}
               <div style={{
                 width: 28, height: 28,
-                background: "linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)",
+                background: `linear-gradient(135deg, ${pal.accent} 0%, ${pal.accent2} 100%)`,
                 clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
                 flexShrink: 0,
               }} />
               <span className="font-black tracking-tight select-none"
-                style={{ fontSize: "clamp(1rem,4vw,1.4rem)", color: "#1a0a2e", letterSpacing: "-0.02em" }}>
+                style={{ fontSize: "clamp(1rem,4vw,1.4rem)", color: pal.text, letterSpacing: "-0.02em" }}>
                 {brandName}
               </span>
             </div>
-            {/* Divider rule */}
-            <div style={{ width: "70%", height: 1, background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.40), transparent)" }} />
-            {/* Tagline stub */}
-            <span className="text-xs uppercase tracking-widest select-none"
-              style={{ color: "rgba(107,70,193,0.65)", fontSize: "0.6rem", letterSpacing: "0.15em" }}>
-              Brand Identity
+            {/* Divider */}
+            <div style={{ width: "70%", height: 1, background: `linear-gradient(90deg, transparent, ${pal.accent}66, transparent)` }} />
+            {/* Tagline */}
+            <span className="text-xs uppercase tracking-widest select-none text-center"
+              style={{ color: `${pal.accent}aa`, fontSize: "0.6rem", letterSpacing: "0.15em", maxWidth: "80%" }}>
+              {card.tagline || "Brand Identity"}
             </span>
           </div>
         ),
       },
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [visuals.logo_profile, visuals.logo_app, visuals.logo_business, brandName, initials]);
+  ], [visuals.logo_profile, visuals.logo_app, visuals.logo_business, brandName, initials, pal]);
 
   // ── Step tabs ──────────────────────────────────────────────────────────────
   function StepTabs() {
@@ -235,6 +274,173 @@ export default function VisualIdentityPanel({
     );
   }
 
+  // ── CSS Mood Board Fallback — branded, uses user's palette ─────────────────
+  function CSSMoodBoardFallback() {
+    const name = brandName;
+    const tagline = card.tagline || "";
+    const bg2 = pal.bg + "ee";
+    return (
+      <div className="rounded-xl overflow-hidden h-full" style={{ border: `1px solid ${pal.accent}33` }}>
+        <div className="grid grid-cols-2 h-full" style={{ gap: 2, background: "rgba(0,0,0,0.3)" }}>
+          {/* Panel 1: Colour atmosphere */}
+          <div className="flex flex-col items-center justify-center relative overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${pal.bg} 0%, ${pal.accent}22 100%)` }}>
+            <div className="absolute inset-0" style={{
+              background: `radial-gradient(ellipse at 40% 40%, ${pal.accent}44 0%, transparent 60%)`,
+            }} />
+            <div className="absolute" style={{
+              width: 80, height: 80, borderRadius: "50%",
+              background: `radial-gradient(circle, ${pal.accent}66 0%, transparent 70%)`,
+              top: "20%", left: "25%",
+            }} />
+            <div className="absolute" style={{
+              width: 50, height: 50, borderRadius: "50%",
+              background: `radial-gradient(circle, ${pal.accent2}55 0%, transparent 70%)`,
+              bottom: "25%", right: "20%",
+            }} />
+            <p className="relative z-10 text-xs font-black uppercase tracking-widest text-center px-3"
+              style={{ color: pal.accent }}>Colour Atmosphere</p>
+          </div>
+
+          {/* Panel 2: Brand typography */}
+          <div className="flex flex-col items-center justify-center px-4 text-center relative overflow-hidden"
+            style={{ background: bg2 }}>
+            <div className="absolute inset-0" style={{
+              background: `linear-gradient(to bottom right, ${pal.accent2}22, transparent)`,
+            }} />
+            <div className="relative">
+              {/* Geometric mark */}
+              <div className="mx-auto mb-3" style={{
+                width: 40, height: 40,
+                background: `linear-gradient(135deg, ${pal.accent}, ${pal.accent2})`,
+                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+              }} />
+              <p className="text-lg font-black leading-none" style={{ color: pal.text }}>{name}</p>
+              <p className="mt-1 text-xs italic" style={{ color: pal.accent }}>&ldquo;{tagline}&rdquo;</p>
+            </div>
+          </div>
+
+          {/* Panel 3: Geometric pattern */}
+          <div className="relative overflow-hidden" style={{ background: pal.bg }}>
+            {/* Repeating diamond/hex grid */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="absolute" style={{
+                width: 36, height: 36,
+                background: `${pal.accent}${i % 3 === 0 ? "44" : "22"}`,
+                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                left: `${(i % 4) * 26}%`,
+                top: `${Math.floor(i / 4) * 32 + 10}%`,
+                transform: `rotate(${i * 15}deg)`,
+              }} />
+            ))}
+            <div className="absolute inset-0 flex items-end justify-start p-3">
+              <p className="text-xs font-black uppercase tracking-widest" style={{ color: `${pal.accent}bb` }}>
+                Geometric DNA
+              </p>
+            </div>
+          </div>
+
+          {/* Panel 4: Motion/energy */}
+          <div className="flex flex-col justify-center px-4 relative overflow-hidden"
+            style={{ background: `linear-gradient(to bottom, ${pal.bg}, ${pal.accent2}22)` }}>
+            {/* Diagonal lines */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="absolute" style={{
+                height: 1,
+                width: "140%",
+                background: `${i % 2 === 0 ? pal.accent : pal.accent2}${i % 3 === 0 ? "55" : "33"}`,
+                top: `${10 + i * 11}%`,
+                left: "-20%",
+                transform: "rotate(-12deg)",
+              }} />
+            ))}
+            <div className="relative">
+              <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: pal.accent }}>
+                Brand Energy
+              </p>
+              <p className="text-xs" style={{ color: `${pal.text}88` }}>
+                {intake.personality || "modern, distinctive"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── CSS Landing Page Fallback — full hero section using brand palette ───────
+  function CSSLandingPageFallback() {
+    const name = brandName;
+    const tagline = card.tagline || "";
+    const desc = card.short_desc || "The brand built for the future.";
+    const industry = intake.industry || "Creative";
+    return (
+      <div className="rounded-xl overflow-hidden h-full" style={{ border: `1px solid ${pal.accent}33` }}>
+        <div className="w-full h-full flex flex-col" style={{ background: `linear-gradient(135deg, ${pal.bg} 0%, ${pal.bg}ee 40%, ${pal.accent}18 100%)` }}>
+          {/* Nav bar */}
+          <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: `${pal.accent}33` }}>
+            <div className="flex items-center gap-2">
+              {/* Small logo mark */}
+              <div style={{
+                width: 22, height: 22,
+                background: `linear-gradient(135deg, ${pal.accent}, ${pal.accent2})`,
+                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                flexShrink: 0,
+              }} />
+              <span className="font-black text-sm tracking-tight" style={{ color: pal.text }}>{name}</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-xs font-bold" style={{ color: `${pal.accent}cc` }}>About</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded"
+                style={{ background: pal.accent, color: pal.bg, fontSize: "0.65rem" }}>
+                Get Started
+              </span>
+            </div>
+          </div>
+
+          {/* Hero section */}
+          <div className="flex-1 flex flex-col items-start justify-center px-8 py-4 relative">
+            {/* Decorative circle */}
+            <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20" style={{
+              width: 120, height: 120, borderRadius: "50%",
+              background: `radial-gradient(circle, ${pal.accent} 0%, transparent 70%)`,
+            }} />
+            <div className="absolute right-12 top-[40%] opacity-10" style={{
+              width: 70, height: 70,
+              background: `${pal.accent2}`,
+              clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            }} />
+
+            <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: pal.accent }}>
+              {industry} · Brand Identity
+            </p>
+            <h1 className="text-3xl font-black leading-none mb-2 tracking-tight"
+              style={{ color: pal.text, textShadow: `0 0 30px ${pal.accent}55` }}>
+              {name}
+            </h1>
+            <p className="text-sm italic mb-3" style={{ color: pal.accent }}>
+              &ldquo;{tagline}&rdquo;
+            </p>
+            <p className="text-xs mb-5 max-w-[55%] leading-relaxed" style={{ color: `${pal.text}aa` }}>
+              {desc}
+            </p>
+            <button type="button" className="px-4 py-2 text-xs font-black rounded-lg"
+              style={{ background: pal.accent, color: pal.bg, boxShadow: `0 4px 16px ${pal.accent}55` }}>
+              {name} — Get Started →
+            </button>
+          </div>
+
+          {/* Footer strip */}
+          <div className="px-5 py-2 border-t text-center" style={{ borderColor: `${pal.accent}22` }}>
+            <p className="text-[9px]" style={{ color: `${pal.accent}66` }}>
+              AI-generated hero concept · Powered by IBM watsonx
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // STEP 1 — LOGO CONCEPTS
   // ══════════════════════════════════════════════════════════════════════════
@@ -244,7 +450,7 @@ export default function VisualIdentityPanel({
         <div className="rounded-2xl border overflow-hidden"
           style={{ background: "rgba(18,22,42,0.97)", borderColor: "rgba(99,210,255,0.22)", boxShadow: "0 24px 64px rgba(5,7,15,0.7)" }}>
 
-          {/* Header — Names + Start Over only (no Export here) */}
+          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b"
             style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
             <div>
@@ -320,7 +526,7 @@ export default function VisualIdentityPanel({
                         </p>
                       </div>
                     ) : (
-                      /* Rich CSS concept placeholder — branded, selectable, design-quality */
+                      /* Rich CSS concept placeholder — uses user's brand palette */
                       placeholder.render()
                     )}
 
@@ -339,6 +545,31 @@ export default function VisualIdentityPanel({
                   </div>
                 );
               })}
+            </div>
+
+            {/* Note about business logo blank */}
+            {!visuals.logo_business && !generatingLogos && (
+              <div className="mt-3 px-4 py-2 rounded-lg flex items-start gap-2"
+                style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.22)" }}>
+                <span style={{ color: "#f59e0b", fontSize: "0.85rem" }}>ℹ</span>
+                <p className="text-xs leading-relaxed" style={{ color: "rgba(245,158,11,0.80)" }}>
+                  <strong>Business / Print</strong> — AI logo not yet generated. The concept above is a
+                  branded CSS preview using your colour palette. Click <em>New Logos</em> to request
+                  AI-generated SVG logos for all three styles.
+                </p>
+              </div>
+            )}
+
+            {/* Disclaimer — no Gemini/Figma mentions */}
+            <div className="mt-3 px-4 py-2 rounded-lg flex items-start gap-2"
+              style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.20)" }}>
+              <span style={{ color: "var(--color-pulse)", fontSize: "0.85rem", lineHeight: 1 }}>✦</span>
+              <p className="text-xs leading-relaxed" style={{ color: "rgba(230,232,240,0.65)" }}>
+                <strong style={{ color: "#c4b5fd" }}>AI-generated brand visuals</strong> — SVG logos generated
+                by IBM watsonx AI using your brand palette and personality.
+                Branded CSS concepts shown when AI visuals are processing.
+                Advanced AI tools will be adapted for a future release.
+              </p>
             </div>
 
             {/* CTA — only when logo selected */}
@@ -365,15 +596,17 @@ export default function VisualIdentityPanel({
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // STEP 2 — MOOD BOARD (single presentation image)
+  // STEP 2 — MOOD BOARD
   // ══════════════════════════════════════════════════════════════════════════
   if (visualStep === "moodboard") {
+    const hasMoodBoard = visuals.mood_board && visuals.mood_board.length > 0;
+
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
         <div className="rounded-2xl border overflow-hidden"
           style={{ background: "rgba(18,22,42,0.97)", borderColor: "rgba(99,210,255,0.22)", boxShadow: "0 24px 64px rgba(5,7,15,0.7)" }}>
 
-          {/* Header — Names + Start Over only (no Export) */}
+          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b"
             style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
             <div>
@@ -405,7 +638,7 @@ export default function VisualIdentityPanel({
           <div className="p-6">
             <p className="text-lg font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Mood Board</p>
             <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
-              Visual world of <strong>{brandName}</strong> — how your selected logo lives across platforms and contexts.
+              Visual world of <strong>{brandName}</strong> — brand colours, logo DNA, and personality expressed as design panels.
             </p>
 
             {/* ── Selected logo showcase — always shown above mood board ── */}
@@ -436,22 +669,36 @@ export default function VisualIdentityPanel({
               ) : null;
             })()}
 
-            {/* ── Mood board: 2×2 SVG tile grid ─────────────────────────── */}
+            {/* ── Mood board area ─────────────────────────────────────────── */}
             <div style={{ height: 420, position: "relative" }}>
             {generatingMoodboard ? (
-              <div className="rounded-xl h-full flex items-center justify-center"
+              /* Full animated loading state */
+              <div className="rounded-xl h-full flex flex-col items-center justify-center gap-4"
                 style={{ border: "1px solid rgba(139,92,246,0.18)", background: "rgba(139,92,246,0.06)" }}>
-                <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
+                <div className="flex gap-3">
+                  {[pal.accent, pal.accent2, pal.accent, pal.accent2].map((c, i) => (
+                    <div key={i} className="rounded-sm" style={{
+                      width: 14, height: 14,
+                      background: c,
+                      opacity: 0.7,
+                      animation: `bounce 1.2s ease-in-out ${i * 0.15}s infinite`,
+                    }} />
+                  ))}
+                </div>
+                <p className="text-sm font-black" style={{ color: "var(--color-pulse)" }}>
                   Generating mood board<span className="nv-dot1">.</span><span className="nv-dot2">.</span><span className="nv-dot3">.</span>
                 </p>
+                <p className="text-xs text-center px-8" style={{ color: "var(--color-text-hint)" }}>
+                  IBM watsonx AI is crafting 4 brand tiles using your palette: <em>{intake.color_mood || "brand colours"}</em>
+                </p>
               </div>
-            ) : visuals.mood_board && visuals.mood_board.length > 0 ? (
-              /* Show AI-generated SVG/PNG tiles in a 2×2 grid */
+            ) : hasMoodBoard ? (
+              /* AI-generated SVG/PNG tiles in a 2×2 grid */
               <div className="rounded-xl overflow-hidden h-full"
                 style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
                 <div className="grid grid-cols-2 h-full" style={{ gap: 2, background: "rgba(255,255,255,0.04)" }}>
-                  {visuals.mood_board.slice(0, 4).map((tile, i) => (
-                    <div key={i} className="overflow-hidden rounded-sm" style={{ background: "#0b0f19" }}>
+                  {visuals.mood_board!.slice(0, 4).map((tile, i) => (
+                    <div key={i} className="overflow-hidden rounded-sm" style={{ background: pal.bg }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={tile}
@@ -461,37 +708,29 @@ export default function VisualIdentityPanel({
                       />
                     </div>
                   ))}
-                  {/* Fill remaining slots if fewer than 4 tiles */}
                   {Array.from({ length: Math.max(0, 4 - (visuals.mood_board?.length ?? 0)) }).map((_, i) => (
                     <div key={`empty-${i}`} className="flex items-center justify-center"
                       style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
-                      <p className="text-xs" style={{ color: "rgba(139,92,246,0.40)" }}>Generating…</p>
+                      <p className="text-xs" style={{ color: "rgba(139,92,246,0.40)" }}>Loading…</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              /* Fallback when mood board hasn't been generated yet */
-              <div className="rounded-xl h-full flex flex-col items-center justify-center gap-3"
-                style={{ border: "1px dashed rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.04)" }}>
-                <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
-                  Mood board generating…
-                </p>
-                <p className="text-xs text-center px-8" style={{ color: "var(--color-text-hint)" }}>
-                  AI is creating 4 abstract brand tiles in your colour palette.
-                </p>
-              </div>
+              /* CSS fallback — always shows a branded mood board when AI result is empty */
+              <CSSMoodBoardFallback />
             )}
             </div>
 
-            {/* ── Disclaimer — improved visibility ─────────────────────── */}
+            {/* Disclaimer — no Gemini/Figma */}
             <div className="mt-3 px-4 py-2 rounded-lg flex items-start gap-2"
               style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.20)" }}>
               <span style={{ color: "var(--color-pulse)", fontSize: "0.85rem", lineHeight: 1 }}>✦</span>
               <p className="text-xs leading-relaxed" style={{ color: "rgba(230,232,240,0.65)" }}>
-                <strong style={{ color: "#c4b5fd" }}>Free-tier AI generation</strong> — SVG vector artwork
-                generated by IBM watsonx AI using your brand palette and description.
-                Photo-quality raster images require Gemini image credits (planned for a future release).
+                {hasMoodBoard
+                  ? <><strong style={{ color: "#c4b5fd" }}>AI-generated mood board</strong> — SVG brand tiles created by IBM watsonx AI using your colour palette ({intake.color_mood || "brand palette"}) and personality.</>
+                  : <><strong style={{ color: "#c4b5fd" }}>Branded CSS concept</strong> — mood board built from your palette, tagline, and brand DNA. Advanced AI image generation will be adapted for a future release.</>
+                }
               </p>
             </div>
 
@@ -531,15 +770,16 @@ export default function VisualIdentityPanel({
   // ══════════════════════════════════════════════════════════════════════════
   // STEP 3 — LANDING PAGE MOCKUP
   // ══════════════════════════════════════════════════════════════════════════
+  const hasMockup = Boolean(visuals.mockup_html && visuals.mockup_html.trim().length > 20);
+
   return (
     <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
       <div className="rounded-2xl border overflow-hidden"
         style={{ background: "rgba(18,22,42,0.97)", borderColor: "rgba(99,210,255,0.22)", boxShadow: "0 24px 64px rgba(5,7,15,0.7)" }}>
 
-        {/* Header — ← Back to Mood Board left, Names + Start Over + Export right */}
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b"
           style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(14,18,32,0.60)" }}>
-          {/* Left: back nav + step label + name */}
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setVisualStep("moodboard")}
               className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
@@ -555,7 +795,6 @@ export default function VisualIdentityPanel({
                 style={{ color: "var(--color-text-primary)" }}>{brandName}</p>
             </div>
           </div>
-          {/* Right: Names + Start Over + Export */}
           <div className="flex items-center gap-2">
             <button type="button" onClick={onBack}
               className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
@@ -596,13 +835,12 @@ export default function VisualIdentityPanel({
             AI-generated hero section for <strong>{brandName}</strong> — brand colours, selected logo, and personality applied.
           </p>
 
-          {/* Fixed height 420px — matches mood board */}
           <div style={{ height: 420, position: "relative" }}>
-          {visuals.mockup_html ? (
+          {hasMockup ? (
             <div className="rounded-xl overflow-hidden h-full"
               style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
               <iframe
-                srcDoc={visuals.mockup_html}
+                srcDoc={visuals.mockup_html!}
                 title={`${brandName} landing page mockup`}
                 className="w-full border-0"
                 style={{
@@ -613,23 +851,20 @@ export default function VisualIdentityPanel({
               />
             </div>
           ) : (
-            <div className="rounded-xl p-12 text-center h-full flex items-center justify-center"
-              style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-              <p className="text-sm" style={{ color: "var(--color-text-hint)" }}>
-                Landing page mockup was not generated — check WATSONX_API_KEY.
-              </p>
-            </div>
+            /* CSS fallback hero — always shown when AI mockup is empty */
+            <CSSLandingPageFallback />
           )}
           </div>
 
-          {/* ── Free-tier disclaimer — card style matching mood board ──────── */}
+          {/* Disclaimer — no Figma mention */}
           <div className="mt-3 px-4 py-2 rounded-lg flex items-start gap-2"
             style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.20)" }}>
             <span style={{ color: "var(--color-pulse)", fontSize: "0.85rem", lineHeight: 1 }}>✦</span>
             <p className="text-xs leading-relaxed" style={{ color: "rgba(230,232,240,0.65)" }}>
-              <strong style={{ color: "#c4b5fd" }}>Free-tier mockup</strong> — HTML/CSS hero section
-              generated by IBM watsonx AI, styled with your brand palette and selected logo.
-              High-fidelity Figma-quality exports are planned for a future release.
+              {hasMockup
+                ? <><strong style={{ color: "#c4b5fd" }}>AI-generated mockup</strong> — HTML/CSS hero section built by IBM watsonx AI with your brand palette and selected logo.</>
+                : <><strong style={{ color: "#c4b5fd" }}>Branded CSS concept</strong> — hero layout built from your brand inputs. Advanced AI tools will be adapted for a future release.</>
+              }
             </p>
           </div>
         </div>

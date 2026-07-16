@@ -43,6 +43,7 @@ export default function NameCardComponent({
 }: NameCardProps) {
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [rejectReason,   setRejectReason] = useState("");
+  const [chooseActive,   setChooseActive]  = useState(false);
 
   const isLiked    = reaction === "liked";
   const isRejected = reaction === "rejected";
@@ -239,18 +240,24 @@ export default function NameCardComponent({
           )}
 
           {!isRejected && (
-            <button type="button" onClick={() => onSelect(card.name)}
+            <button type="button"
+              onClick={() => { setChooseActive(true); onSelect(card.name); }}
               className="py-2 rounded-lg text-xs font-black transition-all"
               style={{
                 width: "80%",
-                background: "linear-gradient(135deg, rgba(109,40,217,0.88) 0%, rgba(30,90,180,0.85) 100%)",
-                border: "1px solid rgba(139,92,246,0.45)",
+                background: chooseActive
+                  ? "linear-gradient(135deg,#4ade80 0%,#22d3ee 100%)"
+                  : "linear-gradient(135deg, rgba(109,40,217,0.88) 0%, rgba(30,90,180,0.85) 100%)",
+                border: chooseActive ? "1px solid #4ade80" : "1px solid rgba(139,92,246,0.45)",
                 color: "#fff",
-                boxShadow: "0 2px 12px rgba(100,50,200,0.25)",
+                boxShadow: chooseActive
+                  ? "0 0 18px rgba(74,222,128,0.55)"
+                  : "0 2px 12px rgba(100,50,200,0.25)",
+                transform: chooseActive ? "scale(0.96)" : "scale(1)",
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg,rgba(139,92,246,0.95) 0%,rgba(34,150,220,0.90) 100%)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(100,50,200,0.45)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(109,40,217,0.88) 0%, rgba(30,90,180,0.85) 100%)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(100,50,200,0.25)"; }}>
-              ✓ Choose
+              onMouseEnter={e => { if (!chooseActive) { e.currentTarget.style.background = "linear-gradient(135deg,rgba(139,92,246,0.95) 0%,rgba(34,150,220,0.90) 100%)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(100,50,200,0.45)"; }}}
+              onMouseLeave={e => { if (!chooseActive) { e.currentTarget.style.background = "linear-gradient(135deg, rgba(109,40,217,0.88) 0%, rgba(30,90,180,0.85) 100%)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(100,50,200,0.25)"; }}}>
+              {chooseActive ? "✓ Chosen!" : "✓ Choose"}
             </button>
           )}
 
