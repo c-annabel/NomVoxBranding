@@ -274,94 +274,154 @@ export default function VisualIdentityPanel({
     );
   }
 
-  // ── CSS Mood Board Fallback — branded, uses user's palette ─────────────────
+  // ── CSS Mood Board — matches reference layout:
+  //   TOP ROW (60% height): [Colour World panel] | [Typography Scale panel]
+  //   BOTTOM ROW (40% height): [Social preview] | [App preview] | [Print preview]
+  // All colours driven by pal (user's actual palette).
   function CSSMoodBoardFallback() {
     const name = brandName;
     const tagline = card.tagline || "";
-    const bg2 = pal.bg + "ee";
+    // Derive a readable font style label from intake.style or intake.personality
+    const styleRaw = (intake.style || intake.personality || "").toLowerCase();
+    const fontLabel =
+      styleRaw.includes("minimal") ? "INTER / CLEAN / MINIMAL" :
+      styleRaw.includes("bold") || styleRaw.includes("edgy") ? "IMPACT / BOLD / STRONG" :
+      styleRaw.includes("playful") || styleRaw.includes("fun") ? "NUNITO / ROUND / PLAYFUL" :
+      styleRaw.includes("elegant") || styleRaw.includes("luxury") ? "CORMORANT / SERIF / ELEGANT" :
+      styleRaw.includes("tech") ? "SPACE GROTESK / WIDE / TECHNICAL" :
+      "SPACE GROTESK / WIDE / MODERN";
+    const fontWeight = styleRaw.includes("minimal") ? "300" : styleRaw.includes("bold") || styleRaw.includes("edgy") ? "900" : "700";
+
+    // Selected logo URI for the showcase in the mood board
+    const selectedLogoURI =
+      selectedLogoType === "profile" ? visuals.logo_profile :
+      selectedLogoType === "app" ? visuals.logo_app :
+      selectedLogoType === "business" ? visuals.logo_business :
+      (visuals.logo_profile || visuals.logo_app || visuals.logo_business || "");
+
     return (
-      <div className="rounded-xl overflow-hidden h-full" style={{ border: `1px solid ${pal.accent}33` }}>
-        <div className="grid grid-cols-2 h-full" style={{ gap: 2, background: "rgba(0,0,0,0.3)" }}>
-          {/* Panel 1: Colour atmosphere */}
-          <div className="flex flex-col items-center justify-center relative overflow-hidden"
-            style={{ background: `linear-gradient(135deg, ${pal.bg} 0%, ${pal.accent}22 100%)` }}>
+      <div className="rounded-xl overflow-hidden h-full" style={{ border: `1px solid ${pal.accent}44`, display: "flex", flexDirection: "column", gap: 2, background: `${pal.bg}` }}>
+
+        {/* ── TOP ROW: 60% height — 2 large panels ─────────────────── */}
+        <div style={{ flex: "0 0 60%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+
+          {/* LEFT: Colour World — shows name, tagline, palette swatches */}
+          <div className="flex flex-col justify-between p-4 relative overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${pal.bg} 0%, ${pal.accent}28 100%)` }}>
+            {/* Ambient glow */}
             <div className="absolute inset-0" style={{
-              background: `radial-gradient(ellipse at 40% 40%, ${pal.accent}44 0%, transparent 60%)`,
+              background: `radial-gradient(ellipse at 20% 30%, ${pal.accent}33 0%, transparent 55%)`,
             }} />
-            <div className="absolute" style={{
-              width: 80, height: 80, borderRadius: "50%",
-              background: `radial-gradient(circle, ${pal.accent}66 0%, transparent 70%)`,
-              top: "20%", left: "25%",
-            }} />
-            <div className="absolute" style={{
-              width: 50, height: 50, borderRadius: "50%",
-              background: `radial-gradient(circle, ${pal.accent2}55 0%, transparent 70%)`,
-              bottom: "25%", right: "20%",
-            }} />
-            <p className="relative z-10 text-xs font-black uppercase tracking-widest text-center px-3"
-              style={{ color: pal.accent }}>Colour Atmosphere</p>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest mb-2 relative"
+                style={{ color: `${pal.accent}cc` }}>Colour World</p>
+              {/* Logo mark if available */}
+              {selectedLogoURI && selectedLogoURI.length > 50 ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={selectedLogoURI} alt={name}
+                  style={{ width: 40, height: 40, objectFit: "contain", marginBottom: 8, borderRadius: 6 }} />
+              ) : (
+                <div className="mb-2" style={{
+                  width: 36, height: 36,
+                  background: `linear-gradient(135deg, ${pal.accent}, ${pal.accent2})`,
+                  clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                }} />
+              )}
+              <p className="font-black text-base leading-none relative" style={{ color: pal.text, fontWeight }}>
+                {name}
+              </p>
+              <p className="text-[10px] italic mt-1 relative" style={{ color: pal.accent }}>
+                {tagline}
+              </p>
+            </div>
+            {/* Colour swatches row */}
+            <div className="flex gap-1.5 mt-2 relative">
+              {[pal.bg, pal.accent, pal.accent2, pal.text].map((c, i) => (
+                <div key={i} title={c} style={{
+                  width: 20, height: 20, borderRadius: "50%",
+                  background: c,
+                  border: "1.5px solid rgba(255,255,255,0.18)",
+                  flexShrink: 0,
+                }} />
+              ))}
+            </div>
           </div>
 
-          {/* Panel 2: Brand typography */}
-          <div className="flex flex-col items-center justify-center px-4 text-center relative overflow-hidden"
-            style={{ background: bg2 }}>
+          {/* RIGHT: Typography Scale */}
+          <div className="flex flex-col justify-between p-4 relative overflow-hidden"
+            style={{ background: `${pal.bg}dd` }}>
             <div className="absolute inset-0" style={{
-              background: `linear-gradient(to bottom right, ${pal.accent2}22, transparent)`,
+              background: `linear-gradient(to bottom right, ${pal.accent2}18, transparent)`,
             }} />
             <div className="relative">
-              {/* Geometric mark */}
-              <div className="mx-auto mb-3" style={{
-                width: 40, height: 40,
-                background: `linear-gradient(135deg, ${pal.accent}, ${pal.accent2})`,
-                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-              }} />
-              <p className="text-lg font-black leading-none" style={{ color: pal.text }}>{name}</p>
-              <p className="mt-1 text-xs italic" style={{ color: pal.accent }}>&ldquo;{tagline}&rdquo;</p>
+              <p className="text-[9px] font-black uppercase tracking-widest mb-2"
+                style={{ color: `${pal.accent}cc` }}>Typography Scale</p>
+              <p className="font-black leading-none" style={{ fontSize: "1.8rem", color: pal.text, fontWeight: "900" }}>Aa</p>
+              <p className="text-xs font-black mt-1" style={{ color: pal.text }}>{fontLabel}</p>
+              <p className="text-[9px] mt-0.5" style={{ color: `${pal.text}66` }}>Regular · Hint text</p>
+            </div>
+            {/* CTA button preview */}
+            <div className="relative mt-2">
+              <div className="inline-flex items-center px-3 py-1 rounded text-[10px] font-black"
+                style={{ background: pal.accent, color: pal.bg }}>
+                CTA Button
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Panel 3: Geometric pattern */}
-          <div className="relative overflow-hidden" style={{ background: pal.bg }}>
-            {/* Repeating diamond/hex grid */}
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="absolute" style={{
-                width: 36, height: 36,
-                background: `${pal.accent}${i % 3 === 0 ? "44" : "22"}`,
-                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                left: `${(i % 4) * 26}%`,
-                top: `${Math.floor(i / 4) * 32 + 10}%`,
-                transform: `rotate(${i * 15}deg)`,
-              }} />
-            ))}
-            <div className="absolute inset-0 flex items-end justify-start p-3">
-              <p className="text-xs font-black uppercase tracking-widest" style={{ color: `${pal.accent}bb` }}>
-                Geometric DNA
-              </p>
-            </div>
+        {/* ── BOTTOM ROW: 40% height — 3 logo preview panels ────────── */}
+        <div style={{ flex: "0 0 40%", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
+
+          {/* Social / Profile preview */}
+          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+            style={{ background: `${pal.bg}cc` }}>
+            {visuals.logo_profile && visuals.logo_profile.length > 50 ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={visuals.logo_profile} alt="profile" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: "50%" }} />
+            ) : (
+              <div className="flex items-center justify-center rounded-full"
+                style={{ width: 36, height: 36, background: pal.accent }}>
+                <span className="font-black text-sm" style={{ color: pal.bg }}>{initials.slice(0,1)}</span>
+              </div>
+            )}
+            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>Social</p>
           </div>
 
-          {/* Panel 4: Motion/energy */}
-          <div className="flex flex-col justify-center px-4 relative overflow-hidden"
-            style={{ background: `linear-gradient(to bottom, ${pal.bg}, ${pal.accent2}22)` }}>
-            {/* Diagonal lines */}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="absolute" style={{
-                height: 1,
-                width: "140%",
-                background: `${i % 2 === 0 ? pal.accent : pal.accent2}${i % 3 === 0 ? "55" : "33"}`,
-                top: `${10 + i * 11}%`,
-                left: "-20%",
-                transform: "rotate(-12deg)",
-              }} />
-            ))}
-            <div className="relative">
-              <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: pal.accent }}>
-                Brand Energy
-              </p>
-              <p className="text-xs" style={{ color: `${pal.text}88` }}>
-                {intake.personality || "modern, distinctive"}
-              </p>
-            </div>
+          {/* App Icon preview */}
+          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+            style={{ background: `${pal.bg}cc` }}>
+            {visuals.logo_app && visuals.logo_app.length > 50 ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={visuals.logo_app} alt="app" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }} />
+            ) : (
+              <div className="flex items-center justify-center"
+                style={{ width: 36, height: 36, background: `linear-gradient(135deg,${pal.accent},${pal.accent2})`, borderRadius: 8 }}>
+                <span className="font-black text-sm" style={{ color: pal.bg }}>{initials}</span>
+              </div>
+            )}
+            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>App</p>
+          </div>
+
+          {/* Print / Business preview */}
+          <div className="flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+            style={{ background: `${pal.bg}cc` }}>
+            {visuals.logo_business && visuals.logo_business.length > 50 ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={visuals.logo_business} alt="business" style={{ width: 56, height: 28, objectFit: "contain", borderRadius: 4 }} />
+            ) : (
+              <div className="flex items-center gap-1 px-2 py-1 rounded"
+                style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${pal.accent}44` }}>
+                <div style={{
+                  width: 10, height: 10,
+                  background: pal.accent,
+                  clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                  flexShrink: 0,
+                }} />
+                <span className="text-[9px] font-black" style={{ color: pal.text }}>{name}</span>
+              </div>
+            )}
+            <p className="text-[9px] uppercase tracking-widest" style={{ color: `${pal.accent}99` }}>Print</p>
           </div>
         </div>
       </div>
@@ -515,9 +575,11 @@ export default function VisualIdentityPanel({
                     }}
                     onClick={() => setSelectedLogoType(key)}>
 
-                    {uri ? (
+                    {uri && uri.length > 50 ? (
+                      /* Only render <img> when the data URI is actually non-trivial */
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={uri} alt={label} className="w-full aspect-square object-cover" />
+                      <img src={uri} alt={label} className="w-full aspect-square object-cover"
+                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.parentElement!.querySelector(".css-fallback") as HTMLElement | null)?.removeAttribute("style"); }} />
                     ) : generatingLogos ? (
                       <div className="w-full aspect-square flex items-center justify-center"
                         style={{ background: "rgba(139,92,246,0.06)" }}>
@@ -692,8 +754,8 @@ export default function VisualIdentityPanel({
                   IBM watsonx AI is crafting 4 brand tiles using your palette: <em>{intake.color_mood || "brand colours"}</em>
                 </p>
               </div>
-            ) : hasMoodBoard ? (
-              /* AI-generated SVG/PNG tiles in a 2×2 grid */
+            ) : hasMoodBoard && visuals.mood_board!.length >= 4 ? (
+              /* AI-generated SVG/PNG tiles — only render when all 4 are present */
               <div className="rounded-xl overflow-hidden h-full"
                 style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
                 <div className="grid grid-cols-2 h-full" style={{ gap: 2, background: "rgba(255,255,255,0.04)" }}>
@@ -706,12 +768,6 @@ export default function VisualIdentityPanel({
                         className="w-full h-full object-cover"
                         style={{ display: "block" }}
                       />
-                    </div>
-                  ))}
-                  {Array.from({ length: Math.max(0, 4 - (visuals.mood_board?.length ?? 0)) }).map((_, i) => (
-                    <div key={`empty-${i}`} className="flex items-center justify-center"
-                      style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
-                      <p className="text-xs" style={{ color: "rgba(139,92,246,0.40)" }}>Loading…</p>
                     </div>
                   ))}
                 </div>
