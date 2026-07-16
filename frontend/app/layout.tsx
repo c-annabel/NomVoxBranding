@@ -7,10 +7,11 @@ export const metadata: Metadata = {
     "AI-powered brand identity platform. From void to voice — names, handles, logos, and landing pages synthesized in under 60 seconds.",
   icons: {
     icon: [
-      { url: "/nomvox-icon.png", type: "image/png" },
+      { url: "/favicon.ico",      sizes: "any" },
+      { url: "/nomvox-icon.png",  type: "image/png", sizes: "512x512" },
     ],
-    shortcut: "/nomvox-icon.png",
-    apple: "/nomvox-icon.png",
+    shortcut: "/favicon.ico",
+    apple:    "/nomvox-icon.png",
   },
 };
 
@@ -21,9 +22,9 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       {/*
         Next.js App Router manages <head> automatically via the metadata export above.
-        Do NOT add a manual <head> block here — it causes hydration mismatch and blank page.
-        The two <Image priority> tags in HomeClient already handle preloading the
-        logo and background via the browser's native priority hints.
+        favicon.ico in public/ is the primary tab icon (browsers request /favicon.ico first).
+        nomvox-icon.png is the high-res fallback for Apple/PWA.
+        Do NOT add a manual <head> block — causes hydration mismatch.
       */}
       <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>

@@ -216,47 +216,44 @@ ABSOLUTE RULES — follow exactly or the output is invalid:
 }
 
 // buildColourContext extracts colour guidance from user intake.
-// It always returns a specific, usable colour description even when the field is empty.
-// colourRole returns (background, primary, accent) colour descriptions.
+// Handles phrases like "bright orange, sky blue, white" correctly.
+// Returns (bg=always dark, primary=#ffffff, accent=first named colour).
 func buildColourContext(intake models.IntakePayload) (bg, primary, accent string) {
 	raw := strings.TrimSpace(intake.ColorMood)
 	if raw == "" {
-		return "#0d1b2a", "#ffffff", "#00bcd4"
+		return "#0a1628", "#ffffff", "#f97316"
 	}
 	lower := strings.ToLower(raw)
-	// Background
-	bg = "#050810" // default very dark bg
-	if strings.Contains(lower, "navy") || strings.Contains(lower, "dark blue") {
-		bg = "#0a1628"
-	} else if strings.Contains(lower, "midnight") {
-		bg = "#0c0c1e"
-	} else if strings.Contains(lower, "dark") || strings.Contains(lower, "black") {
-		bg = "#050810"
-	}
-	// Primary text
 	primary = "#ffffff"
-	// Accent colour — ordered by specificity (longer/more specific first)
-	accent = "#3b82f6" // default electric blue
-	if strings.Contains(lower, "neon yellow") || strings.Contains(lower, "yellow") {
-		accent = "#facc15"
-	} else if strings.Contains(lower, "electric blue") || strings.Contains(lower, "electric") {
-		accent = "#3b82f6"
-	} else if strings.Contains(lower, "teal") || strings.Contains(lower, "cyan") {
-		accent = "#22d3ee"
-	} else if strings.Contains(lower, "gold") || strings.Contains(lower, "amber") {
-		accent = "#f59e0b"
-	} else if strings.Contains(lower, "coral") || strings.Contains(lower, "orange") {
-		accent = "#f97316"
-	} else if strings.Contains(lower, "green") || strings.Contains(lower, "emerald") {
-		accent = "#10b981"
-	} else if strings.Contains(lower, "purple") || strings.Contains(lower, "violet") {
-		accent = "#8B5CF6"
-	} else if strings.Contains(lower, "red") || strings.Contains(lower, "crimson") {
-		accent = "#ef4444"
-	} else if strings.Contains(lower, "pink") || strings.Contains(lower, "rose") {
-		accent = "#ec4899"
-	} else if strings.Contains(lower, "blue") {
-		accent = "#3b82f6"
+
+	// Background — always keep dark; "white" means text colour, not bg
+	bg = "#0a1628"
+	if strings.Contains(lower, "midnight") || strings.Contains(lower, "void") || strings.Contains(lower, "black") {
+		bg = "#050810"
+	} else if strings.Contains(lower, "dark") {
+		bg = "#0d0d1a"
+	}
+
+	// Colour → hex mapping (first match wins for accent)
+	type rule struct{ key, hex string }
+	rules := []rule{
+		{"bright orange", "#f97316"}, {"orange", "#f97316"}, {"coral", "#f97316"},
+		{"neon yellow", "#facc15"}, {"yellow", "#facc15"}, {"gold", "#f59e0b"}, {"amber", "#f59e0b"},
+		{"sky blue", "#38bdf8"}, {"sky", "#38bdf8"}, {"azure", "#38bdf8"},
+		{"electric blue", "#3b82f6"}, {"electric", "#3b82f6"},
+		{"teal", "#22d3ee"}, {"cyan", "#22d3ee"}, {"aqua", "#22d3ee"},
+		{"green", "#10b981"}, {"emerald", "#10b981"}, {"lime", "#84cc16"},
+		{"purple", "#8B5CF6"}, {"violet", "#7c3aed"}, {"indigo", "#6366f1"},
+		{"pink", "#ec4899"}, {"rose", "#f43f5e"}, {"magenta", "#e879f9"},
+		{"red", "#ef4444"}, {"crimson", "#dc2626"}, {"scarlet", "#f43f5e"},
+		{"blue", "#3b82f6"},
+	}
+	accent = "#f97316" // safe default (orange)
+	for _, r := range rules {
+		if strings.Contains(lower, r.key) {
+			accent = r.hex
+			break
+		}
 	}
 	return bg, primary, accent
 }

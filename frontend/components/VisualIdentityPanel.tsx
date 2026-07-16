@@ -28,47 +28,47 @@ const LOGO_STYLE_LABELS: Record<string, string> = {
 };
 
 // ── Colour extraction from intake ─────────────────────────────────────────────
-// Parses the user's colour_mood field and returns CSS-usable values for fallback renders.
+// Parses the user's colour_mood field (e.g. "bright orange, sky blue, white")
+// Returns CSS hex values for: bg (always dark), accent, accent2, text (#fff always).
 function extractPalette(colorMood: string): { bg: string; accent: string; text: string; accent2: string } {
   const lower = (colorMood || "").toLowerCase();
-  let bg = "#0d1b2a";
-  let accent = "#22d3ee";
-  let accent2 = "#8B5CF6";
-  const text = "#ffffff";
+  const text = "#ffffff"; // text is always white on dark bg
 
-  if (lower.includes("dark") || lower.includes("black") || lower.includes("void")) bg = "#050810";
-  else if (lower.includes("navy") || lower.includes("dark blue")) bg = "#0a1628";
-  else if (lower.includes("midnight")) bg = "#0c0c1e";
+  // ── Background — always dark even if user said "white" ────────────────────
+  // "white" = light text, not bg. We keep bg dark for readability.
+  let bg = "#0a1628"; // default dark navy
+  if (lower.includes("midnight") || lower.includes("void") || lower.includes("black")) bg = "#050810";
+  else if (lower.includes("dark blue") || lower.includes("navy")) bg = "#0a1628";
+  else if (lower.includes("dark")) bg = "#0d0d1a";
 
-  if (lower.includes("neon yellow") || lower.includes("yellow")) accent = "#facc15";
-  else if (lower.includes("electric blue") || lower.includes("blue")) accent = "#3b82f6";
-  else if (lower.includes("teal") || lower.includes("cyan")) accent = "#22d3ee";
-  else if (lower.includes("gold") || lower.includes("amber")) accent = "#f59e0b";
-  else if (lower.includes("coral") || lower.includes("orange")) accent = "#f97316";
-  else if (lower.includes("green") || lower.includes("emerald")) accent = "#10b981";
-  else if (lower.includes("purple") || lower.includes("violet")) accent = "#8B5CF6";
-  else if (lower.includes("red") || lower.includes("crimson")) accent = "#ef4444";
-  else if (lower.includes("pink") || lower.includes("rose")) accent = "#ec4899";
-
-  // Second accent — look for 2nd colour keyword
-  const words = lower.split(/[,\s]+/);
-  let foundFirst = false;
-  for (const w of words) {
-    const hit =
-      w.includes("yellow") ? "#facc15" :
-      w.includes("blue") ? "#3b82f6" :
-      w.includes("teal") || w.includes("cyan") ? "#22d3ee" :
-      w.includes("gold") || w.includes("amber") ? "#f59e0b" :
-      w.includes("coral") || w.includes("orange") ? "#f97316" :
-      w.includes("green") || w.includes("emerald") ? "#10b981" :
-      w.includes("purple") || w.includes("violet") ? "#8B5CF6" :
-      w.includes("red") || w.includes("crimson") ? "#ef4444" :
-      w.includes("pink") || w.includes("rose") ? "#ec4899" : null;
-    if (hit) {
-      if (!foundFirst) { foundFirst = true; }
-      else { accent2 = hit; break; }
-    }
+  // ── Map each word → hex colour ────────────────────────────────────────────
+  function colourOf(w: string): string | null {
+    if (w.includes("orange") || w.includes("coral")) return "#f97316";
+    if (w.includes("yellow") || w.includes("gold") || w.includes("amber")) return "#facc15";
+    if (w.includes("sky") || w.includes("azure") || w.includes("cerulean")) return "#38bdf8";
+    if (w.includes("electric") || w.includes("neon")) return "#3b82f6";
+    if (w.includes("blue") && !w.includes("dark")) return "#3b82f6";
+    if (w.includes("teal") || w.includes("cyan") || w.includes("aqua")) return "#22d3ee";
+    if (w.includes("green") || w.includes("emerald") || w.includes("lime")) return "#10b981";
+    if (w.includes("purple") || w.includes("violet") || w.includes("indigo")) return "#8B5CF6";
+    if (w.includes("pink") || w.includes("rose") || w.includes("magenta")) return "#ec4899";
+    if (w.includes("red") || w.includes("crimson") || w.includes("scarlet")) return "#ef4444";
+    return null;
   }
+
+  // Collect all colour tokens from the full string, in order
+  const tokens = lower.split(/[\s,/+&]+/).filter(Boolean);
+  const colours: string[] = [];
+  // Also try bigrams for "bright orange", "sky blue", "electric blue"
+  for (let i = 0; i < tokens.length; i++) {
+    const bigram = (tokens[i] + " " + (tokens[i+1] || "")).trim();
+    const c = colourOf(bigram) || colourOf(tokens[i]);
+    if (c && !colours.includes(c)) colours.push(c);
+  }
+  if (colours.length === 0) colours.push("#f97316", "#38bdf8"); // fallback
+
+  const accent  = colours[0] ?? "#f97316";
+  const accent2 = colours[1] ?? "#38bdf8";
 
   return { bg, accent, text, accent2 };
 }
@@ -575,22 +575,29 @@ export default function VisualIdentityPanel({
                     }}
                     onClick={() => setSelectedLogoType(key)}>
 
-                    {uri && uri.length > 50 ? (
-                      /* Only render <img> when the data URI is actually non-trivial */
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={uri} alt={label} className="w-full aspect-square object-cover"
-                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.parentElement!.querySelector(".css-fallback") as HTMLElement | null)?.removeAttribute("style"); }} />
-                    ) : generatingLogos ? (
-                      <div className="w-full aspect-square flex items-center justify-center"
-                        style={{ background: "rgba(139,92,246,0.06)" }}>
-                        <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
-                          Generating<span className="nv-dot1">.</span><span className="nv-dot2">.</span><span className="nv-dot3">.</span>
-                        </p>
+                    {/* Always render CSS placeholder first (z-index below) */}
+                    <div className="w-full aspect-square relative" style={{ position: "relative" }}>
+                      {/* CSS placeholder — always visible */}
+                      <div className="w-full h-full absolute inset-0" style={{ zIndex: 0 }}>
+                        {placeholder.render()}
                       </div>
-                    ) : (
-                      /* Rich CSS concept placeholder — uses user's brand palette */
-                      placeholder.render()
-                    )}
+                      {/* AI image — overlaid on top; only shown when URI is a valid data URI > 200 chars */}
+                      {uri && uri.startsWith("data:") && uri.length > 200 ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={uri} alt={label}
+                          className="w-full h-full absolute inset-0 object-cover"
+                          style={{ zIndex: 1 }}
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : generatingLogos ? (
+                        <div className="w-full h-full absolute inset-0 flex items-center justify-center"
+                          style={{ background: "rgba(11,15,25,0.85)", zIndex: 1 }}>
+                          <p className="text-sm font-bold" style={{ color: "var(--color-pulse)" }}>
+                            Generating<span className="nv-dot1">.</span><span className="nv-dot2">.</span><span className="nv-dot3">.</span>
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
 
                     <div className="px-4 py-3 flex items-center justify-between">
                       <div>
