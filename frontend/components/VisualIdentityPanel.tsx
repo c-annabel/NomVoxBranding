@@ -378,7 +378,7 @@ export default function VisualIdentityPanel({
             style={{ background: `${pal.bg}cc` }}>
             {visuals.logo_profile && visuals.logo_profile.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_profile} alt="profile" style={{ width: 50, height: 50, objectFit: "contain", borderRadius: "50%" }} />
+              <img src={visuals.logo_profile} alt="profile" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: "50%" }} />
             ) : (
               <div className="flex items-center justify-center rounded-full"
                 style={{ width: 50, height: 50, background: pal.accent }}>
@@ -393,7 +393,7 @@ export default function VisualIdentityPanel({
             style={{ background: `${pal.bg}cc` }}>
             {visuals.logo_app && visuals.logo_app.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_app} alt="app" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }} />
+              <img src={visuals.logo_app} alt="app" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />
             ) : (
               <div className="flex items-center justify-center"
                 style={{ width: 36, height: 36, background: `linear-gradient(135deg,${pal.accent},${pal.accent2})`, borderRadius: 8 }}>
@@ -408,7 +408,7 @@ export default function VisualIdentityPanel({
             style={{ background: `${pal.bg}cc` }}>
             {visuals.logo_business && visuals.logo_business.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_business} alt="business" style={{ width: 56, height: 28, objectFit: "contain", borderRadius: 4 }} />
+              <img src={visuals.logo_business} alt="business" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 4 }} />
             ) : (
               <div className="flex items-center gap-1 px-2 py-1 rounded"
                 style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${pal.accent}44` }}>
