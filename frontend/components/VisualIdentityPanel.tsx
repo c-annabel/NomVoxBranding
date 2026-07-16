@@ -378,10 +378,10 @@ export default function VisualIdentityPanel({
             style={{ background: `${pal.bg}cc` }}>
             {visuals.logo_profile && visuals.logo_profile.length > 50 ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={visuals.logo_profile} alt="profile" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: "50%" }} />
+              <img src={visuals.logo_profile} alt="profile" style={{ width: 50, height: 50, objectFit: "contain", borderRadius: "50%" }} />
             ) : (
               <div className="flex items-center justify-center rounded-full"
-                style={{ width: 36, height: 36, background: pal.accent }}>
+                style={{ width: 50, height: 50, background: pal.accent }}>
                 <span className="font-black text-sm" style={{ color: pal.bg }}>{initials.slice(0,1)}</span>
               </div>
             )}
