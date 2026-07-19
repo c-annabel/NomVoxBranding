@@ -3,6 +3,7 @@ package ai
 import (
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/c-annabel/NomVoxBranding/internal/models"
@@ -500,12 +501,20 @@ func BuildPersonaUserPrompt(card models.NameCard, intake models.IntakePayload) s
 	)
 }
 
+// trailingCommaRe matches a comma followed by a closing } or ] — the most
+// common LLM JSON malformation (e.g. ["a","b",]) that breaks encoding/json
+// with "invalid character '}' after array element".
+var trailingCommaRe = regexp.MustCompile(`,\s*([}\]])`)
+
 // ParsePersona extracts a BrandPersona from raw LLM JSON output.
 func ParsePersona(raw string) (*models.BrandPersona, error) {
 	jsonStr := ExtractJSONObject(raw)
 	if jsonStr == "" {
 		return nil, fmt.Errorf("parsePersona: no JSON object found in: %s", TruncateStr(raw, 200))
 	}
+	// Repair trailing commas before closing braces/brackets so slightly
+	// malformed LLM output still parses.
+	jsonStr = trailingCommaRe.ReplaceAllString(jsonStr, "$1")
 
 	var p models.BrandPersona
 	if err := unmarshalPersona(jsonStr, &p); err != nil {

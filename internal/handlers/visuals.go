@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/c-annabel/NomVoxBranding/internal/ai"
 	"github.com/c-annabel/NomVoxBranding/internal/models"
@@ -27,20 +28,41 @@ type visualsRequest struct {
 // (data:image/png;base64,…) depending on which generator succeeded.
 // MockupHTML is raw HTML for the landing page iframe.
 type visualsResponse struct {
-	MoodBoard    []string             `json:"mood_board"`           // SVG data URIs (or empty)
-	LogoProfile  string               `json:"logo_profile"`         // data URI
-	LogoApp      string               `json:"logo_app"`             // data URI
-	LogoBusiness string               `json:"logo_business"`        // data URI
-	MockupHTML   string               `json:"mockup_html"`          // raw HTML string
+	MoodBoard    []string             `json:"mood_board"`    // SVG data URIs (or empty)
+	LogoProfile  string               `json:"logo_profile"`  // data URI
+	LogoApp      string               `json:"logo_app"`      // data URI
+	LogoBusiness string               `json:"logo_business"` // data URI
+	MockupHTML   string               `json:"mockup_html"`   // raw HTML string
 	Persona      *models.BrandPersona `json:"persona,omitempty"`
+}
+
+// ── watsonx rate-limit throttle ──────────────────────────────────────────────
+// The watsonx plan allows 2 requests per second per instance. When Gemini fails
+// (e.g. depleted credits), all logo goroutines + persona fall back to Granite at
+// the same instant and blow through that limit, producing 429s.
+// throttleGranite serialises the *start* of each Granite call and enforces a
+// minimum 600ms gap between calls (~1.6 req/s), while the goroutines themselves
+// remain concurrent.
+var (
+	graniteCallMu   sync.Mutex
+	graniteLastCall time.Time
+)
+
+func throttleGranite() {
+	graniteCallMu.Lock()
+	defer graniteCallMu.Unlock()
+	if wait := 600*time.Millisecond - time.Since(graniteLastCall); wait > 0 {
+		time.Sleep(wait)
+	}
+	graniteLastCall = time.Now()
 }
 
 // VisualsHandler handles POST /api/visuals.
 //
 // Generation strategy (priority order):
-//   1. Gemini image generation → PNG data URIs (requires credits; skipped if 429/403)
-//   2. watsonx SVG generation → SVG data URIs via Granite/Llama (free, always tried)
-//   3. CSS art placeholders → rendered by the frontend (no server call needed)
+//  1. Gemini image generation → PNG data URIs (requires credits; skipped if 429/403)
+//  2. watsonx SVG generation → SVG data URIs via Granite/Llama (free, always tried)
+//  3. CSS art placeholders → rendered by the frontend (no server call needed)
 //
 // All tasks fan out concurrently; partial failures are tolerated.
 // The frontend CSS art placeholders are the guaranteed final fallback.
@@ -87,6 +109,7 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		sys := ai.BuildSVGLogoSystemPrompt()
 		usr := ai.BuildSVGLogoUserPrompt(req.Card, req.Intake, logoType)
+		throttleGranite()
 		raw, err := graniteClient.Generate(r.Context(), sys, usr)
 		if err != nil {
 			log.Printf("visuals: svg logo %s: %v", logoType, err)
@@ -116,7 +139,9 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 				if len(uris) > 0 {
-					mu.Lock(); resp.MoodBoard = uris; mu.Unlock()
+					mu.Lock()
+					resp.MoodBoard = uris
+					mu.Unlock()
 					return
 				}
 			}
@@ -128,6 +153,7 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 		moodTiles := ai.BuildSVGMoodBoardPrompts(req.Card, req.Intake)
 		svgURIs := make([]string, 0, len(moodTiles))
 		for i, tilePrompt := range moodTiles {
+			throttleGranite()
 			raw, err := graniteClient.Generate(r.Context(), ai.BuildSVGTileSystemPrompt(), tilePrompt)
 			if err != nil {
 				log.Printf("visuals: svg mood tile %d: %v", i, err)
@@ -139,7 +165,9 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if len(svgURIs) > 0 {
-			mu.Lock(); resp.MoodBoard = svgURIs; mu.Unlock()
+			mu.Lock()
+			resp.MoodBoard = svgURIs
+			mu.Unlock()
 		}
 	}()
 
@@ -151,13 +179,18 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 			imgs, err := imagenClient.GenerateImages(r.Context(), ai.LogoConceptPrompt(req.Card, req.Intake, "profile"), 1, "1:1")
 			if err == nil && len(imgs) > 0 {
 				if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
-					mu.Lock(); resp.LogoProfile = uri; mu.Unlock(); return
+					mu.Lock()
+					resp.LogoProfile = uri
+					mu.Unlock()
+					return
 				}
 			}
 			log.Printf("visuals: logo profile (gemini): %v — falling back to SVG", err)
 		}
 		if uri := generateSVGLogo("profile"); uri != "" {
-			mu.Lock(); resp.LogoProfile = uri; mu.Unlock()
+			mu.Lock()
+			resp.LogoProfile = uri
+			mu.Unlock()
 		}
 	}()
 
@@ -169,13 +202,18 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 			imgs, err := imagenClient.GenerateImages(r.Context(), ai.LogoConceptPrompt(req.Card, req.Intake, "app"), 1, "1:1")
 			if err == nil && len(imgs) > 0 {
 				if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
-					mu.Lock(); resp.LogoApp = uri; mu.Unlock(); return
+					mu.Lock()
+					resp.LogoApp = uri
+					mu.Unlock()
+					return
 				}
 			}
 			log.Printf("visuals: logo app (gemini): %v — falling back to SVG", err)
 		}
 		if uri := generateSVGLogo("app"); uri != "" {
-			mu.Lock(); resp.LogoApp = uri; mu.Unlock()
+			mu.Lock()
+			resp.LogoApp = uri
+			mu.Unlock()
 		}
 	}()
 
@@ -187,13 +225,18 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 			imgs, err := imagenClient.GenerateImages(r.Context(), ai.LogoConceptPrompt(req.Card, req.Intake, "business"), 1, "16:9")
 			if err == nil && len(imgs) > 0 {
 				if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
-					mu.Lock(); resp.LogoBusiness = uri; mu.Unlock(); return
+					mu.Lock()
+					resp.LogoBusiness = uri
+					mu.Unlock()
+					return
 				}
 			}
 			log.Printf("visuals: logo business (gemini): %v — falling back to SVG", err)
 		}
 		if uri := generateSVGLogo("business"); uri != "" {
-			mu.Lock(); resp.LogoBusiness = uri; mu.Unlock()
+			mu.Lock()
+			resp.LogoBusiness = uri
+			mu.Unlock()
 		}
 	}()
 
@@ -202,6 +245,7 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			throttleGranite()
 			raw, err := graniteClient.Generate(r.Context(), ai.BuildPersonaSystemPrompt(), ai.BuildPersonaUserPrompt(req.Card, req.Intake))
 			if err != nil {
 				log.Printf("visuals: persona: %v", err)
@@ -212,7 +256,9 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("visuals: persona parse: %v", err)
 				return
 			}
-			mu.Lock(); resp.Persona = persona; mu.Unlock()
+			mu.Lock()
+			resp.Persona = persona
+			mu.Unlock()
 		}()
 	}
 
@@ -241,6 +287,7 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		sysPrompt := ai.BuildMockupSystemPrompt()
 		userPrompt := ai.BuildMockupUserPromptWithLogo(req.Card, req.Intake, req.SelectedLogoKey, req.SelectedLogoStyle, chosenLogoURI)
+		throttleGranite()
 		html, err := graniteClient.Generate(r.Context(), sysPrompt, userPrompt)
 		if err != nil {
 			log.Printf("visuals: mockup html: %v", err)

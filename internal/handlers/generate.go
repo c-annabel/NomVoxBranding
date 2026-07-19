@@ -65,6 +65,11 @@ func getStore() (*session.Store, error) {
 // GenerateHandler handles POST /api/generate.
 // It loads session memory from Redis, calls IBM Granite with full context,
 // persists updated session, and returns enriched NameCards.
+//
+// PROTOTYPE RESILIENCE: if the LLM is unavailable for any reason (missing keys,
+// token quota exhausted, rate limits, unparseable output), the handler silently
+// serves curated fallback NameCards instead of an error, so the demo always
+// completes end-to-end.
 func GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	var req generateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -103,18 +108,38 @@ func GenerateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// ── Build prompts with full session context ────────────────────
-	client, err := ai.NewGraniteClient()
-	if err != nil {
-		log.Printf("generate: granite client: %v", err)
-		jsonError(w, "AI service unavailable — check WATSONX_API_KEY and WATSONX_PROJECT_ID", http.StatusServiceUnavailable)
-		return
-	}
-
 	// Always generate 4 names. The new radical-naming prompt is longer than the
 	// original, so 5 names frequently hits the 3000-token ceiling and truncates JSON.
 	// 4 names reliably fit within budget with the enriched system prompt.
 	nameCount := 4
+
+	// serveCards finalises the response: updates session memory and encodes JSON.
+	serveCards := func(cards []models.NameCard) {
+		for _, c := range cards {
+			sess.AllGenerated = appendUnique(sess.AllGenerated, c.Name)
+		}
+		sess.Intake = req.Intake // update intake in case user changed fields
+
+		if storeErr == nil {
+			if err := store.Set(r.Context(), sess); err != nil {
+				log.Printf("generate: session save: %v", err)
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(generateResponse{ //nolint:errcheck
+			SessionID: sessionID,
+			Cards:     cards,
+		})
+	}
+
+	// ── Build prompts with full session context ────────────────────
+	client, err := ai.NewGraniteClient()
+	if err != nil {
+		fileLog("generate: granite client unavailable (%v) — serving fallback names", err)
+		serveCards(fallbackNameCards(req.Intake, nameCount))
+		return
+	}
 
 	systemPrompt := ai.BuildSystemPrompt(sess)
 	userPrompt := ai.BuildUserPrompt(req.Intake, nameCount)
@@ -132,8 +157,8 @@ func GenerateHandler(w http.ResponseWriter, r *http.Request) {
 		userPrompt2 := fmt.Sprintf("Generate %d brand names. Return ONLY a JSON array [ ... ]. No other text.", nameCount)
 		raw, err = client.Generate(r.Context(), systemPrompt, userPrompt2)
 		if err != nil {
-			fileLog("generate: retry failed: %v", err)
-			jsonError(w, fmt.Sprintf("LLM call failed: %v", err), http.StatusBadGateway)
+			fileLog("generate: retry failed (%v) — serving fallback names", err)
+			serveCards(fallbackNameCards(req.Intake, nameCount))
 			return
 		}
 	}
@@ -143,31 +168,13 @@ func GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	// ── Parse + validate cards ─────────────────────────────────────
 	cards, parseErr := ai.ParseNameCards(raw)
 	if parseErr != nil || len(cards) == 0 {
-		fileLog("generate: parse failed: %v", parseErr)
-		// Return helpful error with the raw prefix so user can report it
-		snippet := ai.TruncateStr(raw, 200)
-		jsonError(w, fmt.Sprintf("AI response could not be parsed (first 200 chars): %s", snippet), http.StatusInternalServerError)
+		fileLog("generate: parse failed (%v) — serving fallback names", parseErr)
+		serveCards(fallbackNameCards(req.Intake, nameCount))
 		return
 	}
 	fileLog("generate: parsed %d cards OK", len(cards))
 
-	// ── Update session memory ──────────────────────────────────────
-	for _, c := range cards {
-		sess.AllGenerated = appendUnique(sess.AllGenerated, c.Name)
-	}
-	sess.Intake = req.Intake // update intake in case user changed fields
-
-	if storeErr == nil {
-		if err := store.Set(r.Context(), sess); err != nil {
-			log.Printf("generate: session save: %v", err)
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(generateResponse{
-		SessionID: sessionID,
-		Cards:     cards,
-	})
+	serveCards(cards)
 }
 
 // appendUnique appends s to slice only if not already present.
@@ -188,5 +195,5 @@ func assembleLLMPrompt(p models.IntakePayload) string {
 func jsonError(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+	json.NewEncoder(w).Encode(map[string]string{"error": msg}) //nolint:errcheck
 }
