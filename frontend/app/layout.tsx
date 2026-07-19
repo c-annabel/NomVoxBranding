@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: "NomVox Branding",
@@ -26,7 +27,7 @@ export default function RootLayout({
         nomvox-icon.png is the high-res fallback for Apple/PWA.
         Do NOT add a manual <head> block — causes hydration mismatch.
       */}
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">{children}<Analytics /></body>
     </html>
   );
 }
