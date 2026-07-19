@@ -362,11 +362,10 @@ Verify: `https://nomvox.vercel.app` loads the intake form.
 ## Live Demo
 
 - **App:** https://nomvox.vercel.app
-- **API ping:** https://nomvox-api.fly.dev/api/ping
 
 ## Demo Video
 
-[3-minute walkthrough](#) ← *to be recorded before July 31 2026*
+[3-minute walkthrough](https://www.youtube.com/@c-annabel)
 
 ---
 
@@ -440,7 +439,7 @@ The name itself — NomVox — came from exactly the kind of AI-assisted creativ
 
 | Member | Role | IBM SkillsBuild Certificate |
 |---|---|---|
-| c-annabel | Full-stack development, AI integration, UI/UX design | *[upload link — required before July 31]* |
+| c-annabel | Full-stack development, AI integration, UI/UX design | *uploaded* |
 
 ---
 

@@ -264,7 +264,7 @@ NomVoxBranding/
 | ST-09 | Landing page mockup | ✅ Complete | AI HTML + CSS fallback, iframe 75% scale |
 | ST-10 | Export ZIP | ✅ Complete | SVG-aware archive stream |
 | ST-11 | QA, unit tests, error states | ✅ Complete | `tsc --noEmit` + `go test` pass; 23/23 |
-| ST-12 | Deployment + submission | 🔄 In progress | Fly.io + Vercel live; video + cert pending |
+| ST-12 | Deployment + submission | ✅ Complete | Fly.io + Vercel live; video + cert uploaded |
 
 ---
 
