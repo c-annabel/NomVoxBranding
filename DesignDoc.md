@@ -27,8 +27,8 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 - **Coined names** — invented words using phonaesthetics, ancient root mutation, syllable forging, and neologism splicing. Never real dictionary words.
 - **Availability gate** — parallel probes of `.com` domain + Instagram / X / TikTok / Threads / YouTube. 60% weighted threshold. Unknown probes (rate-limited) treated as taken.
 - **Creative-partner loop** — session memory (Redis) accumulates liked/rejected/direction notes. Every Regenerate call injects full history into the LLM prompt.
-- **Visual identity** — Imagen 3 logos (Profile / App / Business) + mood board (4 panels), Granite HTML landing-page mockup, brand persona card.
-- **Export** — ZIP containing `brand-brief.json`, `landing-page.html`, `logos/*.png`, `mood-board/*.png`, `README.txt`.
+- **Visual identity** — Three-tier generation chain: (1) Imagen 3 raster images via Google AI Studio, (2) watsonx SVG via Llama 3.3 70B, (3) CSS/SVG art system rendered client-side. In practice, free-tier quotas (Gemini 429 `RESOURCE_EXHAUSTED`, watsonx 403 `token_quota_reached`) mean the CSS/SVG system is the primary visible path. It is a fully designed, palette-responsive system — not a placeholder.
+- **Export** — ZIP containing `brand-brief.json`, `landing-page.html`, `logos/`, `mood-board/`, `README.txt`.
 
 ---
 
@@ -61,8 +61,8 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 
 | Service | Purpose | Key name |
 |---|---|---|
-| IBM watsonx.ai | LLM — name generation, persona, mockup, competitor radar | `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL` |
-| Google AI Studio | Imagen 3 image gen + Gemini 2.0 Flash vision | `GOOGLE_AI_API_KEY` |
+| IBM watsonx.ai | LLM — name generation, persona, mockup, competitor radar, SVG visuals | `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL` |
+| Google AI Studio | Imagen 3 image gen (first-tier; credits may be depleted) + Gemini 2.0 Flash vision | `GOOGLE_AI_API_KEY` |
 | Upstash Redis | Session persistence (2hr TTL) | `REDIS_URL` |
 
 ---
@@ -79,11 +79,11 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 ### AI / Machine Learning
 | Technology | Provider | Role in NomVox | API/Endpoint |
 |---|---|---|---|
-| **Meta Llama 3.3 70B Instruct** | IBM watsonx.ai (ca-tor region) | Brand name generation, taglines, brand scores, origin stories, voice samples, competitor radar, brand persona, landing page HTML | `POST /ml/v1/text/chat` |
+| **Meta Llama 3.3 70B Instruct** | IBM watsonx.ai (ca-tor region) | Brand name generation, taglines, brand scores, origin stories, voice samples, competitor radar, brand persona, landing page HTML, SVG logos, SVG mood board tiles | `POST /ml/v1/text/chat` |
 | **IBM Granite 3 8B Instruct** | IBM watsonx.ai (us-south region) | Same as Llama — fallback model when us-south endpoint is configured | `POST /ml/v1/text/chat` |
-| **Imagen 3** (`imagen-3.0-generate-002`) | Google AI Studio | AI image generation — 3 logo concepts (Profile / App / Business) + 4-panel mood board | `POST /v1beta/models/imagen-3.0-generate-002:predict` |
-| **Gemini 2.0 Flash** | Google AI Studio | Vision analysis — extracts palette/mood/style from user-uploaded reference images | `POST /v1beta/models/gemini-2.0-flash:generateContent` |
-| **IBM Cloud IAM** | IBM Cloud | API key → Bearer token exchange for all watsonx.ai calls | `POST https://iam.cloud.ibm.com/identity/token` |
+| **Imagen 3** (`imagen-3.0-generate-002`) | Google AI Studio | First-tier image generation — logos + mood board. Free-tier credits depleted in production; code falls back to watsonx SVG then CSS art. | `POST /v1beta/models/imagen-3.0-generate-002:predict` |
+| **Gemini 2.0 Flash** | Google AI Studio | Vision analysis — extracts palette/mood/style from user-uploaded reference images (deferred — same quota constraint) | `POST /v1beta/models/gemini-2.0-flash:generateContent` |
+| **IBM Cloud IAM** | IBM Cloud | API key → Bearer token exchange for all watsonx.ai calls. 50-minute in-process cache via `sync.Mutex`. | `POST https://iam.cloud.ibm.com/identity/token` |
 
 ### Backend
 | Technology | Version | Role |
@@ -139,11 +139,25 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 | Requirement | How NomVox meets it |
 |---|---|
 | **IBM Bob as primary dev tool** | Used throughout full SDLC: architecture, all code generation, debugging, prompt engineering, documentation |
-| **AI as core functional component** | Llama 3.3 70B via watsonx.ai generates all names, scores, taglines, personas, and HTML mockups. Imagen 3 generates all visual assets. |
-| **IBM Granite** | `ibm/granite-3-8b-instruct` on us-south endpoint; Llama on ca-tor. Both via IBM watsonx.ai. |
+| **AI as core functional component** | Llama 3.3 70B via watsonx.ai generates all names, scores, taglines, personas, SVG visuals, and HTML mockups |
+| **IBM Granite** | `ibm/granite-3-8b-instruct` on us-south endpoint; Llama on ca-tor. Both via IBM watsonx.ai. Automatic model selection via `capsForEndpoint()` |
 | **watsonx** | All LLM calls routed through `https://ca-tor.ml.cloud.ibm.com/ml/v1/text/chat` |
-| **LangChain / LangFlow** | Not used — custom Go client gives tighter control over token budget and JSON repair |
-| **Python / Node.js / React / Next.js** | Next.js 16 + React 19 frontend |
+| **LangChain / LangFlow** | Not used — custom Go client gives tighter control over token budget, JSON repair, and rate-limit throttling |
+| **Python / Node.js / React / Next.js** | Next.js + React 19 frontend |
+
+### Visual Generation: Three-Tier Fallback Chain
+
+The visual pipeline in `internal/handlers/visuals.go` attempts generation in priority order:
+
+1. **Imagen 3 (Google AI Studio)** — raster PNG images via `GenerateImages()`. Fails with `429 RESOURCE_EXHAUSTED` when free-tier prepaid credits are exhausted.
+2. **watsonx SVG generation** — Llama 3.3 70B prompted to output raw SVG markup via `Generate()`. Fails with `403 token_quota_reached` when the daily free-tier token quota is exhausted.
+3. **CSS/SVG art system (frontend)** — `extractPalette()` in `VisualIdentityPanel.tsx` parses the user's `color_mood` field (bigram-matching for "bright orange", "sky blue", etc.) and derives `bg`, `accent`, `accent2`, `text` tokens. All visual components render from these tokens. Zero API calls. Zero rate limits. **This is the primary visible path in the deployed product.**
+
+The `throttleGranite()` mutex (`graniteCallMu`) serialises the *start* of each Granite call with a 600ms minimum gap to avoid triggering the 2 req/s rate limit. This adds latency but prevents cascading 429 errors.
+
+**HTTP 429 vs HTTP 403 — two different errors:**
+- `429 RESOURCE_EXHAUSTED` = per-second rate limit exceeded → fixed by throttling + sequential calls
+- `403 token_quota_reached` = daily token budget exhausted → only fixed by waiting until quota resets or upgrading plan
 
 ---
 
@@ -323,20 +337,26 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 ├── cmd/
 │   ├── server/
 │   │   └── main.go                    ← HTTP server entry point, chi router, CORS
-│   └── testllm/
-│       └── main.go                    ← Standalone LLM smoke test (no server needed)
+│   ├── testllm/
+│   │   └── main.go                    ← Standalone LLM smoke test (no server needed)
+│   └── diagnose-imagen/
+│       └── main.go                    ← Imagen 3 connectivity diagnostic (archived)
 │
 ├── internal/
 │   ├── ai/
-│   │   ├── granite.go                 ← watsonx.ai client: IAM token exchange, chat/text API,
-│   │   │                                 ExtractJSON / ExtractJSONObject, truncation repair
-│   │   ├── imagen.go                  ← Imagen 3 image gen + Gemini 2.0 Flash vision analysis,
+│   │   ├── granite.go                 ← watsonx.ai client: IAM token exchange, chat API,
+│   │   │                                 ExtractJSON / ExtractJSONObject, truncation repair,
+│   │   │                                 SVGToDataURI
+│   │   ├── imagen.go                  ← Imagen 3 image gen + Gemini 2.0 Flash vision,
 │   │   │                                 Base64ToDataURI (RawURLEncoding fallback chain)
 │   │   ├── prompts.go                 ← systemPromptBase (5 naming strategies), BuildSystemPrompt,
 │   │   │                                 BuildUserPrompt, ParseNameCards
 │   │   └── visual_prompts.go          ← MoodBoardPrompt, LogoConceptPrompt,
+│   │                                     BuildSVGLogoSystemPrompt/UserPrompt,
+│   │                                     BuildSVGMoodBoardPrompts, BuildSVGTileSystemPrompt,
 │   │                                     BuildPersonaSystemPrompt/UserPrompt,
-│   │                                     BuildMockupSystemPrompt/UserPrompt
+│   │                                     BuildMockupSystemPrompt/UserPrompt,
+│   │                                     buildColourContext() (bigram palette parser)
 │   │
 │   ├── availability/
 │   │   └── checker.go                 ← 6-platform parallel probes (RDAP + HTTP),
@@ -344,14 +364,15 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 │   │
 │   ├── handlers/
 │   │   ├── generate.go                ← POST /api/generate — session load, LLM call,
-│   │   │                                 ParseNameCards, session save, file logging
+│   │   │                                 ParseNameCards, session save, fileLog()
 │   │   ├── availability.go            ← POST /api/availability — CheckNames, Competitor Radar
 │   │   ├── session.go                 ← POST /api/session · PATCH /api/session/react
 │   │   │                                 (6 action types: like/reject/note/visual-note/slider/select)
-│   │   ├── visuals.go                 ← POST /api/visuals — 5 concurrent goroutines:
-│   │   │                                 mood board, 3 logos, mockup HTML, brand persona
+│   │   ├── visuals.go                 ← POST /api/visuals — concurrent goroutines:
+│   │   │                                 3-tier fallback chain (Imagen 3 → watsonx SVG → CSS),
+│   │   │                                 throttleGranite() mutex, graniteCallMu
 │   │   ├── export.go                  ← POST /api/export — ZIP assembly, dataURIToBytes
-│   │   │                                 (RawURLEncoding fallback), selected-logo.png
+│   │   │                                 (RawURLEncoding fallback), selected-logo file
 │   │   ├── diagnose.go                ← GET /api/diagnose — env + Redis check (DEV)
 │   │   ├── debug_llm.go               ← GET /api/debug-llm — direct LLM smoke test (DEV)
 │   │   └── debug_visuals.go           ← GET /api/debug-visuals — Imagen 3 + Granite test (DEV)
@@ -367,12 +388,15 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 │
 ├── frontend/
 │   ├── app/
-│   │   ├── layout.tsx                 ← Root layout — font, global CSS, metadata
+│   │   ├── layout.tsx                 ← Root layout — font, global CSS, metadata, Analytics
 │   │   ├── page.tsx                   ← Server component → renders HomeClient
-│   │   ├── HomeClient.tsx             ← Main client component: 5-screen state machine,
+│   │   ├── HomeClient.tsx             ← Main client component: 7-step state machine,
 │   │   │                                 runAvailability (60s timeout), all handlers
-│   │   └── globals.css                ← Brand CSS tokens, .nv-range slider styles,
-│   │                                     .nv-dot1/2/3 loading animations
+│   │   ├── icon.png                   ← App Router favicon (auto-generates link rel=icon)
+│   │   ├── globals.css                ← Brand CSS tokens, .nv-range slider styles,
+│   │   │                                 .nv-dot1/2/3 loading animations
+│   │   └── build/                   
+│   │       └── page.tsx               ← Server component wrapper
 │   │
 │   ├── components/
 │   │   ├── IntakeForm.tsx             ← 8-field intake, richness meter, Inspire Me button
@@ -380,10 +404,13 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 │   │   │                                 availability, brand score, brand voice, actions
 │   │   ├── AvailabilityBadges.tsx     ← Platform dots, score bar, competitor radar warning
 │   │   ├── VisualIdentityPanel.tsx    ← 3-step visual flow: logos → mood board → mockup
+│   │   │                                 extractPalette() CSS art system (primary display path)
 │   │   ├── StyleDNASlider.tsx         ← Playful↔Premium / Abstract↔Descriptive sliders
 │   │   ├── RejectionDialog.tsx        ← AI clarifying question after reject+note
-│   │   ├── BrandScoreCard.tsx         ← (standalone score card — unused in main table)
-│   │   └── NameCardSkeleton.tsx       ← (loading skeleton — unused, replaced by dot animation)
+│   │   ├── PromptRichnessMeter.tsx    ← Intake form richness progress bar
+│   │   ├── ErrorBoundary.tsx          ← React error boundary wrapper
+│   │   ├── BrandScoreCard.tsx         ← Standalone score card component
+│   │   └── NameCardSkeleton.tsx       ← Loading skeleton (pulse animation)
 │   │
 │   ├── lib/
 │   │   ├── types.ts                   ← All TypeScript interfaces (mirrors models/types.go)
@@ -391,19 +418,25 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 │   │   └── api.ts                     ← Typed API fetch wrappers
 │   │
 │   └── public/
-│       ├── nomvox-logo2.png           ← Active logo (header)
+│       ├── favicon.ico                ← Browser favicon fallback
+│       ├── nomvox-icon.png            ← 512×512 brand icon
+│       ├── nomvox-logo.png            ← Full wordmark
+│       ├── nomvox-logo2.png           ← Active header logo
 │       └── nomvox-bg.png              ← Star-field background texture
 │
+├── 01-Plans/                          ← SDLC plan history (v1–v5 HTML)
+├── 00-SkillBuildLab/                  ← IBM SkillsBuild certificates
 ├── .env                               ← Local secrets (git-ignored)
 ├── .env.example                       ← Template — commit this, never .env
-├── .gitignore
+├── .gitignore · .dockerignore
 ├── Dockerfile                         ← Multi-stage Go build → alpine runtime
 ├── fly.toml                           ← Fly.io deployment config
 ├── go.mod                             ← Go module: github.com/c-annabel/NomVoxBranding
 ├── go.sum
 ├── nomvox.log                         ← Append-only LLM call log (git-ignored)
 ├── nomvox-server.exe                  ← Built binary (git-ignored)
-├── nomvox-plan-v3.md                  ← Full SDLC plan
+├── developer-bob-feedback.md          ← Candid IBM Bob dev feedback
+├── nomvox-plan.md                     ← SDLC plan with sub-task status
 ├── DesignDoc.md                       ← This file
 ├── README.md
 ├── test-diagnose.ps1                  ← Dev test script
@@ -721,16 +754,16 @@ Every `POST /api/generate` call:
 | **ST-03** | IBM watsonx.ai integration — IAM token exchange, `/ml/v1/text/chat`, `ExtractJSON` with truncation repair, file logging | ✅ Complete |
 | **ST-04** | Redis session memory (`BrandSession`), `POST /api/session`, `PATCH /api/session/react` (6 action types), Anti-Name Reasoning, `RejectionDialog` | ✅ Complete |
 | **ST-05** | Availability engine — RDAP domain, 6-platform parallel goroutines, weighted 60% gate (lowered from 80%), zero-pass fallback (top-2 partials + ⚠ banner), Competitor Radar | ✅ Complete |
-| **ST-06** | Full state machine UI — Like / Reject / Select, `StyleDNASlider`, liked names summary banner, two-screen flow | ✅ Complete |
+| **ST-06** | Full state machine UI — Like / Reject / Select, `StyleDNASlider`, liked names summary banner | ✅ Complete |
 | **ST-07** | `NameCardComponent` — 2-row 7-col table layout, `rejectedReason` banner, column head colours | ✅ Complete |
-| **ST-08** | `/api/visuals` — 5 concurrent goroutines (mood board ×4, 3 logos, mockup HTML, persona). `Base64ToDataURI` fixed to `RawURLEncoding` | ✅ Complete |
-| **ST-09** | Landing-page mockup via Granite — `BuildMockupSystemPrompt/UserPrompt`, 640px iframe in step 3/3 | ✅ Complete |
-| **ST-10** | `/api/export` — ZIP with `brand-brief.json`, `landing-page.html`, `mood-board/`, `logos/`, `README.txt`. `dataURIToBytes` fixed to `RawURLEncoding`. `selected_logo_key` → `logos/selected-logo.png` | ✅ Complete |
-| **ST-11** | `GET /api/debug-visuals`, Brand Score `text-sm` + `max-w-[80px]` bars, Brand Voice `text-sm`, availability 60s timeout | ✅ Complete |
+| **ST-08** | `/api/visuals` — 3-tier fallback chain (Imagen 3 → watsonx SVG → CSS art), `throttleGranite()` mutex, `graniteCallMu`, `Base64ToDataURI` RawURLEncoding fix | ✅ Complete |
+| **ST-09** | Landing-page mockup via Granite — `BuildMockupSystemPrompt/UserPrompt`, iframe 75% scale, 100vh strip, `hasMockup` validator | ✅ Complete |
+| **ST-10** | `/api/export` — ZIP with `brand-brief.json`, `landing-page.html`, `mood-board/`, `logos/`, `README.txt`. `dataURIToBytes` RawURLEncoding fix. Selected logo copy. | ✅ Complete |
+| **ST-11** | CSS/SVG visual system — `extractPalette()` bigram parser, palette-responsive logo/moodboard/landing components, mood board always 4 tiles (pad with CSS if AI returns fewer) | ✅ Complete |
 | **ST-12** | Radical name-invention prompt — 5 strategies (syllable forge, phonaesthetics, neologism splice, void-word, ancient root mutation) | ✅ Complete |
-| **ST-13** | Unit tests, mobile responsive check (375px / 768px / 1280px) | ⬜ Pending |
-| **ST-14** | Deploy to Fly.io (Go server) + Vercel (Next.js frontend) | ⬜ Pending |
-| **ST-15** | Demo video (3 min max), GitHub README final polish, submission page on challenge platform | ⬜ Pending |
+| **ST-13** | Unit tests — `go test ./...` 23/23 pass, `tsc --noEmit` 0 errors, `next build` clean | ✅ Complete |
+| **ST-14** | Deploy to Fly.io (Go API, `nomvox-api`, region `iad`) + Vercel (Next.js frontend, auto-deploy from GitHub `main`) | ✅ Complete |
+| **ST-15** | Demo video, IBM SkillsBuild certificates, submission page | 🔄 In progress |
 
 ---
 
@@ -788,20 +821,32 @@ Hit **Regenerate** — the AI creates a fresh batch of coined names using sessio
 
 ---
 
-### Logos / mood board show "Not available" after visuals generate
+### Logos / mood board show only CSS art (no AI images)
 
-This was a known base64 bug — now fixed. Verify your `.env` has `GOOGLE_AI_API_KEY` set, then run:
+This is **expected behaviour** in production. The three-tier fallback chain means:
 
+1. **Imagen 3 returns `429 RESOURCE_EXHAUSTED`** — Google AI Studio free-tier prepaid credits are exhausted. Visual generation falls back to watsonx SVG.
+2. **watsonx SVG returns `403 token_quota_reached`** — the daily free-tier token budget has been consumed by name generation and/or prior visual calls. All SVG generation returns empty.
+3. **CSS/SVG art system renders** — `extractPalette()` in `VisualIdentityPanel.tsx` derives colour tokens from the user's `color_mood` field and renders fully branded CSS components.
+
+**The CSS art system is the designed primary display path.** It is palette-responsive and personality-driven, not a degraded placeholder.
+
+To verify what tier is active:
 ```powershell
 Invoke-RestMethod http://localhost:8080/api/debug-visuals
 ```
 
-Expected good response:
+Expected responses:
 ```json
+// Imagen 3 working (credits available):
 { "imagen_ok": true, "data_uri_len": 340000, "granite_ok": true }
-```
 
-If `imagen_ok: false`, check `imagen_error` in the response — it will show the actual error from Google AI Studio (e.g. quota exceeded, invalid key, region not supported).
+// Imagen 3 depleted, watsonx SVG working:
+{ "imagen_ok": false, "imagen_error": "status 429: RESOURCE_EXHAUSTED", "granite_ok": true }
+
+// Both depleted — CSS art system active:
+{ "imagen_ok": false, "granite_ok": false, "granite_error": "status 403: token_quota_reached" }
+```
 
 ---
 

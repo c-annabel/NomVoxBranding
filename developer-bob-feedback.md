@@ -32,7 +32,7 @@ Building NomVox with Bob was a genuine learning experience. The developer came i
 Bob made these concepts accessible and practical — not abstract.
 
 ### Multi-Stack Fluency
-Bob held the full stack in context simultaneously: Go backend, TypeScript frontend, Redis session layer, deployment config (Fly.io `fly.toml`, Vercel `vercel.json`), and AI API integrations. Switching between layers in a single conversation without losing context is a genuine capability.
+Bob held the full stack in context simultaneously: Go backend, TypeScript frontend, Redis session layer, deployment config, and AI API integrations. Switching between layers in a single conversation without losing context is a genuine capability.
 
 ### Structured Prompting and AI Reasoning
 Bob's help crafting the watsonx.ai system prompts — especially the 5-strategy radical naming system, the Anti-Name Reasoning clarifying question loop, and the Brand Persona card — produced noticeably better LLM output than the developer's own first attempts. The prompt engineering assistance was a clear force multiplier.
@@ -48,70 +48,103 @@ Connecting to IBM watsonx.ai was the single most frustrating part of the project
 - **IAM token flow is non-obvious.** The documentation for obtaining a bearer token from `iam.cloud.ibm.com/identity/token` using an API key, caching it for 50 minutes, and refreshing it before expiry is scattered across multiple IBM Cloud docs pages that don't clearly link to each other. Bob helped eventually, but even Bob's first pass used a slightly outdated endpoint format that required a correction round.
 - **Project ID vs. Space ID confusion.** The watsonx.ai inference endpoint requires a `project_id` parameter, but the IBM Cloud UI shows both "Project ID" and "Space ID" in different places, and the error messages when the wrong one is used are generic and unhelpful (`400 Bad Request` with no field-level detail).
 - **Region endpoint inconsistency.** The `ca-tor` (Toronto) regional endpoint behaves differently from `us-south` in subtle ways — model availability, rate limits, and error message formats differ. This wasn't documented clearly anywhere.
-- **WML service association.** The Watson Machine Learning service must be associated with the watsonx project before inference calls work. This step is buried in the UI and the error you get when it's missing does not tell you what's wrong — it just returns a 403. Bob helped diagnose this eventually, but multiple dead-end cycles were spent before the root cause was identified. The error message on IBM's side should say "WML service not associated with this project."
+- **WML service association.** The Watson Machine Learning service must be associated with the watsonx project before inference calls work. This step is buried in the UI and the error you get when it's missing does not tell you what's wrong — it just returns a 403. Bob helped diagnose this eventually, but multiple dead-end cycles were spent before the root cause was identified.
 
 ### 2. Gemini / Imagen Charging Obstacle — IBM Has No Direct Equivalent
 
-The original architecture called for Imagen 3 (Google AI Studio) for logo and mood board image generation. This worked in local testing but hit a hard wall in production:
+The original architecture called for Imagen 3 (Google AI Studio) for logo and mood board image generation. This worked in local testing but hit a permanent wall in production:
 
-- **Gemini 2.5 Flash Image generation credits depleted permanently.** The free tier had exhausted its prepaid credit allocation, and further image generation requires billing enabled on a Google Cloud project. For a hackathon prototype with a fixed budget, this was a permanent blocker.
-- **IBM does not have a comparable image generation model available via watsonx.ai** at the time of development. IBM Granite is excellent for text and code. There is no IBM-native equivalent of Stable Diffusion, DALL-E, or Imagen accessible through the same watsonx interface. This creates an awkward gap for any project in the "Creative Industries" theme that needs actual image output.
-- **The fallback path (watsonx SVG generation)** worked but is inherently limited — an LLM generating SVG markup is not image generation, and the results are geometric/abstract rather than design-quality visuals.
-- **CSS art as a tertiary fallback** is functional and actually looks polished in the UI, but it is not "AI-generated imagery" in the sense that judges or users expect.
+- **Google AI Studio prepaid credits exhausted permanently.** The free tier had depleted its prepaid credit allocation, and further image generation requires billing enabled on Google Cloud. For a hackathon prototype with a fixed budget, this was a permanent blocker.
+- **IBM does not have a comparable image generation model available via watsonx.ai** at the time of development. IBM Granite is excellent for text and code. There is no IBM-native equivalent of Stable Diffusion, DALL-E, or Imagen accessible through the same watsonx interface.
 
-The result: all visual generation in the deployed product uses CSS/SVG fallbacks, not real AI imagery. This is an honest limitation that needed to be designed around rather than hidden.
+The actual error received from Gemini/Imagen in production:
+```
+gemini-image: status 429: {
+  "error": {
+    "code": 429,
+    "message": "Your prepayment credits are depleted. Please go to AI Studio
+    at https://ai.studio/projects to manage your project and billing.",
+    "status": "RESOURCE_EXHAUSTED"
+  }
+}
+```
+This appeared simultaneously for every visual call: logo profile, logo app, logo business, and all four mood board tiles. **The entire visual generation pipeline failed at once.**
 
-### 3. HTTP 429 — RESOURCE_EXHAUSTED at Runtime
+### 3. The SVG Fallback Path and watsonx Token Quota
 
-Even text generation via watsonx.ai hit rate limits frequently during development:
+When Imagen/Gemini failed, the code attempted to fall back to watsonx SVG generation via Granite. This also failed — with a different, more serious error:
 
-- The watsonx.ai free tier enforces a **2 requests/second** limit. NomVox's visual generation phase sends 7 concurrent calls (3 logos + 4 mood board tiles + 1 persona + 1 mockup). All 7 would 429 simultaneously.
-- The error response is `429 RESOURCE_EXHAUSTED` — the message is clear, but the fix (sequential calling with delays, exponential backoff, or upgrading to a paid tier) creates real architectural constraints for a demo product.
-- Bob's suggested fix (sequential generation with `time.Sleep` between calls) worked but added 15-25 seconds to the visual generation phase, which significantly hurts the demo experience.
-- Bobcoins were spent debugging 429s that turned out to be architectural (too many concurrent calls) rather than code bugs — the same issue diagnosed multiple ways before the root cause was accepted.
+```
+granite: chat status 403: {
+  "errors": [{
+    "code": "token_quota_reached",
+    "message": "Request of 1 token(s) from quota was rejected",
+    "more_info": "https://cloud.ibm.com/apidocs/watsonx-ai#text-chat"
+  }],
+  "status_code": 403
+}
+```
 
-### 4. Training Data Limitations — Some Problems Were Genuinely Unsolvable
+This `token_quota_reached` (403) error appeared across **all nine visual generation tasks simultaneously**:
+- `visuals: svg logo profile` → 403
+- `visuals: svg logo app` → 403
+- `visuals: svg logo business` → 403
+- `visuals: svg mood tile 0` → 403
+- `visuals: svg mood tile 1` → 403
+- `visuals: svg mood tile 2` → 403
+- `visuals: svg mood tile 3` → 403
+- `visuals: mockup html` → 403
+- `visuals: persona` → 403
 
-There were several technical questions where Bob consistently produced answers that didn't work, and it became apparent the training data was either outdated or insufficient for the specific domain:
+The watsonx free tier enforces a **2 requests/second** rate limit, and NomVox's visual phase was making 7–9 concurrent calls simultaneously. Even with the `throttleGranite()` serialization lock added to enforce 600ms gaps between calls, when the *daily token quota* for the free account was reached, every call failed with 403 regardless of timing.
 
-- **Puppeteer headless screenshot on Fly.io** — multiple attempts, multiple approaches (custom buildpack, Chrome binary path, `--no-sandbox` flags), none worked reliably in the Fly.io container environment. Bob tried many configurations confidently, but each failed in slightly different ways. This feature (taking live screenshots of taken social handles) was eventually cut from scope.
-- **Fly.io machine autosuspend + cold-start latency** — understanding the exact behavior of `auto_stop_machines = "stop"` and how it interacts with Upstash Redis connection pool teardown required reading Fly.io community forums, not Bob's answers, which were generic.
-- **Next.js App Router `app/icon.png` favicon** — nearly 40 bobcoins were spent over multiple sessions trying to get the favicon to display correctly in the browser tab. Bob tried: `public/favicon.ico`, `app/icon.png`, `metadata.icons` in layout.tsx, `vercel.json` headers, and combinations thereof. In the final session, Bob declared the fix correct — "it should work on Vercel after deploy." It did not visibly change in local development (which Bob later acknowledged is expected browser behavior for localhost). The uncertainty was never fully resolved — the issue was closed by reasoning that localhost behavior is not representative, not by confirming it worked on Vercel. Forty bobcoins for a favicon is a real cost.
+**Root cause:** The free-tier token quota covers both text generation (name generation, session memory calls) and visual generation. A long name-generation session — multiple regenerate cycles, several users — could exhaust the daily quota before any visual generation was attempted.
 
-### 5. Outdated Instructions
+**How the code handles it:** The Go `visuals.go` handler tolerates individual failures gracefully. Each goroutine logs the error and returns an empty result. The `visualsResponse` struct fields default to empty strings and nil arrays. The frontend `VisualIdentityPanel.tsx` then renders the **CSS art system** as the guaranteed primary display path — a fully palette-responsive visual design built from `extractPalette()` on the user's `color_mood` field. The user sees a branded, professional result regardless of API state.
 
-Several specific areas where Bob's answers reflected older versions of tools:
+**The CSS art system is not a degraded experience.** It is a deliberately designed fallback that works at all times, with zero API calls, with zero cost, and with zero rate limits. It was a design decision driven by necessity that produced a more reliable product.
 
-- **Next.js 13 vs. App Router patterns** — early sessions produced `getServerSideProps` patterns that no longer apply in Next.js 14+/App Router. Had to explicitly ask Bob to use App Router conventions.
-- **Tailwind CSS v4 syntax** — Bob defaulted to Tailwind v3 `@apply` and config-file patterns; Tailwind v4 uses a different CSS-variable-based approach. Several rounds of correction were needed.
-- **watsonx.ai API schema** — the `parameters` field naming (`max_new_tokens` vs. `max_tokens`) changed between versions and Bob's initial code used the older format, producing silent failures.
-- **Fly.io CLI flags** — `fly secrets set` flag syntax in some Bob suggestions used deprecated flag formats.
+### 4. HTTP 429 — RESOURCE_EXHAUSTED at the Rate Level
 
-### 6. Unintended "Improvements" Without Consultation
+Even within-quota, the watsonx.ai free tier enforced a 2 requests/second limit. NomVox sends 7 concurrent calls (3 logos + 4 mood board tiles) when all generate simultaneously. The fix required:
+
+1. A `graniteCallMu` mutex and `graniteLastCall` timestamp to serialize *when* each Granite call starts
+2. A `throttleGranite()` function that enforces a minimum 600ms gap between call starts
+3. Accepting that the visual generation phase now takes 5–8 seconds sequentially rather than 1–2 seconds concurrently
+
+This added significant latency to the demo but prevented the cascade of 429 errors that made the visual phase appear broken.
+
+### 5. Training Data Limitations — Genuinely Unsolvable Problems
+
+Several areas where Bob's answers were consistently off or outdated:
+
+- **Puppeteer headless screenshots on Fly.io** — multiple approaches, multiple Chrome binary path configurations, none worked reliably in the container environment. Each attempt was confident; each failed differently. This feature was cut.
+- **Fly.io cold-start + Upstash Redis** — understanding the exact interaction between `auto_stop_machines = "stop"` and the Redis connection pool required reading Fly.io community forums, not Bob's answers.
+- **Next.js App Router favicon** — approximately 40 bobcoins spent across multiple sessions. Bob tried `public/favicon.ico`, `app/icon.png`, `metadata.icons` in layout.tsx, and `vercel.json` headers. Final verdict: "it's correct, it will work on Vercel." The localhost "N" is browser behavior. This was technically accurate but took far too long to arrive at.
+
+### 6. Outdated Instructions
+
+- **Next.js 13 vs App Router patterns** — early sessions produced `getServerSideProps` patterns that no longer apply. Had to explicitly ask for App Router conventions.
+- **Tailwind CSS v4 syntax** — Bob defaulted to v3 `@apply` and config-file patterns. Multiple correction rounds needed.
+- **watsonx.ai API schema** — `max_new_tokens` vs `max_tokens` field naming changed between versions; Bob's initial code used the older format, producing silent failures.
+- **Fly.io CLI flags** — some suggested flag formats were deprecated.
+
+### 7. Unintended "Improvements" Without Consultation
 
 On multiple occasions, Bob changed functioning code while fixing something minor:
 
-- A request to adjust the color of a footer text element resulted in a refactor of the footer component's layout, removing a working gradient border that had taken time to tune.
-- A request to fix the iframe scrollbar (a one-line CSS fix) produced a diff that also rewrote the entire `hasMockup` validation logic — the new logic was correct but the change was broader than requested and introduced a brief regression on a different field.
-- A request to update a label string triggered a re-evaluation of the entire component's state management, adding an unnecessary `useEffect`.
+- A request to adjust footer text color resulted in a refactor of the footer component's layout, removing a working gradient border.
+- A request to fix the iframe scrollbar produced a diff that also rewrote the `hasMockup` validation logic — the new logic was correct but the scope was broader than requested.
+- A request to update a label string triggered a re-evaluation of the component's state management, adding an unnecessary `useEffect`.
 
-The pattern: Bob reads the surrounding context and "improves" what it sees, even when the instruction was surgical. For a solo developer on a deadline, unexpected refactors are high-risk.
+The pattern: Bob reads surrounding context and "improves" what it sees, even when the instruction was surgical. For a solo developer on a deadline, unexpected refactors are high-risk.
 
-### 7. Bobcoin Consumption Rate
+### 8. Bobcoin Consumption Rate
 
-- **Simple questions consumed surprising coin amounts** — asking "what does this error mean?" for a single-line error output, or "is this import correct?", would sometimes trigger long exploratory reasoning chains that consumed significant coin before reaching a simple answer.
-- **Redundant reviews** — Bob would sometimes re-read and re-summarize files it had already seen in the same session, spending coin on recap rather than action. Prefacing requests with "don't re-read the file, just answer" sometimes helped but wasn't always respected.
-- **Thinking time** — on complex requests (multi-file diffs, architecture decisions), the "thinking" phase before output was sometimes 60+ seconds with no visible progress indicator from the developer's perspective — just waiting. This made it difficult to know whether Bob was working or had stalled.
-- **Long response time on bug hits** — when Bob encountered a genuinely novel bug (not in training data), response time increased significantly as it explored approaches. These were also the sessions most likely to produce incorrect first attempts, meaning multiple expensive rounds.
-- **Token limits on large files** — `VisualIdentityPanel.tsx` at 1,100+ lines frequently required splitting into range reads (e.g., lines 1-200, 200-450, etc.) because a single full-file read would hit context or cost limits. The overhead of re-assembling context across multiple reads added up over many sessions.
-
-### 8. The Favicon Saga — A Case Study
-
-The favicon issue deserves its own entry as a cautionary tale about diminishing returns:
-
-Over multiple sessions, Bob attempted: writing `public/favicon.ico`, adding `metadata.icons` to `layout.tsx`, creating `app/icon.png` (App Router convention), adding `vercel.json` cache headers, and explaining that localhost shows a letter "N" which is normal browser behavior. Each attempt was confident, each consumed bobcoins, and the final verdict was "it's correct, it will work on Vercel."
-
-The browser tab on localhost still shows the Edge-generated "N" for localhost. On Vercel, the correct icon may or may not be showing (unconfirmed at time of writing). **~40 bobcoins** were spent. The correct answer, identified in hindsight: `app/icon.png` is the right approach for Next.js App Router, and localhost Edge behavior is irrelevant. That insight could have been delivered in one response at the start.
+- **Simple questions consumed disproportionate coin.** Asking "what does this error mean?" for a single-line error output sometimes triggered long exploratory reasoning chains before a simple answer.
+- **Redundant session recaps.** Bob would sometimes re-read and re-summarize files it had already seen in the same session, spending coin on recap rather than action.
+- **Long response time on novel bugs.** When Bob encountered a genuinely novel bug (not in training data), response time increased significantly and the first attempt was often incorrect.
+- **Token limits on large files.** `VisualIdentityPanel.tsx` at 1,100+ lines frequently required splitting into range reads (lines 1-200, 200-450, etc.) because a single full-file read would hit context limits. The overhead of re-assembling context across multiple reads added up.
 
 ---
 
@@ -134,12 +167,13 @@ The browser tab on localhost still shows the Edge-generated "N" for localhost. O
 
 ## Suggestions for IBM Bob Team
 
-1. **Add a "surgical edit" mode** — when a user says "change only X", Bob should scope its diff strictly to X and not refactor adjacent code.
-2. **Improve watsonx.ai setup documentation** — a single "getting started" guide covering IAM token flow, WML service association, project ID location, and regional endpoint differences would save every watsonx-based project significant time.
+1. **Add a "surgical edit" mode** — when a user says "change only X", scope the diff strictly to X.
+2. **Improve watsonx.ai setup documentation** — a single getting-started guide covering IAM token flow, WML service association, project ID location, and regional endpoint differences would save every project significant time.
 3. **Acknowledge IBM's image generation gap honestly** — rather than suggesting Gemini/Imagen alternatives that may have cost barriers, Bob should proactively offer the SVG/CSS fallback path as a first-class option with honest tradeoffs stated upfront.
-4. **Bobcoin cost previews** — show an estimated cost before executing long reasoning chains. Let the developer decide if the question is worth it.
-5. **Reduce recap overhead** — within a session, don't re-summarize files already loaded. Trust the context.
-6. **Version-pin recommendations** — when suggesting API patterns, state which version of the library/framework they apply to. "This is the Next.js 14 App Router pattern" vs. "This is the Pages Router pattern" would have saved multiple correction cycles.
+4. **Bobcoin cost previews** — show an estimated cost before executing long reasoning chains.
+5. **Reduce recap overhead** — within a session, don't re-summarize files already loaded.
+6. **Version-pin recommendations** — state which framework version a pattern applies to.
+7. **Token quota documentation** — explicitly document the difference between the 2 req/s rate limit (HTTP 429) and the daily token quota (HTTP 403 `token_quota_reached`). These are two different limits that produce different errors and require different fixes. Many developers will confuse them.
 
 ---
 

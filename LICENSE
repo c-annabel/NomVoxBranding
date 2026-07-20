@@ -2,20 +2,33 @@ MIT License
 
 Copyright (c) 2026 c-annabel
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+All rights reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This repository — including its source code, documentation, the NomVox name,
+logo, color palette, and all other brand or design assets — is made publicly
+available on GitHub for viewing and cloning only, as part of a submission to
+the AI Builders Challenge with IBM Bob (sponsored by IBM SkillsBuild,
+organized by BeMyApp).
+
+You may view this repository and clone it locally for personal, non-commercial
+reference. No other rights are granted. Specifically, without prior written
+permission from the copyright holder, you may NOT:
+
+  - Use, copy, modify, merge, publish, or distribute this code or any part
+    of it in another project;
+  - Sell, sublicense, or otherwise commercialize this software or any
+    derivative of it;
+  - Remove, replace, or omit the "NomVox" name, logo, wordmark, color
+    palette, or any other brand asset and deploy the resulting software,
+    in whole or in part, as your own product or service, whether modified
+    or unmodified.
+
+All copyright and other intellectual property rights in this repository
+remain the sole property of the copyright holder.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

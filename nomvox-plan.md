@@ -1,7 +1,7 @@
-# NomVox SDLC Plan — v5 (Final)
+# NomVox SDLC Plan — v5 (Final, Deployed)
 
-> Last updated: July 2026  
-> Status: Prototype complete, deployed to production, submission in progress
+> Last updated: July 2026
+> Status: Prototype complete · Deployed to production 
 
 ---
 
@@ -80,6 +80,37 @@ A fully dynamic **CSS/SVG visual system** — `extractPalette()` parses the user
   - Personality-driven button radius (pill for playful, sharp for edgy, rounded for standard)
   - Feature strip with industry, personality, target audience
 
+### The Quota Cascade — What Actually Happened in Production
+
+On a session with multiple name regenerations, the watsonx.ai free-tier daily token quota can be exhausted entirely before the user reaches the visual phase. When this happens:
+
+```
+Imagen 3 → HTTP 429 RESOURCE_EXHAUSTED
+  "Your prepayment credits are depleted."
+  (Google AI Studio free-tier credits exhausted permanently)
+
+watsonx SVG fallback → HTTP 403 token_quota_reached
+  "Request of 1 token(s) from quota was rejected"
+  (watsonx free-tier daily budget consumed by name gen calls)
+
+Result: all 9 visual tasks fail simultaneously
+  visuals: persona → 403
+  visuals: svg logo profile → 403
+  visuals: svg logo app → 403
+  visuals: svg logo business → 403
+  visuals: svg mood tile 0 → 403
+  visuals: svg mood tile 1 → 403
+  visuals: svg mood tile 2 → 403
+  visuals: svg mood tile 3 → 403
+  visuals: mockup html → 403
+```
+
+**The 403 `token_quota_reached` and 429 `RESOURCE_EXHAUSTED` are two different failures:**
+- `429` = per-second rate limit → fixed by `throttleGranite()` serialization with 600ms gaps
+- `403` = daily token budget exhausted → only resets at midnight UTC or on plan upgrade
+
+The `throttleGranite()` mutex prevents the rate-limit 429s. Nothing can prevent the quota 403s except spending fewer tokens overall or upgrading the account.
+
 ### Future path
 When IBM watsonx.ai releases a native image generation model, or when a paid Stability AI / Replicate / Together.ai integration is scoped and budgeted, the CSS components are designed for drop-in replacement at the same JSX insertion points (`VisualIdentityPanel.tsx`).
 
@@ -145,6 +176,7 @@ NomVoxBranding/
 │   │   ├── generate.go             ← POST /api/generate (4 names, availability gate)
 │   │   ├── visuals.go              ← POST /api/visuals (logos+moodboard+mockup, 2-phase)
 │   │   ├── export.go               ← POST /api/export (ZIP stream, SVG-aware)
+│   │   ├── export_fallback.go      ← POST /api/export_fallback (ZIP stream, SVG-aware)
 │   │   ├── session.go              ← GET/PATCH /api/session/*
 │   │   ├── availability.go         ← POST /api/availability
 │   │   ├── debug_llm.go            ← Dev debug endpoint
@@ -161,11 +193,13 @@ NomVoxBranding/
 ├── frontend/
 │   ├── app/
 │   │   ├── layout.tsx              ← Root layout + metadata + favicon
-│   │   ├── page.tsx                ← Server component wrapper
+│   │   ├── page.tsx                ← Landing main page
+│   │   ├── landing.css             ← Landing page style
 │   │   ├── HomeClient.tsx          ← 5-screen state machine + all API calls
 │   │   ├── globals.css             ← Brand tokens, animations, nv-dot keyframes
 │   │   ├── icon.png                ← App Router favicon (Next.js auto-generates <link>)
-│   │   └── favicon.ico             ← Legacy/fallback favicon
+│   │   └── build/                   
+│   │       └── page.tsx            ← Server component wrapper
 │   │
 │   ├── components/
 │   │   ├── IntakeForm.tsx           ← 8-field form (Q1–Q8) + richness meter
@@ -188,6 +222,7 @@ NomVoxBranding/
 │   │   ├── favicon.ico
 │   │   ├── nomvox-icon.png         ← 512×512 brand icon
 │   │   ├── nomvox-logo.png
+│   │   ├── nomvox-logo2.png
 │   │   └── nomvox-bg.png
 │   │
 │   └── vercel.json                 ← Cache headers for favicon assets
@@ -205,47 +240,26 @@ NomVoxBranding/
 └── developer-bob-feedback.md       ← Candid IBM Bob dev feedback
 ```
 
+**Favicon resolution:** Browser tab icon on deployed Vercel URL served from `app/icon.png` (Next.js App Router convention). `public/favicon.ico` serves as legacy fallback. localhost Edge behavior (shows "N") is browser behavior, not a code bug.
+
 ---
 
-## Fly.io + Vercel Deployment — What Was Done
+## Development Process Summary
 
-### Fly.io (Go API Backend)
+### What was genuinely hard
+- **watsonx IAM setup** — IAM token flow, WML service association, Project vs Space ID, regional endpoint differences: all underdocumented. Required multiple dead-end debug cycles before first successful call.
+- **The quota cascade** — Imagen 3 depleted (permanent 429 `RESOURCE_EXHAUSTED`), watsonx SVG hits 403 `token_quota_reached` when daily budget runs out from name generation calls. Two different errors, two different causes, both required architectural decisions rather than code fixes.
+- **Concurrent goroutine rate limiting** — 7 concurrent watsonx calls at 2 req/s → all 429. Added `throttleGranite()` mutex. Adds latency but prevents cascade failure.
+- **JSON truncation repair** — LLM occasionally truncates JSON array at token limit. `ExtractJSON()` with repair loop handles partial arrays; still occasionally fails with `unexpected end of JSON input` (logged, auto-retry triggered).
+- **Puppeteer on Fly.io** — Chrome binary constraints on shared-cpu containers. Multiple approaches, none reliable. Feature cut.
+- **Favicon on localhost** — App Router `app/icon.png` is correct. Browser shows "N" on localhost — browser behavior, not a code bug.
 
-1. Wrote multi-stage `Dockerfile`:
-   - Stage 1 (`golang:1.22-alpine`): `go build -o nomvox-server ./cmd/server`
-   - Stage 2 (`alpine:3.20`): copy binary + set `EXPOSE 8080`
-2. Created `fly.toml`:
-   ```toml
-   app = "nomvox-api"
-   primary_region = "iad"
-   [http_service]
-     internal_port = 8080
-     force_https = true
-     auto_stop_machines = "stop"
-     auto_start_machines = true
-   [[vm]]
-     size = "shared-cpu-1x"
-   ```
-3. Set secrets via `fly secrets set`:
-   - `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`
-   - `REDIS_URL` (Upstash connection string)
-   - `ALLOWED_ORIGIN=https://nomvox.vercel.app`
-4. Deployed: `fly deploy` — builds Docker image on Fly infrastructure, deploys to IAD region
-5. Verified: `https://nomvox-api.fly.dev/api/ping` → `{"status":"ok"}`
-
-**Key adaptation:** `auto_stop_machines = "stop"` saves cost but creates 2–4s cold start on first request after inactivity. The `min_machines_running = 0` means zero cost when idle.
-
-**CORS:** `ALLOWED_ORIGIN` env var controls which frontend origins the API accepts. Updated on every new Vercel deployment URL.
-
-### Vercel (Next.js Frontend)
-
-1. `cd frontend && npx vercel --prod` — auto-detected Next.js, configured build settings
-2. Set `NEXT_PUBLIC_API_URL=https://nomvox-api.fly.dev` in Vercel environment variables
-3. Pushed to GitHub `main` — Vercel auto-deploys on every push
-4. Added `vercel.json` for favicon cache headers
-5. `app/icon.png` added for Next.js App Router native favicon handling (`/icon.png` route registered automatically)
-
-**Favicon resolution:** Browser tab icon on deployed Vercel URL served from `app/icon.png` (Next.js App Router convention). `public/favicon.ico` serves as legacy fallback. localhost Edge behavior (shows "N") is browser behavior, not a code bug.
+### What worked well from day one
+- **RDAP domain availability** — reliable, no API key, no scraping, Verisign-hosted. Always returns clean 200/404.
+- **Session memory in Redis** — clean `BrandSession` struct, `PATCH /api/session/react` pattern, full inject on every generate call. The creative-partner loop works exactly as designed.
+- **ZIP export** — `archive/zip` streamed with no temp files, `dataURIToBytes()` with RawURLEncoding fallback. Reliable across all asset types.
+- **CSS/SVG visual system** — `extractPalette()` bigram parser + palette-responsive component tree. Works at all times, zero cost, zero rate limits.
+- **Anti-name reasoning loop** — rejection dialog + AI clarifying question + session inject works cleanly end-to-end.
 
 ---
 
@@ -319,21 +333,6 @@ npx next build — Compiled successfully (Turbopack, 1831ms)
 - [ ] **Shopify / Squarespace plugin:** Brand naming embedded in website builder onboarding
 - [ ] **IBM co-marketing:** Reference implementation of watsonx.ai for Creative Industries
 - [ ] **Accelerator partnerships:** Pre-cohort brand naming tool for YC, Techstars, On Deck cohorts
-
----
-
-## 3-Minute Demo Script
-
-| Time | Segment | On Screen | Voiceover |
-|---|---|---|---|
-| 0:00–0:20 | Hook | NomVox landing page, void/signal animation | "Every great brand starts as a feeling you can't quite name. NomVox changes that." |
-| 0:20–0:50 | Intake Form | Fill all 8 fields; richness meter turns green | "Eight fields. That's all the engine needs. Watch the richness meter fill." |
-| 0:50–1:20 | Results + Gate | 4 name cards stream in; 1–2 filtered; show score badges | "Some names were filtered automatically — they didn't clear the availability threshold. These did." |
-| 1:20–1:40 | Reject + Reasoning | Reject with note 'too corporate'; AI responds with clarifying question | "When I reject a name, NomVox doesn't just spin again. It asks what I actually meant." |
-| 1:40–2:10 | Select + Visuals | Choose a name; logo concepts + mood board render | "I choose a name. The engine builds a complete visual identity — logo concepts, mood board, brand persona." |
-| 2:10–2:30 | Persona + Voice | Show persona card; voice samples panel | "This is the brand as a person. And here's how it writes an Instagram caption and a 404 page." |
-| 2:30–2:50 | Export | Export Pack → ZIP downloads | "One ZIP. Everything a founder needs." |
-| 2:50–3:00 | Close | Architecture diagram (5 seconds) | "Built with IBM Granite, watsonx.ai, Go, and IBM Bob. NomVox — signal sent, brand received." |
 
 ---
 
