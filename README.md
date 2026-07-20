@@ -1,9 +1,9 @@
 # NomVox — Born from the Void
 
-> **AI-powered brand identity platform.**  
+> **AI-powered brand identity platform.**
 > From a single idea to a complete brand universe — coined names, availability checks, logo concepts, mood boards, and a landing page mockup — synthesized in one session.
 
-Built for the **IBM AI Builders Challenge · July 2026 · Creative Industries**  
+Built for the **AI Builders Challenge with IBM Bob · July 2026 · Creative Industries**
 **Primary development tool: IBM Bob**
 
 [![Live](https://img.shields.io/badge/Live_App-nomvox.vercel.app-8B5CF6?style=flat-square)](https://nomvox.vercel.app)
@@ -12,63 +12,91 @@ Built for the **IBM AI Builders Challenge · July 2026 · Creative Industries**
 
 ---
 
-## The Problem
+## Problem Statement
 
-Every founder, creator, and side-hustle builder hits the same blank-page wall: *what do I call this, and does anyone already own it?*
+Naming a brand means opening ten tabs — a thesaurus, a domain registrar, five social apps, a logo tool, a blank design file — and spending days before having anything shareable. Static name-generator tools make it worse: there's no way to say "I liked #3 but want it shorter" and have the tool actually respond.
 
-Today that means opening ten tabs — a name brainstorm doc, a domain registrar, Instagram search, X search, TikTok search, a freelancer quote for a logo — and spending days in back-and-forth before having anything shareable. And when a naming tool spits out a static list, there's no way to say "I liked the energy of #3 but want it shorter" and have it actually respond.
-
-**NomVox closes that gap.** It acts as a creative partner, not a generator — it remembers what you liked, what you rejected, and why, and it gets smarter with every reaction.
+**NomVox closes that gap.** It's a creative partner, not a generator — it remembers what you liked, what you rejected, and why, and gets sharper with every reaction.
 
 ---
 
-## What NomVox Does
+## Solution
 
-A founder types their idea. NomVox synthesizes up to five **coined brand names** — invented words built from phonaesthetics, syllable forging, ancient root mutation, and neologism splicing. Each name arrives with:
+One idea in, a full brand out:
 
-- A **tagline**, **origin story**, and **tone reasoning** — explaining *why* the word works
-- A **brand score** across Memorability, Spellability, Global Safety, and Squatter Risk
-- **Three brand voice samples** — an Instagram caption, email subject line, and 404 message
-- **Live availability checks** across `.com` domain and five social platforms simultaneously
-- A **competitor radar** flag if the name semantically clashes with a known brand in the category
+- **Coined names** — invented words, never dictionary terms, each with a tagline, origin story, and tone reasoning
+- **Brand score** — Memorability, Spellability, Global Safety, Squatter Risk
+- **Brand voice samples** — Instagram caption, email subject, 404 message
+- **Live availability** — `.com` domain + five social platforms, checked in parallel before a name is ever shown
+- **Competitor radar** — flags semantic overlap with known brands in the category
 
-The user **likes**, **passes** (with a reason), or **chooses** a name. Passing triggers the AI's **anti-name reasoning** — it asks one clarifying question to understand what was wrong. That answer, plus all liked names and rejection notes, is injected into every subsequent generation call. This is the **creative-partner loop**: the AI learns within the session.
+Liking, passing (with a reason), or choosing a name feeds directly into the next AI call — passing triggers one clarifying question, and every prior reaction shapes what comes next. This is the **creative-partner loop**.
 
-Once a name is chosen, NomVox generates a complete **visual identity pack**: three logo concept directions, a four-panel mood board, a brand persona card, and an AI-generated hero landing page mockup — all calibrated to the user's brand palette and personality. Everything exports as a ZIP.
+Once a name is picked: three logo directions, a four-panel mood board, a brand persona card, and a landing page mockup — all from one consistent palette. Everything exports as a ZIP.
 
 ---
 
-## Why This Wins on Every Judging Criterion
+## Selected Challenge Theme
 
-### ✦ Technical Execution
-- **IBM watsonx.ai** (Llama 3.3 70B via `ca-tor.ml.cloud.ibm.com`) powers all AI reasoning: name generation with five distinct invention strategies, origin stories, brand scores, voice samples, competitor radar, persona cards, SVG logo concepts, mood board tiles, and HTML landing page mockups
-- **Go API server** (chi router) orchestrates parallel goroutines for simultaneous availability probing across six platforms and concurrent visual generation
-- **Redis session store** (Upstash) persists the full creative conversation — liked names, rejections, direction notes, slider positions — across every API call
-- **Three-tier visual fallback chain**: Imagen 3 PNG → watsonx SVG → CSS art system — the app never shows a broken state
+**July Challenge — Reimagine Creative Industries with AI**
 
-### ✦ Innovation
-- **Creative-partner loop**: the AI asks clarifying questions when names are rejected and injects the user's full reaction history into every subsequent prompt — this is not a list generator
-- **Anti-name reasoning**: structured rejection flow that makes refusal productive rather than frustrating
-- **Style DNA sliders**: two-axis tonal control (Playful↔Premium, Abstract↔Descriptive) that shifts the AI's generation character in real time
-- **Competitor radar**: a second AI pass that semantically compares generated names against known brands in the user's industry
-- **CSS/SVG visual system**: when AI image generation is unavailable, a fully dynamic palette-responsive design system renders every visual component from the user's stated colour mood — no static placeholders
+| Solution area | How NomVox addresses it |
+|---|---|
+| AI Creative Partner | Session memory — every like/pass/note shapes the next generation |
+| Creative Ideation & Brainstorming | Multi-strategy coined-name generation with scoring |
+| AI-Powered Design & Visual Concept Tools | Logos, mood board, and landing page from one brand system |
+| Personalized Creative Assistant | No two sessions produce the same output |
 
-### ✦ Challenge Fit — Creative Industries
-NomVox spans **four of the six example solution areas** simultaneously:
-- **AI Creative Partner** — the session-memory-driven name refinement loop
-- **Creative Ideation & Brainstorming Platform** — multi-strategy coined name generation with scoring
-- **AI-powered Design & Visual Concept Tools** — logos, mood boards, landing page
-- **Personalized Creative Assistant** — every session is unique; the AI adapts to individual direction
+---
 
-### ✦ Feasibility
-- Deployed and publicly accessible today at [nomvox.vercel.app](https://nomvox.vercel.app)
-- Zero-dependency visual fallbacks mean the demo works regardless of API quota state
-- Full ZIP export means output is immediately usable by a developer, printer, or registrar
+## AI Approach & Architecture
 
-### ✦ Real-World Impact
-- Universal audience: anyone launching anything — a startup, a side project, a band, a nonprofit — needs a name and handle before anything else
-- Instant demo value: a judge types "eco-friendly coffee brand for young professionals" and watches AI generate names, check availability, and build a visual identity in real time
-- Addresses a real pain point with a clear workflow, not a toy
+**Model.** All AI reasoning runs on **IBM watsonx.ai with IBM Granite** — names, origin stories, scoring, voice samples, competitor radar, persona cards, SVG logos, mood board tiles, and landing page HTML. Auth is IBM Cloud IAM (API key → Bearer token, cached 50 min).
+
+```mermaid
+flowchart LR
+    A[User describes idea] --> B[Go API]
+    B --> C[watsonx — Granite]
+    C --> D[Names + scores]
+    B --> E[Availability Engine]
+    E -->|parallel| F[RDAP domain check]
+    E -->|parallel| G[5 social probes]
+    D --> H[Redis session memory]
+    F --> H
+    G --> H
+    H -->|injected into next call| C
+    H --> I[Name selected]
+    I --> J[Visual generation: logos, mood board, persona, landing page]
+    J --> C
+    J --> K[ZIP export]
+```
+
+**Concurrency.** Go's `sync.WaitGroup` runs six availability probes and four visual-generation tasks in parallel — a session that would take 30+ seconds serialized completes in a few seconds.
+
+**Session memory is the core mechanism.** Every like, pass-with-reason, slider move, and clarifying answer persists in Redis and is re-injected into the next watsonx call. Reject a name as "too playful" and the next batch is generated against that constraint — it's a conversation, not a list generator.
+
+**No broken states.** Every AI-generated asset has a deterministic CSS/SVG fallback, built from the user's actual inputs, if a watsonx call fails or quota runs out. The app never shows a blank screen regardless of upstream API health — this matters for a live demo where quota is genuinely unpredictable.
+
+---
+
+## How IBM Bob Was Used
+
+IBM Bob was the primary development tool across the full build, used as a conversational pair-programmer:
+
+- **Built by conversation** — features were described in plain language; Bob wrote the implementation and iterated through follow-up questions rather than one-shot prompts
+- **Debug loop** — the most common pattern: paste an error → Bob diagnoses the root cause → Bob patches the file directly
+- **Cross-stack context** — Bob held the Go backend, Next.js/TypeScript frontend, and deployment config (Fly.io, Vercel) together, which mattered for bugs spanning multiple layers
+- **Docs from conversation** — this README and the SDLC plan were produced by asking Bob to summarize what had been built, rather than writing documentation separately after the fact
+- **Full SDLC** — architecture through active production debugging (deployment failures, dependency conflicts, watsonx auth setup) to final docs, as the one consistent tool throughout
+
+---
+
+## Feasibility & Real-World Impact
+
+- **Live today** at [nomvox.vercel.app](https://nomvox.vercel.app)
+- **No broken demo state** — fallbacks mean it works regardless of AI quota at judging time
+- **Real output** — full ZIP export, immediately usable by a developer, printer, or registrar
+- **Universal need** — anyone launching anything needs a name and handle first
 
 ---
 
@@ -76,33 +104,32 @@ NomVox spans **four of the six example solution areas** simultaneously:
 
 | Capability | What it does |
 |---|---|
-| **Coined name generation** | 5 invention strategies: syllable forge · phonaesthetics · neologism splice · void-word · ancient root mutation |
-| **Origin stories** | Etymology and sound-symbolism reasoning for each invented name |
-| **Brand scoring** | Memorability · Spellability · Global Safety · Squatter Risk with reasoning |
-| **Brand voice samples** | Instagram caption · Email subject · 404 page message — written in the brand's voice |
-| **Live availability engine** | Parallel RDAP domain check + HEAD probes: Instagram · X · TikTok · Threads · YouTube |
-| **60% availability gate** | Names must clear a weighted threshold; zero-pass fallback shows top-2 partials |
-| **Session memory** | Liked/rejected/direction notes persist in Redis and inject into every AI call |
-| **Anti-name reasoning** | AI asks one clarifying question when a name is rejected with a note |
-| **Style DNA sliders** | Playful↔Premium and Abstract↔Descriptive axes shift generation tone in real time |
-| **Competitor radar** | Second AI pass flags semantic overlap with known brands in the user's industry |
-| **Logo concepts** | Three CSS/SVG styles: Geometric Bauhaus mark · Glassmorphic app icon · Horizontal wordmark |
-| **Mood board** | Four-panel visual board — Colour World · Brand Identity · Pattern DNA · Typography — palette-driven |
-| **Brand persona** | "Brand as a person" — age, occupation, voice, what it reads, what it would never say |
-| **Landing page mockup** | AI-generated hero section HTML/CSS + CSS art fallback, rendered in a sandboxed iframe |
-| **Export ZIP** | brand-brief.json · brand-brief.html · logos/ · mood-board/ · landing-page.html · README.txt |
+| Coined name generation | 5 invention strategies: syllable forge · phonaesthetics · neologism splice · void-word · ancient root mutation |
+| Origin stories | Etymology and sound-symbolism reasoning per name |
+| Brand scoring | Memorability · Spellability · Global Safety · Squatter Risk, with reasoning |
+| Brand voice samples | Instagram caption · Email subject · 404 message |
+| Live availability engine | Parallel RDAP domain check + HEAD probes: Instagram · X · TikTok · Threads · YouTube |
+| 60% availability gate | Names must clear a weighted threshold; zero-pass fallback shows top-2 partials |
+| Session memory | Liked/rejected/notes persist in Redis, injected into every AI call |
+| Anti-name reasoning | AI asks one clarifying question on a rejection with a note |
+| Style DNA sliders | Playful↔Premium and Abstract↔Descriptive, shift tone in real time |
+| Competitor radar | Second AI pass flags semantic overlap with known brands |
+| Logo concepts | 3 CSS/SVG styles: Geometric Bauhaus · Glassmorphic app icon · Horizontal wordmark |
+| Mood board | 4-panel palette-driven board: Colour World · Brand Identity · Pattern DNA · Typography |
+| Brand persona | Age, occupation, voice, what it reads, what it never says |
+| Landing page mockup | AI HTML/CSS hero section with CSS fallback, sandboxed iframe |
+| Export ZIP | brand-brief.json/html · logos/ · mood-board/ · landing-page.html · README.txt |
 
 ---
 
 ## IBM Technologies at the Core
 
-| IBM Technology | Role |
+| Technology | Role |
 |---|---|
-| **IBM Bob** | Primary development tool across the full SDLC — architecture, code generation, prompt engineering, debugging, documentation |
-| **IBM watsonx.ai** | All AI reasoning: name generation, scoring, persona, competitor radar, SVG visuals, landing page HTML |
-| **Meta Llama 3.3 70B** via watsonx | Primary model — `ca-tor.ml.cloud.ibm.com` · chat API (`/ml/v1/text/chat`) |
-| **IBM Granite** via watsonx | Fallback model — `us-south.ml.cloud.ibm.com` — same API, automatic endpoint selection |
-| **IBM Cloud IAM** | API key → Bearer token exchange with 50-minute in-process cache |
+| **IBM Bob** | Primary development tool — see [How IBM Bob Was Used](#how-ibm-bob-was-used) |
+| **IBM watsonx.ai** | Hosts all AI reasoning |
+| **IBM Granite** | Primary model, called via watsonx's chat completion API |
+| **IBM Cloud IAM** | API key → Bearer token exchange, cached 50 min |
 
 ---
 
@@ -112,54 +139,30 @@ NomVox spans **four of the six example solution areas** simultaneously:
 |---|---|
 | Backend | Go · chi router · archive/zip · sync.WaitGroup |
 | Frontend | Next.js · React · TypeScript · Tailwind CSS · Zod |
-| AI — Text & SVG | IBM watsonx.ai (Llama 3.3 70B / IBM Granite) |
-| AI — Images | Imagen 3 via Google AI Studio (fallback: watsonx SVG → CSS art) |
+| AI | IBM watsonx.ai (IBM Granite) |
 | Session store | Redis via Upstash |
 | Availability | RDAP (Verisign) + parallel HTTP HEAD probes |
-| Deployment | Fly.io (Go API) · Vercel (Next.js) |
+| Deployment | Fly.io (API) · Vercel (frontend) |
 | Font | Space Grotesk |
-| Analytics | Vercel Analytics |
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Copy env template
+# 1. Copy env template and fill in credentials
 cp .env.example .env
-# Fill in: WATSONX_API_KEY, WATSONX_PROJECT_ID, WATSONX_URL, REDIS_URL
+# Required: WATSONX_API_KEY, WATSONX_PROJECT_ID, WATSONX_URL, REDIS_URL
+# Optional: GOOGLE_AI_API_KEY (Imagen fallback for raster logo/mood-board images)
 
-# 2. Start Go API (port 8080)
-go build -o nomvox-server.exe ./cmd/server
-.\nomvox-server.exe
+# 2. Start the Go API (port 8080)
+go run ./cmd/server
 
-# 3. Start frontend (port 3000)
+# 3. Start the frontend (port 3000)
 cd frontend && npm install && npm run dev
 ```
 
-Open `http://localhost:3000`. Full setup details in `DesignDoc.md`.
-
----
-
-## Repository
-
-```
-NomVoxBranding/
-├── cmd/server/          Go API entry point
-├── cmd/testllm/         watsonx.ai standalone connection test
-├── internal/ai/         watsonx client, Imagen client, all prompt builders
-├── internal/availability/ RDAP + social HEAD probes, 60% gate
-├── internal/handlers/   HTTP handlers: generate, visuals, export, session
-├── internal/models/     Shared Go structs
-├── internal/session/    Redis session CRUD
-├── frontend/app/        Next.js App Router — layout, page, HomeClient
-├── frontend/components/ IntakeForm, NameCard, VisualIdentityPanel, and more
-├── frontend/lib/        TypeScript types, Zod schemas, API wrappers
-├── 01-Plans/            Full SDLC plan history (HTML)
-├── DesignDoc.md         Complete technical reference
-├── nomvox-plan.md       SDLC plan with sub-task status
-└── developer-bob-feedback.md  Candid feedback on IBM Bob
-```
+Open `http://localhost:3000`.
 
 ---
 
@@ -179,5 +182,5 @@ NomVoxBranding/
 
 ---
 
-*© 2026 c-annabel — Developed with IBM Bob — IBM AI Builders Challenge — All rights reserved.*  
+*© 2026 c-annabel — Developed with IBM Bob — AI Builders Challenge with IBM Bob — All rights reserved.*
 *AI-generated brand assets are creative inspiration. Verify name availability before registration.*
