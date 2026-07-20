@@ -64,23 +64,47 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 	// ── brand-brief.html — human-readable version ─────────────────────
 	writeZipEntry(zw, slug+"/brand-brief.html", []byte(buildBrandBriefHTML(req, now)))
 
-	// ── landing-page.html ────────────────────────────────────────────
+	// ── landing-page.html — AI mockup if available, otherwise a branded
+	// fallback generated server-side so the export is never missing this file ──
+	pal := exportPalette(req.Intake.ColorMood)
 	if strings.TrimSpace(req.MockupHTML) != "" {
 		writeZipEntry(zw, slug+"/landing-page.html", []byte(req.MockupHTML))
+	} else {
+		writeZipEntry(zw, slug+"/landing-page.html", []byte(fallbackLandingPageHTML(req, pal)))
 	}
 
-	// ── mood-board — supports SVG or PNG data URIs ────────────────────
-	for i, uri := range req.MoodBoard {
-		ext := dataURIExt(uri)
-		if ext == "" {
-			continue
+	// ── mood board — AI panels if present, otherwise 4 generated fallback tiles ──
+	validMoodBoard := false
+	for _, uri := range req.MoodBoard {
+		if dataURIExt(uri) != "" {
+			validMoodBoard = true
+			break
 		}
-		if data := dataURIToBytes(uri); len(data) > 0 {
-			writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.%s", slug, i+1, ext), data)
+	}
+	if validMoodBoard {
+		for i, uri := range req.MoodBoard {
+			ext := dataURIExt(uri)
+			if ext == "" {
+				continue
+			}
+			if data := dataURIToBytes(uri); len(data) > 0 {
+				writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.%s", slug, i+1, ext), data)
+			}
+		}
+	} else {
+		tiles := fallbackMoodBoardSVGs(req.BrandName, req.Card.Tagline, req.Intake.Personality, pal)
+		for i, svg := range tiles {
+			writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.svg", slug, i+1), []byte(svg))
 		}
 	}
 
-	// ── logos — supports SVG or PNG ──────────────────────────────────
+	// ── logos — AI PNG/SVG if present, otherwise a generated fallback SVG
+	// for each of the 3 styles, so all three files always exist ──────────
+	fallbackLogos := map[string]string{
+		"profile":  fallbackLogoProfileSVG(req.BrandName, pal),
+		"app":      fallbackLogoAppSVG(req.BrandName, pal),
+		"business": fallbackLogoBusinessSVG(req.BrandName, req.Card.Tagline, pal),
+	}
 	logoMap := map[string]string{
 		"profile":  req.LogoProfile,
 		"app":      req.LogoApp,
@@ -92,26 +116,26 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		"business": "logo-business-card",
 	}
 	for key, uri := range logoMap {
-		if uri == "" {
-			continue
-		}
 		ext := dataURIExt(uri)
-		if ext == "" {
-			continue
+		if ext != "" {
+			if data := dataURIToBytes(uri); len(data) > 0 {
+				writeZipEntry(zw, slug+"/logos/"+baseNames[key]+"."+ext, data)
+				continue
+			}
 		}
-		if data := dataURIToBytes(uri); len(data) > 0 {
-			writeZipEntry(zw, slug+"/logos/"+baseNames[key]+"."+ext, data)
-		}
+		// No usable AI asset — write the generated fallback instead.
+		writeZipEntry(zw, slug+"/logos/"+baseNames[key]+".svg", []byte(fallbackLogos[key]))
 	}
 	// Write the selected logo as a dedicated easy-to-find file
 	if req.SelectedLogoKey != "" {
-		if uri, ok := logoMap[req.SelectedLogoKey]; ok && uri != "" {
-			ext := dataURIExt(uri)
-			if ext != "" {
-				if data := dataURIToBytes(uri); len(data) > 0 {
-					writeZipEntry(zw, slug+"/logos/selected-logo."+ext, data)
-				}
+		uri := logoMap[req.SelectedLogoKey]
+		ext := dataURIExt(uri)
+		if ext != "" {
+			if data := dataURIToBytes(uri); len(data) > 0 {
+				writeZipEntry(zw, slug+"/logos/selected-logo."+ext, data)
 			}
+		} else if fb, ok := fallbackLogos[req.SelectedLogoKey]; ok {
+			writeZipEntry(zw, slug+"/logos/selected-logo.svg", []byte(fb))
 		}
 	}
 
@@ -298,15 +322,22 @@ func buildBrandBriefHTML(req exportRequest, now time.Time) string {
 	// Availability score from the card — we don't have the full probe results in export,
 	// so we surface the Brand Score and voice samples instead.
 	scoreColor := func(v int) string {
-		if v >= 7 { return "#4ade80" }
-		if v >= 4 { return "#f59e0b" }
+		if v >= 7 {
+			return "#4ade80"
+		}
+		if v >= 4 {
+			return "#f59e0b"
+		}
 		return "#f87171"
 	}
 	riskColor := func(r string) string {
 		switch r {
-		case "Low":  return "#4ade80"
-		case "High": return "#f87171"
-		default:     return "#f59e0b"
+		case "Low":
+			return "#4ade80"
+		case "High":
+			return "#f87171"
+		default:
+			return "#f59e0b"
 		}
 	}
 	tagsHTML := ""
