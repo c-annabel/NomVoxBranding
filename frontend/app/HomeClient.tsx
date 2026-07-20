@@ -8,6 +8,7 @@ import RejectionDialog from "@/components/RejectionDialog";
 import StyleDNASlider from "@/components/StyleDNASlider";
 import VisualIdentityPanel from "@/components/VisualIdentityPanel";
 import { parseGenerateResponse } from "@/lib/schemas";
+import Link from "next/link";
 import type {
   IntakePayload,
   NameCard,
@@ -390,6 +391,19 @@ export default function HomeClient() {
 
   return (
     <>
+      {/* ── Home button — fixed top-right, visible on every screen ── */}
+      <Link href="/"
+        className="fixed top-4 right-4 z-50 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold backdrop-blur-sm transition-all"
+        style={{
+          border: "1px solid rgba(99,210,255,0.30)",
+          color: "var(--color-signal)",
+          background: "rgba(11,15,28,0.75)",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.15)"; e.currentTarget.style.borderColor = "var(--color-signal)"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "rgba(11,15,28,0.75)"; e.currentTarget.style.borderColor = "rgba(99,210,255,0.30)"; }}>
+        <span aria-hidden="true">⌂</span> Home
+      </Link>
+      
       {/* ── Star-field background ──────────────────────────────── */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <Image src="/nomvox-bg.png" alt="" fill priority quality={90}
@@ -405,9 +419,11 @@ export default function HomeClient() {
 
         {/* ── Logo — always visible ──────────────────────────── */}
         <div className="mb-6 flex flex-col items-center text-center">
-          <Image src="/nomvox-logo2.png" alt="NomVox — Born from the Void"
-            width={600} height={200} priority
-            className="w-[280px] h-auto drop-shadow-[0_0_32px_rgba(139,92,246,0.55)]" />
+          <Link href="/" className="logo-home-link">
+            <Image src="/nomvox-logo2.png" alt="NomVox — Born from the Void"
+              width={600} height={200} priority
+              className="w-[280px] h-auto drop-shadow-[0_0_32px_rgba(139,92,246,0.55)]" />
+          </Link>
           <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
             Name your brand in 60 seconds — handles, logos &amp; landing pages included.
           </p>
