@@ -763,7 +763,7 @@ Every `POST /api/generate` call:
 | **ST-12** | Radical name-invention prompt — 5 strategies (syllable forge, phonaesthetics, neologism splice, void-word, ancient root mutation) | ✅ Complete |
 | **ST-13** | Unit tests — `go test ./...` 23/23 pass, `tsc --noEmit` 0 errors, `next build` clean | ✅ Complete |
 | **ST-14** | Deploy to Fly.io (Go API, `nomvox-api`, region `iad`) + Vercel (Next.js frontend, auto-deploy from GitHub `main`) | ✅ Complete |
-| **ST-15** | Demo video, IBM SkillsBuild certificates, submission page | 🔄 In progress |
+| **ST-15** | Demo video, IBM SkillsBuild certificates, submission page | ✅ Complete |
 
 ---
 
