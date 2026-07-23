@@ -16,17 +16,17 @@ export const metadata: Metadata = {
   },
 };
 
+// Next.js App Router manages <head> automatically via the metadata export above.
+// favicon.ico in public/ is the primary tab icon (browsers request /favicon.ico first).
+// nomvox-icon.png is the high-res fallback for Apple/PWA.
+// Do NOT add a manual <head> block — it causes a hydration mismatch.
+// Do NOT put a JSX comment between <html> and <body> — Next 16 / Turbopack's root
+// layout validator then reports "Missing <html> and <body> tags in the root layout."
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="h-full">
-      {/*
-        Next.js App Router manages <head> automatically via the metadata export above.
-        favicon.ico in public/ is the primary tab icon (browsers request /favicon.ico first).
-        nomvox-icon.png is the high-res fallback for Apple/PWA.
-        Do NOT add a manual <head> block — causes hydration mismatch.
-      */}
       <body className="min-h-full flex flex-col antialiased">{children}<Analytics /></body>
     </html>
   );
