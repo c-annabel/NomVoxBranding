@@ -7,6 +7,7 @@ Built for the **AI Builders Challenge with IBM Bob · July 2026 · Creative Indu
 **Primary development tool: IBM Bob**
 
 [![Live](https://img.shields.io/badge/Live_App-nomvox.vercel.app-8B5CF6?style=flat-square)](https://nomvox.vercel.app)
+[![Demo](https://img.shields.io/badge/Demo_Video-YouTube-f43f5e?style=flat-square)](https://youtu.be/Kt73AI9WI8o)
 [![API](https://img.shields.io/badge/API-nomvox--api.fly.dev-22d3ee?style=flat-square)](https://nomvox-api.fly.dev/api/ping)
 [![IBM Bob](https://img.shields.io/badge/Built_with-IBM_Bob-0f62fe?style=flat-square)](http://ibm.biz/university-bob)
 
@@ -169,8 +170,7 @@ Open `http://localhost:3000`.
 ## Demo
 
 - **Live app:** https://nomvox.vercel.app
-- **API health:** https://nomvox-api.fly.dev/api/ping
-- **Demo video:** https://www.youtube.com/@c-annabel
+- **Demo video:** https://youtu.be/Kt73AI9WI8o
 
 ---
 
