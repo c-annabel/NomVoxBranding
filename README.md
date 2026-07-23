@@ -176,11 +176,14 @@ Open `http://localhost:3000`.
 
 ## Team
 
-| Member | Role | IBM SkillsBuild |
+| Member | Role | IBM SkillsBuild Courses|
 |---|---|---|
-| c-annabel | Full-stack · AI integration · Design | *Uploaded* |
+| c-annabel | Software Engineer · AI integration · Full-stack developer · Design · Project Manager | Completed |
+
+---
+
+*AI-generated brand assets are creative inspiration. Verify name availability before registration.*
 
 ---
 
 *© 2026 c-annabel — Developed with IBM Bob — AI Builders Challenge with IBM Bob — All rights reserved.*
-*AI-generated brand assets are creative inspiration. Verify name availability before registration.*
