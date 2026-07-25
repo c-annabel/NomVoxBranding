@@ -6,7 +6,7 @@ import "./landing.css";
 
 // Update this once with your published YouTube video ID
 // (the part after youtu.be/ or ?v= in the URL).
-const DEMO_VIDEO_ID = "Kt73AI9WI8o";
+const DEMO_VIDEO_ID = "Q4dLLITmxH4";
 const DEMO_VIDEO_URL = `https://youtu.be/${DEMO_VIDEO_ID}`;
 
 export default function LandingPage() {
