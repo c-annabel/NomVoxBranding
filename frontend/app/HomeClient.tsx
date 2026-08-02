@@ -425,7 +425,7 @@ export default function HomeClient() {
               className="w-[280px] h-auto drop-shadow-[0_0_32px_rgba(139,92,246,0.55)]" />
           </Link>
           <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            Name your brand in 60 seconds — handles, logos &amp; landing pages included.
+            From idea to full brand identity in minutes.
           </p>
         </div>
 
@@ -704,7 +704,7 @@ export default function HomeClient() {
                 ))}
               </div>
               <p className="text-xs" style={{ color: "var(--color-text-hint)" }}>
-                This takes 30–60 seconds — AI is generating your brand visuals.
+                This takes a minute or two — AI is generating your brand visuals.
               </p>
             </div>
           </div>

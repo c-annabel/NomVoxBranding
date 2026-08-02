@@ -88,14 +88,15 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if data := dataURIToBytes(uri); len(data) > 0 {
-				writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.%s", slug, i+1, ext), data)
+				writeZipEntry(zw, fmt.Sprintf("%s/mood-board/texture-%d.%s", slug, i+1, ext), data)
 			}
 		}
-	} else {
-		tiles := fallbackMoodBoardSVGs(req.BrandName, req.Card.Tagline, req.Intake.Personality, pal)
-		for i, svg := range tiles {
-			writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.svg", slug, i+1), []byte(svg))
-		}
+	}
+	// Always include the brand system panels. These carry the exact palette
+	// and typeface, which the AI texture images cannot.
+	tiles := fallbackMoodBoardSVGs(req.BrandName, req.Card.Tagline, req.Intake.Personality, pal)
+	for i, svg := range tiles {
+		writeZipEntry(zw, fmt.Sprintf("%s/mood-board/panel-%d.svg", slug, i+1), []byte(svg))
 	}
 
 	// ── logos — AI PNG/SVG if present, otherwise a generated fallback SVG

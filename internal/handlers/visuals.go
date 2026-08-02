@@ -12,6 +12,13 @@ import (
 	"github.com/c-annabel/NomVoxBranding/internal/models"
 )
 
+// Placeholders stand in for logo data URIs inside LLM prompts, so a
+// multi-megabyte base64 string never enters the context window.
+const (
+	logoPlaceholder     = "__NOMVOX_LOGO__"      // nav bar, small
+	logoHeroPlaceholder = "__NOMVOX_LOGO_HERO__" // hero right panel, large
+)
+
 // visualsRequest is the incoming payload from the frontend.
 // SelectedLogoKey ("profile"|"app"|"business") and SelectedLogoStyle are sent
 // after the user picks a logo so the mood board can reference the chosen visual style.
@@ -129,23 +136,29 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer wg.Done()
 		if imagenErr == nil {
-			prompt := ai.MoodBoardPrompt(req.Card, req.Intake, visionCtx, req.SelectedLogoKey, req.SelectedLogoStyle)
-			imgs, err := imagenClient.GenerateImages(r.Context(), prompt, 4, "1:1")
-			if err == nil && len(imgs) > 0 {
-				uris := make([]string, 0, len(imgs))
-				for _, b64 := range imgs {
-					if uri := ai.Base64ToDataURI(b64, "image/png"); uri != "" {
+			// Two separate single-image calls. Asking one call for four panels
+			// made Gemini return a collage with white gutters.
+			uris := make([]string, 0, 2)
+			for _, panel := range []string{"texture", "atmosphere"} {
+				p := ai.MoodBoardPanelPrompt(req.Card, req.Intake, visionCtx, req.SelectedLogoKey, req.SelectedLogoStyle, panel)
+				imgs, err := imagenClient.GenerateImages(r.Context(), p, 1, "1:1")
+				if err != nil {
+					log.Printf("visuals: mood board %s (gemini): %v", panel, err)
+					continue
+				}
+				if len(imgs) > 0 {
+					if uri := ai.Base64ToDataURI(imgs[0], "image/png"); uri != "" {
 						uris = append(uris, uri)
 					}
 				}
-				if len(uris) > 0 {
-					mu.Lock()
-					resp.MoodBoard = uris
-					mu.Unlock()
-					return
-				}
 			}
-			log.Printf("visuals: mood board (gemini): %v — falling back to SVG", err)
+			if len(uris) > 0 {
+				mu.Lock()
+				resp.MoodBoard = uris
+				mu.Unlock()
+				return
+			}
+			log.Printf("visuals: mood board (gemini): no images — falling back to SVG")
 		}
 		if graniteErr != nil {
 			return
@@ -285,27 +298,43 @@ func VisualsHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		// Never send the logo data URI to the LLM. A Gemini PNG can exceed 1MB,
+		// which blows past the 131k context limit. Send a placeholder and
+		// substitute the real URI into the returned HTML.
 		sysPrompt := ai.BuildMockupSystemPrompt()
-		userPrompt := ai.BuildMockupUserPromptWithLogo(req.Card, req.Intake, req.SelectedLogoKey, req.SelectedLogoStyle, chosenLogoURI)
+		userPrompt := ai.BuildMockupUserPromptWithLogo(req.Card, req.Intake, req.SelectedLogoKey, req.SelectedLogoStyle, logoPlaceholder)
 		throttleGranite()
 		html, err := graniteClient.Generate(r.Context(), sysPrompt, userPrompt)
 		if err != nil {
 			log.Printf("visuals: mockup html: %v", err)
 		} else {
-			resp.MockupHTML = stripMDFences(html)
+			html = stripMDFences(html)
+			// Substitute the real logo data URI for the placeholders.
+			if chosenLogoURI != "" {
+				html = strings.ReplaceAll(html, logoHeroPlaceholder, chosenLogoURI)
+				html = strings.ReplaceAll(html, logoPlaceholder, chosenLogoURI)
+			}
+			// Clear any leftovers so a raw placeholder never reaches the iframe.
+			html = strings.ReplaceAll(html, logoHeroPlaceholder, "")
+			html = strings.ReplaceAll(html, logoPlaceholder, "")
+			// It is a mockup, not a working page — neutralise all interaction.
+			const noInteract = "<style>a,button{pointer-events:none!important;cursor:default!important}</style>"
+			if strings.Contains(html, "</head>") {
+				html = strings.Replace(html, "</head>", noInteract+"</head>", 1)
+			} else {
+				html = noInteract + html
+			}
+			resp.MockupHTML = html
 		}
 	}
 
-	// Persist visuals to session.
+	// Persist session state.
+	// Images are deliberately excluded: a Gemini mood board plus three logos
+	// exceeds Upstash's 10MB max request size and the write is rejected.
+	// Only lightweight brand state is stored.
 	if req.SessionID != "" {
 		if store, err := getStore(); err == nil {
 			if sess, err := store.Get(r.Context(), req.SessionID); err == nil && sess != nil {
-				sess.Visuals = &models.VisualPack{
-					MoodBoard:    resp.MoodBoard,
-					LogoProfile:  resp.LogoProfile,
-					LogoApp:      resp.LogoApp,
-					LogoBusiness: resp.LogoBusiness,
-				}
 				sess.Persona = resp.Persona
 				if serr := store.Set(r.Context(), sess); serr != nil {
 					log.Printf("visuals: session save: %v", serr)
@@ -336,13 +365,14 @@ func stripMDFences(s string) string {
 // a clean string starting with <svg.
 func stripSVGFences(s string) string {
 	s = strings.TrimSpace(s)
-	// Strip opening fences: ```svg, ```xml, ```
-	for _, fence := range []string{"```svg", "```xml", "```"} {
-		if idx := strings.Index(s, fence); idx != -1 {
-			s = s[idx+len(fence):]
+	// Strip ONE leading fence only. Using strings.Index in a loop
+	// matched the closing fence and deleted the entire payload.
+	for _, fence := range []string{"```svg", "```xml", "```html", "```"} {
+		if strings.HasPrefix(s, fence) {
+			s = s[len(fence):]
+			break
 		}
 	}
-	// Strip closing fence
 	if idx := strings.LastIndex(s, "```"); idx != -1 {
 		s = s[:idx]
 	}

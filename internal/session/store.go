@@ -23,6 +23,19 @@ func New(redisURL string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("session.New: invalid redis URL: %w", err)
 	}
+
+	// Upstash free-tier databases may not support RESP3. go-redis v9 sends
+	// HELLO 3 on connect by default, and an unsupported server closes the
+	// connection with no reply, surfacing as a bare EOF.
+	opts.Protocol = 2
+
+	// Upstash closes idle connections aggressively. Visual generation can
+	// take 40s+, so refresh rather than reuse a dead connection.
+	opts.MaxRetries = 3
+	opts.MinIdleConns = 0
+	opts.ConnMaxIdleTime = 30 * time.Second
+	opts.DialTimeout = 10 * time.Second
+
 	return &Store{client: redis.NewClient(opts)}, nil
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/c-annabel/NomVoxBranding/internal/handlers"
+	"github.com/c-annabel/NomVoxBranding/internal/session"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
@@ -25,6 +27,11 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+	// ── Redis connectivity check ────────────────────────────────────
+	// Warnings only. The app degrades gracefully without sessions, so a
+	// Redis failure must never block startup or the live demo.
+	checkRedis()
 
 	r := chi.NewRouter()
 
@@ -43,18 +50,18 @@ func main() {
 
 	// ── API routes ──────────────────────────────────────────────────
 	// /api/generate has its own timeout (120s) to allow full LLM responses
-	r.With(middleware.Timeout(120 * time.Second)).Post("/api/generate",     handlers.GenerateHandler)
-	r.With(middleware.Timeout(30 * time.Second)).Get("/api/diagnose",        handlers.DiagnoseHandler)   // DEV ONLY
-	r.With(middleware.Timeout(60 * time.Second)).Get("/api/debug-llm",       handlers.DebugLLMHandler)   // DEV ONLY
-	r.With(middleware.Timeout(90 * time.Second)).Get("/api/debug-visuals",   handlers.DebugVisualsHandler) // DEV ONLY
-	r.With(middleware.Timeout(30 * time.Second)).Post("/api/session",        handlers.CreateSession)
-	r.With(middleware.Timeout(30 * time.Second)).Patch("/api/session/react", handlers.React)
-	r.With(middleware.Timeout(60 * time.Second)).Post("/api/availability",   handlers.CheckAvailability)
+	r.With(middleware.Timeout(120*time.Second)).Post("/api/generate", handlers.GenerateHandler)
+	r.With(middleware.Timeout(30*time.Second)).Get("/api/diagnose", handlers.DiagnoseHandler)          // DEV ONLY
+	r.With(middleware.Timeout(60*time.Second)).Get("/api/debug-llm", handlers.DebugLLMHandler)         // DEV ONLY
+	r.With(middleware.Timeout(90*time.Second)).Get("/api/debug-visuals", handlers.DebugVisualsHandler) // DEV ONLY
+	r.With(middleware.Timeout(30*time.Second)).Post("/api/session", handlers.CreateSession)
+	r.With(middleware.Timeout(30*time.Second)).Patch("/api/session/react", handlers.React)
+	r.With(middleware.Timeout(60*time.Second)).Post("/api/availability", handlers.CheckAvailability)
 	// ST-08: visual identity — mood board, logos, persona, landing-page mockup
 	// All image generation calls fan out concurrently; 120s covers worst-case Imagen latency
-	r.With(middleware.Timeout(120 * time.Second)).Post("/api/visuals", handlers.VisualsHandler)
+	r.With(middleware.Timeout(120*time.Second)).Post("/api/visuals", handlers.VisualsHandler)
 	// ST-10: ZIP export
-	r.With(middleware.Timeout(30 * time.Second)).Post("/api/export",  handlers.ExportHandler)
+	r.With(middleware.Timeout(30*time.Second)).Post("/api/export", handlers.ExportHandler)
 
 	log.Printf("NomVox API server listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
@@ -65,9 +72,10 @@ func main() {
 // corsMiddleware allows requests from the Next.js frontend.
 //
 // Configuration (environment variables):
-//   ALLOWED_ORIGIN   — single origin, e.g. "https://nomvox.app" (default: localhost:3000)
-//   ALLOWED_ORIGINS  — comma-separated list of origins, e.g. "https://nomvox.app,https://nomvox.vercel.app"
-//   CORS_WILDCARD    — set to "true" to allow all origins with * (use only for public APIs)
+//
+//	ALLOWED_ORIGIN   — single origin, e.g. "https://nomvox.app" (default: localhost:3000)
+//	ALLOWED_ORIGINS  — comma-separated list of origins, e.g. "https://nomvox.app,https://nomvox.vercel.app"
+//	CORS_WILDCARD    — set to "true" to allow all origins with * (use only for public APIs)
 //
 // In development no variable is needed — localhost:3000 is always allowed.
 func corsMiddleware(next http.Handler) http.Handler {
@@ -78,8 +86,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 		} else {
 			// Build allowed-origin set
 			allowedOrigins := map[string]bool{
-				"http://localhost:3000":  true,
-				"http://localhost:3001":  true,
+				"http://localhost:3000": true,
+				"http://localhost:3001": true,
 				"http://127.0.0.1:3000": true,
 			}
 			// Single ALLOWED_ORIGIN env var
@@ -114,4 +122,31 @@ func corsMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// checkRedis verifies the Redis connection at startup and logs the result.
+// It never exits — session storage is optional and the handlers tolerate
+// its absence. This exists so connection failures surface as a clear
+// startup message rather than an opaque EOF buried in a request log.
+func checkRedis() {
+	url := os.Getenv("REDIS_URL")
+	if url == "" {
+		log.Println("WARNING: REDIS_URL not set — session memory disabled")
+		return
+	}
+	if !strings.HasPrefix(url, "rediss://") {
+		log.Printf("WARNING: REDIS_URL does not use rediss:// — Upstash requires TLS")
+	}
+	s, err := session.New(url)
+	if err != nil {
+		log.Printf("WARNING: redis client init failed: %v", err)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.Ping(ctx); err != nil {
+		log.Printf("WARNING: redis ping failed: %v", err)
+		return
+	}
+	log.Println("redis: connected OK")
 }

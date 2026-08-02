@@ -5,7 +5,7 @@ import { Analytics } from '@vercel/analytics/next';
 export const metadata: Metadata = {
   title: "NomVox Branding",
   description:
-    "AI-powered brand identity platform. From void to voice — names, handles, logos, and landing pages synthesized in under 60 seconds.",
+    "AI-powered brand identity platform. From void to voice — names, handles, logos, and landing pages synthesized in minutes.",
   icons: {
     icon: [
       { url: "/favicon.ico",      sizes: "any" },

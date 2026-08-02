@@ -26,12 +26,19 @@ func logoStyleDescription(logoKey string) string {
 	}
 }
 
-// MoodBoardPrompt returns a contextually rich Imagen 3 prompt for a 4-panel mood board.
-// It fuses: brand name + its invented etymology, tagline meaning, chosen logo style,
-// all intake fields (industry, audience, personality, colour mood, style), and any
-// vision context from an uploaded reference image.
-// The resulting mood board visually expresses the brand world — not generic stock photography.
+// MoodBoardPrompt keeps the original signature for backwards compatibility.
+// It returns the "texture" panel prompt.
 func MoodBoardPrompt(card models.NameCard, intake models.IntakePayload, vision *models.VisionContext, selectedLogoKey, selectedLogoStyle string) string {
+	return MoodBoardPanelPrompt(card, intake, vision, selectedLogoKey, selectedLogoStyle, "texture")
+}
+
+// MoodBoardPanelPrompt builds a prompt for ONE single photographic image.
+// panel is "texture" or "atmosphere".
+//
+// The previous version asked for a 2x2 grid of four panels, which made Gemini
+// return a single collage image complete with white gutters. Each call now
+// requests one unbroken frame instead.
+func MoodBoardPanelPrompt(card models.NameCard, intake models.IntakePayload, vision *models.VisionContext, selectedLogoKey, selectedLogoStyle, panel string) string {
 	// ── Colour palette ────────────────────────────────────────────────
 	colourHint := strings.TrimSpace(intake.ColorMood)
 	if vision != nil && len(vision.Colours) > 0 {
@@ -84,68 +91,144 @@ func MoodBoardPrompt(card models.NameCard, intake models.IntakePayload, vision *
 	}
 
 	// ── Avoid hint ────────────────────────────────────────────────────
-	avoidHint := strings.TrimSpace(intake.Avoid)
-
-	// Build the prompt
 	avoidClause := ""
-	if avoidHint != "" {
+	if avoidHint := strings.TrimSpace(intake.Avoid); avoidHint != "" {
 		avoidClause = fmt.Sprintf("Do NOT include: %s. ", avoidHint)
 	}
 
+	// ── Panel subject ─────────────────────────────────────────────────
+	subject := fmt.Sprintf(
+		`A single macro material study. Surface texture rendered in %s, `+
+			`with a tactile quality that suggests %s. The material should feel `+
+			`like something from the world of %s. Shallow depth of field, `+
+			`dramatic side lighting, fills the entire frame.`,
+		colourHint, moodHint, industry)
+
+	if panel == "atmosphere" {
+		subject = fmt.Sprintf(
+			`A single atmospheric environment shot. An interior or architectural `+
+				`space that a %s brand serving %s would inhabit. Light, scale and `+
+				`mood expressed in %s, matching a %s aesthetic. Wide angle, `+
+				`cinematic lighting, no people, fills the entire frame.`,
+			industry, audience, colourHint, styleHint)
+	}
+
 	return fmt.Sprintf(
-		`Brand identity mood board for "%s" — a %s brand. `+
-			`Name meaning & origin: %s. `+
-			`Brand tagline: "%s". `+
-			`Target audience: %s. `+
-			`Brand personality: %s. `+
-			`Visual aesthetic: %s. `+
-			`Colour palette: %s. `+
-			`Chosen logo style: %s. `+
-			`\n`+
-			`Create a 2×2 grid of 4 cohesive but distinct photographic panels that DIRECTLY express this brand's world: `+
-			`(1) A material or texture close-up that embodies the brand colour palette — `+
-			`dominant hues from "%s", surface quality matching "%s" personality — `+
-			`(2) An editorial lifestyle scene showing the brand's ideal customer (%s) `+
-			`in their natural environment, product or concept implied — `+
-			`(3) An abstract macro or colour study — ink in water, smoke, light refraction — `+
-			`using ONLY the brand's colour palette (%s) — `+
-			`(4) An environment or architectural detail that a "%s" brand would inhabit — `+
-			`space, scale, and light matching "%s" aesthetic. `+
-			`\n`+
-			`Strict rules: magazine-quality commercial photography, no text, no logos, no human faces, `+
-			`no generic stock imagery. Every panel must feel like it belongs to THIS specific brand. `+
-			`%s`+
-			`Crisp focus, natural or dramatic lighting, high resolution, `+
-			`colour palette must be visually consistent across all 4 panels.`,
+		`ONE single photographic image. This is NOT a collage, NOT a grid, `+
+			`NOT a multi-panel composition. One unbroken frame with no borders, `+
+			`no white margins, and no dividing lines.
+
+Brand context — the image must feel like it belongs to THIS brand:
+- Brand: "%s", a %s brand
+- Name meaning: %s
+- Tagline: "%s"
+- Personality: %s
+- Aesthetic: %s
+- Chosen logo style: %s
+
+Subject: %s
+
+Strict rules: magazine-quality commercial photography. No text, no letters, `+
+			`no numbers, no logos, no watermarks, no human faces, no borders. `+
+			`The image must fill the frame edge to edge. %s`,
 		card.Name, industry,
 		originContext,
 		card.Tagline,
-		audience,
 		moodHint,
 		styleHint,
-		colourHint,
 		logoStyle,
-		// panel 1
-		colourHint, moodHint,
-		// panel 2
-		audience,
-		// panel 3
-		colourHint,
-		// panel 4
-		card.Name, styleHint,
-		// avoid
+		subject,
 		avoidClause,
 	)
 }
 
-// LogoConceptPrompt returns an Imagen 3 prompt for one of three logo concept types.
-// Each type uses a deliberately different visual style so the three logos look distinct.
-// logoType: "profile" | "app" | "business"
-func LogoConceptPrompt(card models.NameCard, intake models.IntakePayload, logoType string) string {
-	colourHint := strings.TrimSpace(intake.ColorMood)
-	if colourHint == "" {
-		colourHint = "deep indigo and electric cyan"
+// logoPalette resolves the user's free-text colour mood into concrete hex codes.
+//
+// Passing raw text like "electric blue, neon yellow, dark bg" straight into an
+// image prompt makes the model guess, and "dark bg" gets read as a mark colour.
+// Resolving to hex first gives predictable, on-brand output.
+//
+// Returns: dark background hex, primary mark hex, secondary mark hex.
+func logoPalette(intake models.IntakePayload) (darkBG, primary, secondary string) {
+	lower := strings.ToLower(strings.TrimSpace(intake.ColorMood))
+
+	// Ordered so multi-word keys match before their single-word prefixes.
+	rules := []struct{ key, hex string }{
+		{"neon yellow", "#facc15"}, {"electric blue", "#3b82f6"},
+		{"sky blue", "#38bdf8"}, {"navy", "#1e3a8a"},
+		{"orange", "#f97316"}, {"coral", "#fb7185"},
+		{"yellow", "#facc15"}, {"gold", "#eab308"}, {"amber", "#f59e0b"},
+		{"teal", "#22d3ee"}, {"cyan", "#22d3ee"}, {"aqua", "#22d3ee"},
+		{"turquoise", "#2dd4bf"},
+		{"emerald", "#10b981"}, {"lime", "#84cc16"}, {"green", "#10b981"},
+		{"violet", "#7c3aed"}, {"purple", "#8b5cf6"}, {"indigo", "#6366f1"},
+		{"magenta", "#e879f9"}, {"pink", "#ec4899"}, {"rose", "#f43f5e"},
+		{"crimson", "#dc2626"}, {"scarlet", "#f43f5e"}, {"red", "#ef4444"},
+		{"blue", "#3b82f6"},
 	}
+
+	// Collect matches in the order the user wrote them.
+	type hit struct {
+		pos int
+		hex string
+	}
+	var hits []hit
+	seen := map[string]bool{}
+	for _, r := range rules {
+		if idx := strings.Index(lower, r.key); idx >= 0 && !seen[r.hex] {
+			seen[r.hex] = true
+			hits = append(hits, hit{idx, r.hex})
+		}
+	}
+	for i := 1; i < len(hits); i++ {
+		for j := i; j > 0 && hits[j].pos < hits[j-1].pos; j-- {
+			hits[j], hits[j-1] = hits[j-1], hits[j]
+		}
+	}
+
+	primary, secondary = "#3b82f6", "#facc15"
+	if len(hits) > 0 {
+		primary = hits[0].hex
+	}
+	if len(hits) > 1 {
+		secondary = hits[1].hex
+	} else if len(hits) == 1 {
+		secondary = "#ffffff"
+	}
+
+	darkBG = "#0a1628"
+	switch {
+	case strings.Contains(lower, "midnight"), strings.Contains(lower, "void"),
+		strings.Contains(lower, "black"):
+		darkBG = "#050810"
+	case strings.Contains(lower, "charcoal"), strings.Contains(lower, "slate"):
+		darkBG = "#1e293b"
+	}
+	return darkBG, primary, secondary
+}
+
+// LogoConceptPrompt builds a Gemini image prompt for one logo format.
+// logoType: "profile" | "app" | "business"
+//
+// Prompt design notes:
+//   - Hard constraints lead. Image models weight early tokens most, so the
+//     "one shape, no letters" rule must not be buried at the end.
+//   - Colours are given as explicit hex codes, never as free text.
+//   - The core idea is included so the symbol relates to what the brand does.
+//   - Each format has a distinct role, so the three read as one system rather
+//     than three unrelated images.
+
+func LogoConceptPrompt(card models.NameCard, intake models.IntakePayload, logoType string) string {
+	darkBG, primary, secondary := logoPalette(intake)
+
+	coreIdea := strings.TrimSpace(intake.CoreIdea)
+	if coreIdea == "" {
+		coreIdea = strings.TrimSpace(card.ShortDesc)
+	}
+	if coreIdea == "" {
+		coreIdea = "a modern brand"
+	}
+
 	personality := strings.TrimSpace(intake.Personality)
 	if personality == "" {
 		personality = "modern and distinctive"
@@ -155,45 +238,102 @@ func LogoConceptPrompt(card models.NameCard, intake models.IntakePayload, logoTy
 		industry = "technology"
 	}
 
+	// Shared hard rules, repeated at the top and bottom of every prompt.
+	const noText = `ABSOLUTE RULE: the image must contain NO letters, NO words, ` +
+		`NO numbers, NO monogram, NO initials and NO typography of any kind. ` +
+		`Do not render the brand name. Any letterform makes the output unusable.`
+
 	switch logoType {
 	case "profile":
-		// Style A: bold geometric monogram — a single strong abstract mark
 		return fmt.Sprintf(
-			`Minimalist geometric logo mark for brand "%s" in the %s industry. `+
-				`Single abstract symbol — NOT text, NOT a wordmark. `+
-				`Inspired by: %s. Color palette: %s. `+
-				`Style: flat vector, bold geometric shapes, strong negative space, Bauhaus-inspired. `+
-				`White background, centered mark, no gradients, no shadows. `+
-				`The shape should suggest motion, growth, or the brand's core concept through pure geometry. `+
-				`Professional, iconic, scalable to 32×32 pixels. No text, no letters, no words.`,
-			card.Name, industry, personality, colourHint,
-		)
+			`%s
+ 
+Design ONE flat vector logo symbol. A single geometric mark, nothing else.
+ 
+What the brand does: %s (industry: %s).
+The symbol should abstractly suggest that idea through pure geometry —
+simple, confident shapes, not an illustration or a scene.
+ 
+Exact colours, use these and nothing else:
+- Symbol primary: %s
+- Symbol secondary accent: %s
+- Background: pure white #ffffff, completely plain
+ 
+Rules: flat vector only. Solid fills. Two colours maximum on the symbol.
+Thick strong strokes, generous negative space, perfectly centred,
+occupying about 60%% of the frame. No gradients, no shadows, no glow,
+no 3D, no texture, no outlines around the canvas, no mockup or device frame.
+Tone: %s. Must stay legible at 32x32 pixels.
+Reference quality: the mark should feel as clean and inevitable as the
+Nike swoosh or the Airbnb Belo.
+ 
+%s`,
+			noText, coreIdea, industry, primary, secondary, personality, noText)
+
 	case "app":
-		// Style B: vibrant gradient icon — rich depth, app-store aesthetic
 		return fmt.Sprintf(
-			`App store icon for brand "%s" — %s. Industry: %s. `+
-				`Style: rounded-square canvas with deep gradient background (%s tones). `+
-				`A single bold abstract icon or symbol floats centred with soft drop shadow. `+
-				`Rich colour depth, glassmorphism or neon glow accent. `+
-				`Personality: %s. High detail, 3D-feeling depth without being photorealistic. `+
-				`No text, no letters. Looks premium in a 256×256 app store grid.`,
-			card.Name, card.Tagline, industry, colourHint, personality,
-		)
+			`%s
+ 
+Design ONE app icon. A rounded-square tile with a single symbol centred on it.
+ 
+What the brand does: %s (industry: %s).
+The symbol abstractly suggests that idea. ONE shape only — not a composition,
+not several objects combined, not a scene.
+ 
+Exact colours, use these and nothing else:
+- Tile background: solid %s, completely flat, edge to edge
+- Symbol: %s
+- Optional small accent detail: %s
+ 
+Rules: flat vector only. Solid fills. The symbol occupies about 55%% of the
+tile with generous even padding on all sides. Thick simple forms.
+No glow, no neon, no bloom, no gradients, no glassmorphism, no drop shadows,
+no 3D, no bevel, no fine detail, no background pattern.
+Tone: %s. Must be instantly recognisable at 48x48 pixels.
+Reference quality: Spotify, Airbnb or Duolingo — one bold shape a child
+could redraw from memory.
+ 
+%s`,
+			noText, coreIdea, industry, darkBG, primary, secondary, personality, noText)
+
 	case "business":
-		// Style C: horizontal wordmark lockup — text + icon side by side on clean background
+		// The only format where type is intentional, so noText does not apply.
 		return fmt.Sprintf(
-			`Horizontal brand wordmark lockup for "%s" — "%s". `+
-				`Industry: %s. Personality: %s. `+
-				`Style: clean white or very light background, sans-serif bold wordmark on the right, `+
-				`small abstract icon mark on the left, separated by thin rule or negative space. `+
-				`Colour palette: %s accents on white. `+
-				`Corporate print quality, business card format (landscape 3.5"×2"). `+
-				`Professional typographic hierarchy, no gradients on background, `+
-				`single accent colour on the icon. Looks like a Fortune 500 rebrand.`,
-			card.Name, card.Tagline, industry, personality, colourHint,
-		)
+			`Design a horizontal brand lockup for a business card.
+ 
+Layout, left to right:
+1. A small flat vector symbol, ONE simple geometric shape only.
+2. A thin vertical divider rule.
+3. The brand name "%s" set in a bold geometric sans-serif,
+   with the tagline "%s" directly beneath it in a smaller regular weight.
+ 
+What the brand does: %s (industry: %s).
+The symbol abstractly suggests that idea.
+ 
+Exact colours, use these and nothing else:
+- Background: pure white #ffffff, completely plain
+- Symbol: %s with a %s accent
+- Brand name text: near-black #111111
+- Tagline text: %s
+ 
+Rules: flat vector only. Solid fills. Landscape composition with generous
+margins, the lockup centred and occupying about 70%% of the width.
+No gradients, no shadows, no glow, no 3D, no photographic card mockup,
+no perspective, no background texture, no extra words beyond the brand
+name and tagline given above.
+Tone: %s. Print quality, the typographic confidence of a Fortune 500 rebrand.`,
+			card.Name, card.Tagline, coreIdea, industry,
+			primary, secondary, primary, personality)
+
 	default:
-		return fmt.Sprintf(`Clean modern logo for brand "%s". %s colour palette. Vector style, white background.`, card.Name, colourHint)
+		return fmt.Sprintf(
+			`%s
+ 
+ONE flat vector logo symbol for a %s brand. Symbol in %s with a %s accent
+on a pure white background. Simple geometry, solid fills, centred.
+ 
+%s`,
+			noText, industry, primary, secondary, noText)
 	}
 }
 
@@ -366,23 +506,58 @@ func SVGToDataURI(svg string) string {
 	if svg == "" {
 		return ""
 	}
-	// Trim any leading/trailing whitespace and ensure it starts with <svg
 	svg = strings.TrimSpace(svg)
+
+	// Ensure it starts with <svg
 	if !strings.HasPrefix(svg, "<svg") {
-		// Try to extract just the SVG block
 		if idx := strings.Index(svg, "<svg"); idx >= 0 {
 			svg = svg[idx:]
 		} else {
 			return ""
 		}
 	}
-	// Close tag safety check
+
+	// Reject truncated output instead of forcing a close tag.
+	// Malformed XML renders as a broken image; empty lets the
+	// frontend LogoMark fallback take over cleanly.
 	if !strings.Contains(svg, "</svg>") {
-		svg += "</svg>"
+		return ""
 	}
+
+	// Drop anything after the final </svg> (stray model commentary).
+	if idx := strings.LastIndex(svg, "</svg>"); idx >= 0 {
+		svg = svg[:idx+len("</svg>")]
+	}
+
+	// REQUIRED for data-URI SVG in <img>. Browsers parse it as a
+	// standalone XML document and refuse to render without this.
+	if !strings.Contains(svg, "xmlns=") {
+		svg = strings.Replace(svg, "<svg", `<svg xmlns="http://www.w3.org/2000/svg"`, 1)
+	}
+
+	// Escape bare ampersands, which break XML parsing.
+	svg = escapeBareAmps(svg)
+
 	encoded := base64.StdEncoding.EncodeToString([]byte(svg))
 	return "data:image/svg+xml;base64," + encoded
 }
+
+// escapeBareAmps escapes & that is not already part of an XML entity.
+// Go's regexp is RE2 and has no negative lookahead, so we over-escape
+// then restore the legitimate entities.
+func escapeBareAmps(s string) string {
+	if !strings.Contains(s, "&") {
+		return s
+	}
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	for _, e := range []string{"amp", "lt", "gt", "quot", "apos"} {
+		s = strings.ReplaceAll(s, "&amp;"+e+";", "&"+e+";")
+	}
+	return numericEntityRe.ReplaceAllString(s, "&$1;")
+}
+
+// numericEntityRe restores numeric entities like &#39; and &#x27;.
+var numericEntityRe = regexp.MustCompile(`&amp;(#\d+|#x[0-9a-fA-F]+);`)
 
 // ── SVG Mood Board Tiles ──────────────────────────────────────────────────────
 
@@ -545,24 +720,17 @@ func unmarshalPersona(jsonStr string, p *models.BrandPersona) error {
 
 // BuildMockupSystemPrompt returns the system prompt for the landing page HTML generator.
 func BuildMockupSystemPrompt() string {
-	return `You are NomVox, a brand design AI. Generate a beautiful, self-contained HTML hero section for a brand landing page.
+	return `You are NomVox, a brand design AI. Generate a self-contained HTML hero section for a brand landing page.
 
 Rules:
 - Return ONLY valid HTML starting with <!DOCTYPE html> — no markdown fences, no explanation.
-- Inline ALL CSS in a <style> block; no external stylesheets, no CDN links, no Google Fonts imports.
+- Inline ALL CSS in a <style> block; no external stylesheets, no CDN links, no font imports.
 - No JavaScript.
 - Use system fonts: font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif.
-- The design MUST use the EXACT hex colours provided — never substitute generic black/dark-grey.
-- If a logo data URI is provided, embed it with <img src="LOGO_DATA_URI" alt="logo"> in the nav bar.
-- Include: nav bar with logo, large hero headline (H1), italic tagline, short description, one CTA button.
-- The hero section fills viewport height with the specified background gradient using the brand colours.
-- Use the provided personality to drive ALL decisions: font weight, spacing, border-radius, CTA shape.
-- If "playful" or "bold" — large fonts, bright accent, rounded corners (border-radius: 32px on CTA).
-- If "minimal" or "premium" — thin fonts, generous whitespace, sharp lines (border-radius: 4px on CTA).
-- If "earthy" or "organic" — warm gradients, soft radii, natural tones.
-- If "edgy" or "dark" — high contrast, angular shapes, electric accent on dark bg.
-- Include an inline SVG accent shape in the hero (a decorative circle, hexagon, or abstract path)
-  that reuses the brand's accent colour — this makes the page feel visually designed not plain text.
+- Use the EXACT hex colours provided — never substitute generic black or grey.
+- NO decorative shapes. Do NOT add circles, hexagons, blobs, or abstract SVG paths.
+  Do NOT place anything behind the headline text. The layout must stay clean and structural.
+- The only images allowed are the logo placeholders given in the user prompt.
 - Max 200 lines of HTML. Must render correctly in a sandboxed iframe at 75% scale.`
 }
 
@@ -595,28 +763,14 @@ func BuildMockupUserPromptWithLogo(card models.NameCard, intake models.IntakePay
 	}
 
 	// Logo clause — embed data URI if available, otherwise use text logo
-	logoClause := fmt.Sprintf(`In the nav bar, display the brand name "%s" as a bold text logo on the left.`, card.Name)
-	if logoDataURI != "" {
-		logoClause = fmt.Sprintf(
-			`In the nav bar, display this logo image on the left: <img src="%s" alt="%s logo" style="height:40px;width:auto;object-fit:contain;vertical-align:middle"> followed by the brand name "%s" in bold text. The logo style is: %s.`,
-			logoDataURI, card.Name, card.Name, logoStyle,
-		)
-	}
-
-	// Colour extraction for explicit hex usage
-	colourInstructions := fmt.Sprintf(
-		`CRITICAL: Use these exact colours — do NOT default to black or generic grey.
-Primary background: derive a rich gradient from "%s".
-All headings: white or the lightest colour from the palette.
-CTA button: the most vibrant accent colour from the palette as background, white text.
-Decorative SVG element: the accent colour at 30%% opacity.`,
-		colourHint,
-	)
+	// Logo clauses — placeholders only. The real data URI is substituted
+	// into the returned HTML by the handler.
+	heroLogo := fmt.Sprintf(
+		`<img src="%s" alt="%s logo" style="width:220px;height:220px;object-fit:contain;border-radius:20px">`,
+		"__NOMVOX_LOGO_HERO__", card.Name)
 
 	return fmt.Sprintf(
-		`Create a hero landing page for brand "%s".
-
-%s
+		`Create a hero landing page for brand "%s" using EXACTLY this structure.
 
 Brand details:
 - Tagline: "%s"
@@ -624,20 +778,49 @@ Brand details:
 - Industry: %s
 - Colour palette: %s
 - Brand personality: %s
-- Visual style: %s (logo aesthetic) — echo this in typography weight, button shape, and spacing.
+- Visual style: %s
 - Target audience: %s
 
-%s
+COLOURS — use these exactly, no generic black or grey:
+- Page background: a dark tone derived from "%s"
+- Headings: white
+- Accent (buttons, eyebrow text, underline bar): the most vibrant colour in the palette
 
-Design requirements:
-1. BACKGROUND: rich CSS gradient using the brand colour palette — NO pure black (#000), NO generic grey.
-2. NAV BAR: %s — two nav links ("About", "Get Started") on the right in the accent colour.
-3. HERO: large H1 brand name, italic tagline below, short description (max 20 words), CTA button.
-4. SVG DECORATION: include one inline SVG shape (60px circle or hexagon) in accent colour at 25%% opacity, floating to the side of the hero text.
-5. CTA BUTTON: label "%s — Get Started", background = accent colour, white text, border-radius matches personality.
-6. Ensure the page looks DESIGNED not plain — use gradients, letter-spacing on tagline, subtle text-shadow on H1.`,
+REQUIRED STRUCTURE — follow this layout precisely:
+
+1. NAV BAR (full width, subtle bottom border):
+   LEFT: the brand name "%s" in bold white text. No logo image in the nav.
+   RIGHT: text links "About" and "Features" in the accent colour, then a
+   solid accent-coloured "Get Started" button with white text.
+
+2. HERO — a two-column flex row, generous padding:
+
+   LEFT COLUMN (60%% width):
+   - Small uppercase eyebrow text reading "%s" in the accent colour,
+     letter-spacing 0.15em, font-size 0.75rem, bold.
+   - H1 with the brand name "%s" — very large (clamp(2.5rem, 6vw, 4rem)),
+     heavy weight, white, tight line-height.
+   - A short horizontal bar underneath: 48px wide, 4px tall, accent colour.
+   - The tagline in italics, wrapped in curly quotes, accent colour, ~1.15rem.
+   - The short description in a muted light grey, ~1rem, max-width 32rem.
+   - Two buttons side by side: a filled accent button labelled "Start with %s →"
+     with white text, and an outlined button labelled "Learn More" with a
+     1px light border and white text.
+
+   RIGHT COLUMN (40%% width, centred):
+   - %s
+   - Beneath it, the brand personality words in uppercase, letter-spacing
+	 0.1em, font-size 0.8rem, font-weight 700, in white at 75%% opacity
+	 (rgba(255,255,255,0.75)), with 16px of space above. It must be clearly
+	 legible against the dark background — never use a dark or saturated colour here.
+
+3. BOTTOM STRIP (full width, thin top border, three equal cells divided by
+   1px vertical borders, each centred, uppercase, 0.7rem, letter-spacing
+   0.1em, accent colour):
+   Cell 1: "%s"   Cell 2: "%s"   Cell 3: "%s"
+
+Do not add any other sections, decorative shapes, or background graphics.`,
 		card.Name,
-		logoClause,
 		card.Tagline,
 		card.ShortDesc,
 		strings.TrimSpace(intake.Industry),
@@ -645,8 +828,14 @@ Design requirements:
 		personality,
 		logoStyle,
 		strings.TrimSpace(intake.TargetAudience),
-		colourInstructions,
-		logoClause,
+		colourHint,
 		card.Name,
+		strings.ToUpper(strings.TrimSpace(intake.Industry)),
+		card.Name,
+		card.Name,
+		heroLogo,
+		strings.ToUpper(strings.TrimSpace(intake.Industry)),
+		strings.ToUpper(personality),
+		strings.ToUpper(strings.TrimSpace(intake.TargetAudience)),
 	)
 }

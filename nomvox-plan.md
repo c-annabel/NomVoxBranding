@@ -13,8 +13,8 @@ NomVox is an AI-powered brand identity platform that transforms a raw business c
 **Module:** `github.com/c-annabel/NomVoxBranding`  
 **Backend:** Go 1.22 (net/http + chi v5 router) — deployed on Fly.io (`nomvox-api`, region `iad`)  
 **Frontend:** Next.js 16.2 + React 19 + Tailwind CSS v4 + Space Grotesk — deployed on Vercel  
-**AI Core (text/reasoning):** IBM Granite / Llama 3.3 70B via watsonx.ai (`ca-tor.ml.cloud.ibm.com`) — name generation, taglines, origin stories, brand scores, persona, voice samples, competitor radar, SVG logos, SVG mood board tiles, landing page HTML  
-**AI Visual (production):** CSS/SVG art system (palette-driven, personality-responsive) — primary visual path; replaces Imagen 3 which hit free-tier credit exhaustion. See "Image Generation Decision" section.  
+**AI Core (reasoning):** IBM watsonx.ai chat completion API. The model is selected by endpoint: Llama 3.3 70B Instruct on `ca-tor.ml.cloud.ibm.com`, IBM Granite 3 8B Instruct on `us-south.ml.cloud.ibm.com`. Covers name generation, taglines, origin stories, brand scores, persona, voice samples, competitor radar, SVG logo markup, SVG mood board tiles, and landing page HTML.  
+**AI Visual:** Google Gemini 2.5 Flash Image for raster logo concepts and mood board textures, with a watsonx SVG tier and a deterministic CSS brand system behind it. See "Image Generation Decision".  
 **Session store:** Redis via Upstash (2-hour TTL)  
 **Primary dev tool:** IBM Bob
 
@@ -48,20 +48,20 @@ NomVox is an AI-powered brand identity platform that transforms a raw business c
 
 ---
 
-## Image Generation Decision: Imagen 3 → CSS/SVG System
+## Image Generation Decision: Imagen 3 to Gemini 2.5 Flash Image
 
 ### What was planned
-Imagen 3 via Google AI Studio for logo concepts (3 types) and mood board tiles (4 panels). Gemini 2.0 Flash for optional vision image analysis (palette extraction from uploaded reference image).
+Imagen 3 via Google AI Studio for logo concepts (3 formats) and mood board tiles. Gemini 2.0 Flash for optional vision analysis, extracting a palette from an uploaded reference image.
 
 ### What happened
-During development, local tests with Imagen 3 worked. Before the production demo, Google AI Studio free-tier prepaid credits for image generation were **exhausted permanently**. Further calls return HTTP 429 `RESOURCE_EXHAUSTED`. Re-enabling requires billing on Google Cloud.
+Imagen 3 worked in local testing. Before the production demo, Google AI Studio prepaid credits were exhausted and every call returned HTTP 429 `RESOURCE_EXHAUSTED`. Restoring it required enabling billing on Google Cloud.
 
-Concurrently, watsonx.ai also hit 429 `RESOURCE_EXHAUSTED` on the SVG generation fallback — the free tier enforces a 2 requests/second limit, and NomVox's 7-concurrent visual calls all fail simultaneously.
-
-IBM watsonx.ai does not currently offer a native image generation model comparable to Imagen, DALL-E, or Stable Diffusion.
+Concurrently watsonx.ai returned 429 on the SVG fallback, because the free tier enforces 2 requests per second and the seven concurrent visual calls all fired at once.
 
 ### What was built instead
-A fully dynamic **CSS/SVG visual system** — `extractPalette()` parses the user's `color_mood` field (using bigram matching: "bright orange", "sky blue", etc.) and derives `bg`, `accent`, `accent2`, `text` tokens. Every visual component renders exclusively from these tokens:
+Two changes, in sequence.
+
+First, a fully dynamic **CSS/SVG brand system**. `extractPalette()` parses the user's `color_mood` field (using bigram matching: "bright orange", "sky blue", etc.) and derives `bg`, `accent`, `accent2`, `text` tokens. Every visual component renders exclusively from these tokens:
 
 - **Logo placeholders (3 CSS compositions):**
   - *Profile/Social:* Geometric hexagonal mark with orbital ring and corner accent dots
@@ -85,7 +85,7 @@ A fully dynamic **CSS/SVG visual system** — `extractPalette()` parses the user
 On a session with multiple name regenerations, the watsonx.ai free-tier daily token quota can be exhausted entirely before the user reaches the visual phase. When this happens:
 
 ```
-Imagen 3 → HTTP 429 RESOURCE_EXHAUSTED
+Gemini image generation → HTTP 429 RESOURCE_EXHAUSTED
   "Your prepayment credits are depleted."
   (Google AI Studio free-tier credits exhausted permanently)
 
@@ -111,8 +111,55 @@ Result: all 9 visual tasks fail simultaneously
 
 The `throttleGranite()` mutex prevents the rate-limit 429s. Nothing can prevent the quota 403s except spending fewer tokens overall or upgrading the account.
 
+## The Fallback Trap
+
+The most instructive bug of the build was invisible until the day it mattered.
+
+The SVG fallback path had three defects that had never surfaced, because while Gemini had credits the code took the first branch every time and the fallback never executed. When credits ran out, all three appeared at once:
+
+1. The generated SVG had no `xmlns` attribute. An SVG loaded through an `img` tag is parsed as a standalone XML document and will not render without it. Inline SVG in HTML does not need it, which is what makes this easy to miss.
+2. The markdown fence stripper searched for the first occurrence of a fence in a loop. After removing an opening fence it matched the closing one and discarded everything before it, returning an empty string.
+3. Truncated output had a closing tag appended blindly, producing malformed XML that the browser rejected without reporting an error.
+
+Redis had the same shape of problem. Session writes had been failing from the first deploy, but the handler logged and continued, so every request still returned 200. Nothing surfaced until Upstash sent an inactivity notice for a database that had never recorded a single command.
+
+**The lesson is not about SVG or Redis.** An untested error path is not a fallback, it is a second bug waiting for the first one. Two changes came out of this: generated assets are validated before use rather than assumed well formed, and degraded states are logged at startup rather than only at the point of failure.
+
+---
+
+## What Prompt Debugging Taught
+
+Four rules came out of getting usable output from the image and HTML models.
+
+**Resolve colours to hex before prompting.** Passing free text such as "electric blue, neon yellow, dark bg" makes the model guess, and a background instruction gets read as a mark colour. `logoPalette()` now parses the mood string into explicit hex values, preserving the order the user wrote them.
+
+**Put hard constraints first and repeat them.** Image models weight early tokens most heavily. A "no text" rule placed at the end of a long style description was ignored, and produced app icons containing the brand's initials. The same rule stated first and restated last holds.
+
+**Never ask an image model for a grid.** A prompt requesting a four-panel mood board returns one collage image with visible gutters, not four images.
+
+**Check the prompt before blaming the model.** The landing page kept rendering a circle behind the headline. The prompt was asking for a decorative SVG accent shape, and the model was doing exactly as told.
+
+---
+
+### Then image generation was restored
+
+Image generation now runs on **Gemini 2.5 Flash Image** rather than Imagen 3. It has a free tier, uses the standard `generateContent` endpoint with `responseModalities` set to include `IMAGE`, and does not require prepaid credits. The client type and filename kept the `imagen` name to avoid breaking the debug endpoint contract.
+
+### Why watsonx does not do this job
+
+IBM watsonx.ai does not currently offer a native raster image generation model comparable to Gemini, DALL-E, or Stable Diffusion. It can be prompted to emit SVG markup, which is code rather than pixels, and that is exactly how the second tier of the fallback chain works. For photographic texture, an image model is required.
+
+### Where the mood board landed
+
+The mood board is a hybrid, and the split is deliberate.
+
+Panels that must be exact are rendered deterministically from the parsed palette: the colour swatches, the typography specimen, and the three logo lockups. An image model cannot render a specific hex value, set type in Space Grotesk, or place the real logo. Only the two texture panels come from Gemini, because texture and atmosphere are what an image model is genuinely good at.
+
+The original implementation asked one Gemini call for a four-panel grid. That returns a single collage image complete with white gutters, not four images. It now makes two separate calls, each requesting one unbroken frame.
+
 ### Future path
-When IBM watsonx.ai releases a native image generation model, or when a paid Stability AI / Replicate / Together.ai integration is scoped and budgeted, the CSS components are designed for drop-in replacement at the same JSX insertion points (`VisualIdentityPanel.tsx`).
+
+If IBM watsonx.ai releases a native image generation model, the Gemini tier can be swapped for it without touching the frontend, because every visual component already reads from the same palette tokens and data URI contract.
 
 ---
 
@@ -135,7 +182,7 @@ Fly.io shared-cpu-1x (Go 1.22, chi v5)
     │
     ├──► Upstash Redis (session store, availability cache, IAM token cache)
     │
-    ├──► IBM watsonx.ai ca-tor (Llama 3.3 70B)
+    ├──► IBM watsonx.ai (Llama 3.3 70B on ca-tor, Granite 3 8B on us-south)
     │       IAM token from iam.cloud.ibm.com/identity/token
     │       POST /ml/v1/text/generation
     │       Rate limit: 2 req/s — all calls now sequential with delay
@@ -158,12 +205,13 @@ NomVoxBranding/
 ├── cmd/
 │   ├── server/main.go              ← Go entry point, all routes registered
 │   ├── testllm/main.go             ← watsonx.ai connection test
-│   └── diagnose-imagen/main.go     ← Imagen 3 diagnostic (archived)
+│   └── diagnose-imagen/main.go     ← image generation diagnostic (archived)
 │
 ├── internal/
 │   ├── ai/
-│   │   ├── granite.go              ← watsonx.ai client, IAM token cache (50 min)
-│   │   ├── imagen.go               ← Imagen 3 client (legacy, 429 in prod)
+│   │   ├── granite.go              ← watsonx.ai client, model selected by endpoint,
+│   │   │                              IAM token cache (50 min)
+│   │   ├── imagen.go               ← Gemini image client (legacy filename)
 │   │   ├── prompts.go              ← Name gen, persona, competitor radar prompts
 │   │   ├── visual_prompts.go       ← SVG logo/moodboard prompts, buildColourContext()
 │   │   └── ai_test.go
@@ -248,7 +296,7 @@ NomVoxBranding/
 
 ### What was genuinely hard
 - **watsonx IAM setup** — IAM token flow, WML service association, Project vs Space ID, regional endpoint differences: all underdocumented. Required multiple dead-end debug cycles before first successful call.
-- **The quota cascade** — Imagen 3 depleted (permanent 429 `RESOURCE_EXHAUSTED`), watsonx SVG hits 403 `token_quota_reached` when daily budget runs out from name generation calls. Two different errors, two different causes, both required architectural decisions rather than code fixes.
+- **The quota cascade.** Imagen 3 depleted with a 429 `RESOURCE_EXHAUSTED`, while watsonx SVG hit 403 `token_quota_reached` once the daily budget was spent on name generation. Two different errors, two different causes, both needing architectural decisions rather than code fixes.
 - **Concurrent goroutine rate limiting** — 7 concurrent watsonx calls at 2 req/s → all 429. Added `throttleGranite()` mutex. Adds latency but prevents cascade failure.
 - **JSON truncation repair** — LLM occasionally truncates JSON array at token limit. `ExtractJSON()` with repair loop handles partial arrays; still occasionally fails with `unexpected end of JSON input` (logged, auto-retry triggered).
 - **Puppeteer on Fly.io** — Chrome binary constraints on shared-cpu containers. Multiple approaches, none reliable. Feature cut.
@@ -290,15 +338,26 @@ npx tsc --noEmit — 0 errors
 npx next build — Compiled successfully (Turbopack, 1831ms)
 ```
 
+### Hardening pass
+
+| Area | Before | After |
+|---|---|---|
+| Visuals response size | ~12.7 MB | ~5.9 MB |
+| Visuals generation time | ~40 s | ~29 s |
+| Session writes | Failing silently since first deploy | Verified at startup, succeeding |
+| SVG fallback | Rendered as broken images | Validated, renders or cleanly defers |
+| Landing page prompt | Overflowed context window when a logo was attached | Placeholder substitution, well within budget |
+| Mood board images | One collage per call, white gutters | Two calls, one clean frame each |
+
 ---
 
 ## What Didn't Make It (and Why)
 
 | Feature | Decision | Reason |
 |---|---|---|
-| Imagen 3 real image generation | ⚠️ Replaced with CSS/SVG | Free-tier credits exhausted; no IBM equivalent |
+| Imagen 3 | ⚠️ Replaced | Prepaid credits exhausted; migrated to Gemini 2.5 Flash Image, which has a free tier |
 | Puppeteer handle screenshots | 🚫 Cut | Chrome binary constraints on Fly.io shared-cpu container |
-| Vision image upload (palette extract) | 🚫 Deferred | Gemini API credits also depleted |
+| Vision image upload (palette extract) | 🚫 Deferred | Implemented in the client but not wired into the UI flow |
 | PDF brand brief export | 🚫 Deferred | `wkhtmltopdf`/`chromedp` adds significant container size |
 | 80% availability gate | ⚠️ Adjusted to 60% | 80% threshold left too few passing names for good UX |
 
@@ -315,7 +374,7 @@ npx next build — Compiled successfully (Turbopack, 1831ms)
 ### Stage 2 — Post-submission enhancements
 - [ ] Real AI image generation: integrate Stability AI or Replicate API (drop-in at CSS fallback insertion points in `VisualIdentityPanel.tsx`)
 - [ ] Puppeteer screenshot service: separate lightweight container (not Fly.io shared-cpu) — show screenshots of taken handles
-- [ ] Vision image upload: restore Gemini palette extraction when credits restored
+- [ ] Vision image upload: wire the existing Gemini palette extraction into the intake flow
 - [ ] Editable brand descriptions: short/long in-app edit + per-field regeneration
 - [ ] "Download HTML" button for landing page mockup
 

@@ -33,9 +33,9 @@ func NewGraniteClient() (*GraniteClient, error) {
 		baseURL = "https://us-south.ml.cloud.ibm.com"
 	}
 	return &GraniteClient{
-		apiKey:    apiKey,
-		projectID: projectID,
-		baseURL:   baseURL,
+		apiKey:     apiKey,
+		projectID:  projectID,
+		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: 90 * time.Second},
 	}, nil
 }
@@ -54,14 +54,14 @@ type watsonxTextRequest struct {
 // Using the chat endpoint avoids the repetition-loop issue seen when concatenating
 // system+user into a single "input" field on instruction-tuned models.
 type watsonxChatRequest struct {
-	ModelID    string         `json:"model_id"`
-	ProjectID  string         `json:"project_id"`
-	Messages   []chatMessage  `json:"messages"`
-	Parameters watsonxParams  `json:"parameters"`
+	ModelID    string        `json:"model_id"`
+	ProjectID  string        `json:"project_id"`
+	Messages   []chatMessage `json:"messages"`
+	Parameters watsonxParams `json:"parameters"`
 }
 
 type chatMessage struct {
-	Role    string `json:"role"`    // "system" | "user" | "assistant"
+	Role    string `json:"role"` // "system" | "user" | "assistant"
 	Content string `json:"content"`
 }
 
@@ -83,6 +83,7 @@ type endpointCaps struct {
 // capsForEndpoint returns the model and API format for the given base URL.
 // ca-tor endpoint catalog (verified 2026-07-15):
 //   - meta/llama-3-3-70b-instruct (instruct → use chat API)
+//
 // us-south endpoint catalog:
 //   - ibm/granite-3-8b-instruct (instruct → use chat API)
 func capsForEndpoint(baseURL string) endpointCaps {
@@ -113,8 +114,9 @@ func (c *GraniteClient) Generate(ctx context.Context, systemPrompt, userPrompt s
 
 	caps := capsForEndpoint(c.baseURL)
 	params := watsonxParams{
-		DecodingMethod:    "greedy",
-		MaxNewTokens:      1800, // 1800 tokens — fits 4 cards reliably; lower = faster inference
+		DecodingMethod: "greedy",
+		MaxNewTokens:   3500, // structured landing page HTML needs headroom;
+		// this is a cap, not a target, so shorter calls are unaffected00 tokens — fits 4 cards reliably; lower = faster inference
 		Temperature:       0.7,
 		RepetitionPenalty: 1.05,
 	}
@@ -347,7 +349,7 @@ func (t *IBMTokenClient) FetchToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cachedToken    = tok
+	cachedToken = tok
 	cachedTokenExp = time.Now().Add(50 * time.Minute)
 	return tok, nil
 }

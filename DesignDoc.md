@@ -27,7 +27,7 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 - **Coined names** — invented words using phonaesthetics, ancient root mutation, syllable forging, and neologism splicing. Never real dictionary words.
 - **Availability gate** — parallel probes of `.com` domain + Instagram / X / TikTok / Threads / YouTube. 60% weighted threshold. Unknown probes (rate-limited) treated as taken.
 - **Creative-partner loop** — session memory (Redis) accumulates liked/rejected/direction notes. Every Regenerate call injects full history into the LLM prompt.
-- **Visual identity** — Three-tier generation chain: (1) Imagen 3 raster images via Google AI Studio, (2) watsonx SVG via Llama 3.3 70B, (3) CSS/SVG art system rendered client-side. In practice, free-tier quotas (Gemini 429 `RESOURCE_EXHAUSTED`, watsonx 403 `token_quota_reached`) mean the CSS/SVG system is the primary visible path. It is a fully designed, palette-responsive system — not a placeholder.
+- **Visual identity.** Three-tier generation chain: (1) Gemini 2.5 Flash Image raster output via Google AI Studio, (2) watsonx SVG markup, (3) a CSS brand system rendered client side. Each tier validates its own output and defers to the next rather than emitting something broken. Free-tier quotas (Gemini 429 `RESOURCE_EXHAUSTED`, watsonx 403 `token_quota_reached`) mean the CSS system is often the visible path. It is a fully designed, palette-responsive brand system, not a placeholder.
 - **Export** — ZIP containing `brand-brief.json`, `landing-page.html`, `logos/`, `mood-board/`, `README.txt`.
 
 ---
@@ -62,7 +62,7 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 | Service | Purpose | Key name |
 |---|---|---|
 | IBM watsonx.ai | LLM — name generation, persona, mockup, competitor radar, SVG visuals | `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL` |
-| Google AI Studio | Imagen 3 image gen (first-tier; credits may be depleted) + Gemini 2.0 Flash vision | `GOOGLE_AI_API_KEY` |
+| Google AI Studio | Gemini 2.5 Flash Image (raster generation) and Gemini 2.0 Flash (vision analysis) | `GOOGLE_AI_API_KEY` |
 | Upstash Redis | Session persistence (2hr TTL) | `REDIS_URL` |
 
 ---
@@ -79,10 +79,24 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 ### AI / Machine Learning
 | Technology | Provider | Role in NomVox | API/Endpoint |
 |---|---|---|---|
-| **Meta Llama 3.3 70B Instruct** | IBM watsonx.ai (ca-tor region) | Brand name generation, taglines, brand scores, origin stories, voice samples, competitor radar, brand persona, landing page HTML, SVG logos, SVG mood board tiles | `POST /ml/v1/text/chat` |
-| **IBM Granite 3 8B Instruct** | IBM watsonx.ai (us-south region) | Same as Llama — fallback model when us-south endpoint is configured | `POST /ml/v1/text/chat` |
-| **Imagen 3** (`imagen-3.0-generate-002`) | Google AI Studio | First-tier image generation — logos + mood board. Free-tier credits depleted in production; code falls back to watsonx SVG then CSS art. | `POST /v1beta/models/imagen-3.0-generate-002:predict` |
-| **Gemini 2.0 Flash** | Google AI Studio | Vision analysis — extracts palette/mood/style from user-uploaded reference images (deferred — same quota constraint) | `POST /v1beta/models/gemini-2.0-flash:generateContent` |
+| **Meta Llama 3.3 70B Instruct** | IBM watsonx.ai, `ca-tor` region | All reasoning: names, taglines, scores, origin stories, voice samples, competitor radar, persona, landing page HTML, SVG logo markup, SVG mood tiles | `POST /ml/v1/text/chat` |
+| **IBM Granite 3 8B Instruct** | IBM watsonx.ai, `us-south` region | The same reasoning workload. Selected automatically when `WATSONX_URL` points at us-south | `POST /ml/v1/text/chat` |
+| **Gemini 2.5 Flash Image** | Google AI Studio | Raster logo concepts and mood board texture panels | `POST /v1beta/models/gemini-2.5-flash-image:generateContent` |
+| **Gemini 2.0 Flash** | Google AI Studio | Vision analysis: extracts palette, mood, and style from an uploaded reference image | `POST /v1beta/models/gemini-2.0-flash:generateContent` |
+
+**A note on terminology, for anyone new to this stack.**
+
+*Reasoning* here means any task where the model works with language and structure rather than pixels. Inventing a coined name is reasoning. Explaining its etymology is reasoning. Writing an HTML hero section is also reasoning, because the model is producing code that a browser renders, not drawing an image. That is why SVG logos and landing page markup sit in the watsonx column even though the end result is something you look at.
+
+*watsonx.ai* is IBM's platform for running large models. You do not install a model. You send a prompt to a regional endpoint over HTTPS and receive text back.
+
+*ca-tor* and *us-south* are IBM Cloud region codes, Toronto and Dallas. Each region publishes its own catalogue of available models. A model available in one region is not necessarily available in another, which is why the region determines the model rather than the other way round.
+
+*Granite* is IBM's own family of open models. *Llama 3.3 70B* is Meta's model, hosted on IBM infrastructure. Both are reached through the same watsonx API with the same prompts, so switching between them requires no code change. The 8B and 70B figures are parameter counts, a rough proxy for capability and cost: the larger model produces more reliable long structured output such as complete HTML pages, and the smaller one responds faster.
+
+*IAM* is IBM Cloud's identity service. A long-lived API key is exchanged for a short-lived Bearer token, which is what actually authenticates each watsonx call. The token is cached for 50 minutes to avoid an exchange on every request.
+
+**On the two providers.** watsonx.ai handles everything expressible as text, including markup. Gemini handles raster pixels, which watsonx does not currently generate. The dependency runs one way: without Gemini the product still completes end to end on the SVG and CSS tiers, but without watsonx there is no product.
 | **IBM Cloud IAM** | IBM Cloud | API key → Bearer token exchange for all watsonx.ai calls. 50-minute in-process cache via `sync.Mutex`. | `POST https://iam.cloud.ibm.com/identity/token` |
 
 ### Backend
@@ -95,8 +109,8 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 | **google/uuid** | v1.6.0 | Session ID generation |
 | **encoding/json** | stdlib | JSON marshal/unmarshal for all API payloads |
 | **archive/zip** | stdlib | ZIP assembly for brand identity export |
-| **sync** | stdlib | WaitGroup for concurrent Imagen 3 calls; Mutex for IAM token cache |
-| **net/http** | stdlib | HTTP client for watsonx.ai, Imagen 3, RDAP, and social platform probes |
+| **sync** | stdlib | WaitGroup for concurrent visual generation; Mutex for IAM token cache and watsonx throttling |
+| **net/http** | stdlib | HTTP client for watsonx.ai, Google AI Studio, RDAP, and social platform probes |
 
 ### Frontend
 | Technology | Version | Role |
@@ -139,8 +153,8 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 | Requirement | How NomVox meets it |
 |---|---|
 | **IBM Bob as primary dev tool** | Used throughout full SDLC: architecture, all code generation, debugging, prompt engineering, documentation |
-| **AI as core functional component** | Llama 3.3 70B via watsonx.ai generates all names, scores, taglines, personas, SVG visuals, and HTML mockups |
-| **IBM Granite** | `ibm/granite-3-8b-instruct` on us-south endpoint; Llama on ca-tor. Both via IBM watsonx.ai. Automatic model selection via `capsForEndpoint()` |
+| **AI as core functional component** | watsonx.ai generates every name, score, tagline, persona, SVG asset, and HTML mockup. Without it there is no product |
+| **IBM Granite** | `ibm/granite-3-8b-instruct` on the us-south endpoint, `meta-llama/llama-3-3-70b-instruct` on ca-tor. Both served by IBM watsonx.ai. Selection is automatic via `capsForEndpoint()` in `internal/ai/granite.go` |
 | **watsonx** | All LLM calls routed through `https://ca-tor.ml.cloud.ibm.com/ml/v1/text/chat` |
 | **LangChain / LangFlow** | Not used — custom Go client gives tighter control over token budget, JSON repair, and rate-limit throttling |
 | **Python / Node.js / React / Next.js** | Next.js + React 19 frontend |
@@ -149,15 +163,40 @@ NomVox transforms a raw brand idea into a complete, launch-ready identity in one
 
 The visual pipeline in `internal/handlers/visuals.go` attempts generation in priority order:
 
-1. **Imagen 3 (Google AI Studio)** — raster PNG images via `GenerateImages()`. Fails with `429 RESOURCE_EXHAUSTED` when free-tier prepaid credits are exhausted.
-2. **watsonx SVG generation** — Llama 3.3 70B prompted to output raw SVG markup via `Generate()`. Fails with `403 token_quota_reached` when the daily free-tier token quota is exhausted.
-3. **CSS/SVG art system (frontend)** — `extractPalette()` in `VisualIdentityPanel.tsx` parses the user's `color_mood` field (bigram-matching for "bright orange", "sky blue", etc.) and derives `bg`, `accent`, `accent2`, `text` tokens. All visual components render from these tokens. Zero API calls. Zero rate limits. **This is the primary visible path in the deployed product.**
+1. **Gemini 2.5 Flash Image (Google AI Studio)** produces raster PNG via `GenerateImages()`. Returns `429 RESOURCE_EXHAUSTED` when prepaid credits are depleted.
+2. **watsonx SVG generation** prompts the configured watsonx model to emit raw SVG markup via `Generate()`. Returns `403 token_quota_reached` when the daily free-tier token budget is spent.
+3. **CSS brand system (frontend)** uses `extractPalette()` in `VisualIdentityPanel.tsx` to parse `color_mood` with bigram matching for phrases such as "bright orange" and "sky blue", deriving `bg`, `accent`, `accent2`, and `text` tokens. All components render from those tokens. No API calls, no rate limits.
 
-The `throttleGranite()` mutex (`graniteCallMu`) serialises the *start* of each Granite call with a 600ms minimum gap to avoid triggering the 2 req/s rate limit. This adds latency but prevents cascading 429 errors.
+Each tier validates its own output rather than passing it through. Tier 2 SVG must survive `SVGToDataURI`. Tier 1 and 2 HTML must reach its closing tags and contain the bottom-strip content, or the frontend treats it as incomplete and falls to tier 3.
 
-**HTTP 429 vs HTTP 403 — two different errors:**
-- `429 RESOURCE_EXHAUSTED` = per-second rate limit exceeded → fixed by throttling + sequential calls
-- `403 token_quota_reached` = daily token budget exhausted → only fixed by waiting until quota resets or upgrading plan
+`throttleGranite()` (`graniteCallMu`) serialises the *start* of each watsonx call with a 600 ms minimum gap to stay under the 2 requests per second limit. This adds latency but prevents cascading 429s.
+
+**HTTP 429 vs HTTP 403, two different failures:**
+- `429 RESOURCE_EXHAUSTED` is a per-second rate limit, fixed by throttling
+- `403 token_quota_reached` is the daily token budget, which resets at midnight UTC or on plan upgrade
+
+### Data URI contract
+
+Any SVG returned by a language model passes through `ai.SVGToDataURI` before reaching the frontend. Four rules, each corresponding to an observed failure:
+
+| Rule | Failure it prevents |
+|---|---|
+| Must contain `</svg>`, otherwise return empty | Truncated markup closed blindly becomes invalid XML and renders as a broken image |
+| Inject `xmlns="http://www.w3.org/2000/svg"` if absent | Browsers parse data-URI SVG as a standalone XML document and will not render it without a namespace |
+| Escape bare `&` | An unescaped ampersand terminates XML parsing |
+| Trim anything after the final `</svg>` | Models sometimes append commentary after the markup |
+
+Returning an empty string is deliberate. It signals "no asset" to the frontend, which renders its own deterministic component, rather than emitting something broken.
+
+### Prompt design constraints
+
+**Resolve colours to hex before prompting.** `logoPalette()` parses the colour mood string into explicit hex values in the order the user wrote them. Free text makes the model guess, and phrases such as "dark bg" get read as a mark colour.
+
+**Put hard constraints first and repeat them.** Image models weight early tokens most heavily. A "no text" rule at the end of a long style description was ignored and produced app icons containing the brand's initials.
+
+**Request one frame per call.** Asking one call for a multi-panel board returns a single collage image with visible gutters.
+
+**Never send image data to a text model.** The landing page prompt carries `__NOMVOX_LOGO__` and `__NOMVOX_LOGO_HERO__` placeholders. The handler substitutes real data URIs into the returned HTML afterwards. A single PNG can exceed the entire context window.
 
 ---
 
@@ -237,7 +276,7 @@ Invoke-RestMethod http://localhost:8080/api/ping
 # Full AI + Redis diagnosis
 Invoke-RestMethod http://localhost:8080/api/diagnose
 
-# Test Imagen 3 + watsonx connectivity
+# Test image generation and watsonx connectivity
 Invoke-RestMethod http://localhost:8080/api/debug-visuals
 ```
 
@@ -317,13 +356,15 @@ All variables live in `.env` at the repo root. The server loads this file automa
 | `WATSONX_PROJECT_ID` | ✅ | watsonx.ai project ID (from watsonx console) |
 | `WATSONX_URL` | ✅ | Endpoint base URL, e.g. `https://ca-tor.ml.cloud.ibm.com` |
 | `WATSONX_CPD_URL` | ⬜ | Only set for Cloud Pak for Data deployments — leave empty for public IBM Cloud |
-| `GOOGLE_AI_API_KEY` | ✅ | Google AI Studio key — used for both Imagen 3 (image gen) and Gemini 2.0 Flash (vision) |
+| `GOOGLE_AI_API_KEY` | ✅ | Google AI Studio key, used for both Gemini 2.5 Flash Image and Gemini 2.0 Flash vision |
 | `REDIS_URL` | ✅ | Upstash Redis connection string: `rediss://:password@host.upstash.io:6379` |
 | `ALLOWED_ORIGIN` | ⬜ | CORS origin for the frontend. Defaults to `http://localhost:3000` |
 | `PORT` | ⬜ | HTTP port. Defaults to `8080` |
 | `VERCEL_BLOB_TOKEN` | ⬜ | Vercel Blob storage (for future screenshot feature — not used in current build) |
 
-**Model selection is automatic** — `capsForEndpoint()` in `internal/ai/granite.go` picks the model based on `WATSONX_URL`:
+`REDIS_URL` must use the `rediss://` scheme. Upstash requires TLS and closes plain `redis://` connections immediately, which surfaces as a bare `EOF` with no protocol error. The API pings Redis at startup and logs the outcome without blocking boot.
+
+**Model selection is automatic.** `capsForEndpoint()` in `internal/ai/granite.go` picks the model based on `WATSONX_URL`:
 - `ca-tor.*` → `meta-llama/llama-3-3-70b-instruct` + chat API
 - `us-south.*` → `ibm/granite-3-8b-instruct` + chat API
 
@@ -340,14 +381,17 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 │   ├── testllm/
 │   │   └── main.go                    ← Standalone LLM smoke test (no server needed)
 │   └── diagnose-imagen/
-│       └── main.go                    ← Imagen 3 connectivity diagnostic (archived)
+│       └── main.go                    ← image generation connectivity diagnostic (archived)
 │
 ├── internal/
 │   ├── ai/
 │   │   ├── granite.go                 ← watsonx.ai client: IAM token exchange, chat API,
 │   │   │                                 ExtractJSON / ExtractJSONObject, truncation repair,
 │   │   │                                 SVGToDataURI
-│   │   ├── imagen.go                  ← Imagen 3 image gen + Gemini 2.0 Flash vision,
+│   │   ├── imagen.go                  ← Gemini 2.5 Flash Image + Gemini 2.0 Flash vision.
+│   │   │                                 Filename and ImagenClient type retained from
+│   │   │                                 the original Imagen 3 integration to keep the
+│   │   │                                 debug endpoint response contract stable,
 │   │   │                                 Base64ToDataURI (RawURLEncoding fallback chain)
 │   │   ├── prompts.go                 ← systemPromptBase (5 naming strategies), BuildSystemPrompt,
 │   │   │                                 BuildUserPrompt, ParseNameCards
@@ -369,13 +413,13 @@ NomVoxBranding/                        ← repo root (go.mod lives here)
 │   │   ├── session.go                 ← POST /api/session · PATCH /api/session/react
 │   │   │                                 (6 action types: like/reject/note/visual-note/slider/select)
 │   │   ├── visuals.go                 ← POST /api/visuals — concurrent goroutines:
-│   │   │                                 3-tier fallback chain (Imagen 3 → watsonx SVG → CSS),
+│   │   │                                 3-tier fallback chain (Gemini → watsonx SVG → CSS),
 │   │   │                                 throttleGranite() mutex, graniteCallMu
 │   │   ├── export.go                  ← POST /api/export — ZIP assembly, dataURIToBytes
 │   │   │                                 (RawURLEncoding fallback), selected-logo file
 │   │   ├── diagnose.go                ← GET /api/diagnose — env + Redis check (DEV)
 │   │   ├── debug_llm.go               ← GET /api/debug-llm — direct LLM smoke test (DEV)
-│   │   └── debug_visuals.go           ← GET /api/debug-visuals — Imagen 3 + Granite test (DEV)
+│   │   └── debug_visuals.go           ← GET /api/debug-visuals, image gen + watsonx test (DEV)
 │   │
 │   ├── models/
 │   │   └── types.go                   ← All shared Go structs (IntakePayload, NameCard,
@@ -460,7 +504,7 @@ GenerateHandler (Go)
     │
     │  builds prompts via BuildSystemPrompt(sess) + BuildUserPrompt(intake, n)
     │
-    │  POST to watsonx.ai ──────────────────────► IBM Granite / Llama
+    │  POST to watsonx.ai ──────────────────────► Llama 3.3 70B or Granite 3 8B
     │  { model_id, project_id, messages[system,user], parameters }
     │
     │  ExtractJSON + ParseNameCards → []NameCard
@@ -488,12 +532,13 @@ POST /api/availability  { session_id, names[] }
 POST /api/visuals  { session_id, card, intake }
     │
     │  5 goroutines in parallel:
-    │    Imagen 3 ──► 4 mood board images  (base64 → data URI)
-    │    Imagen 3 ──► logo profile          (1:1)
-    │    Imagen 3 ──► logo app icon         (1:1)
-    │    Imagen 3 ──► logo business card    (16:9)
-    │    Granite  ──► landing page HTML     (sandboxed iframe)
-    │    Granite  ──► brand persona JSON
+    │    Gemini   ──► mood board texture    (1:1, base64 → data URI)
+    │    Gemini   ──► mood board atmosphere (1:1)
+    │    Gemini   ──► logo profile          (1:1)
+    │    Gemini   ──► logo app icon         (1:1)
+    │    Gemini   ──► logo business card    (16:9)
+    │    watsonx  ──► landing page HTML     (sandboxed iframe)
+    │    watsonx  ──► brand persona JSON
     │
     ▼
 { mood_board[], logo_profile, logo_app, logo_business, mockup_html, persona }
@@ -618,7 +663,7 @@ All routes are prefixed `/api`. The server runs on `http://localhost:8080` in de
 | `GET` | `/api/ping` | — | Health check. Returns `{"status":"ok"}` |
 | `GET` | `/api/diagnose` | 30s | DEV: checks env vars + Redis connectivity |
 | `GET` | `/api/debug-llm` | 60s | DEV: sends simple prompt to watsonx, returns raw response |
-| `GET` | `/api/debug-visuals` | 90s | DEV: fires test prompt at Imagen 3 + Granite, returns `{imagen_ok, granite_ok, ...}` |
+| `GET` | `/api/debug-visuals` | 90s | DEV: fires a test prompt at Gemini and watsonx, returns `{imagen_ok, granite_ok, ...}`. The response keys keep their original names |
 | `POST` | `/api/generate` | 120s | Main generation — LLM call, session load/save, returns `{session_id, cards[]}` |
 | `POST` | `/api/session` | 30s | Create or retrieve a session |
 | `PATCH` | `/api/session/react` | 30s | Record user reaction — actions: `like/reject/note/visual-note/slider/select` |
@@ -756,8 +801,8 @@ Every `POST /api/generate` call:
 | **ST-05** | Availability engine — RDAP domain, 6-platform parallel goroutines, weighted 60% gate (lowered from 80%), zero-pass fallback (top-2 partials + ⚠ banner), Competitor Radar | ✅ Complete |
 | **ST-06** | Full state machine UI — Like / Reject / Select, `StyleDNASlider`, liked names summary banner | ✅ Complete |
 | **ST-07** | `NameCardComponent` — 2-row 7-col table layout, `rejectedReason` banner, column head colours | ✅ Complete |
-| **ST-08** | `/api/visuals` — 3-tier fallback chain (Imagen 3 → watsonx SVG → CSS art), `throttleGranite()` mutex, `graniteCallMu`, `Base64ToDataURI` RawURLEncoding fix | ✅ Complete |
-| **ST-09** | Landing-page mockup via Granite — `BuildMockupSystemPrompt/UserPrompt`, iframe 75% scale, 100vh strip, `hasMockup` validator | ✅ Complete |
+| **ST-08** | `/api/visuals`, 3-tier fallback chain (Gemini → watsonx SVG → CSS), `throttleGranite()` mutex, `SVGToDataURI` validation, logo placeholder substitution | ✅ Complete |
+| **ST-09** | Landing page mockup via watsonx, `BuildMockupSystemPrompt/UserPrompt`, iframe at 75% scale with interaction disabled, `hasMockup` completeness validator | ✅ Complete |
 | **ST-10** | `/api/export` — ZIP with `brand-brief.json`, `landing-page.html`, `mood-board/`, `logos/`, `README.txt`. `dataURIToBytes` RawURLEncoding fix. Selected logo copy. | ✅ Complete |
 | **ST-11** | CSS/SVG visual system — `extractPalette()` bigram parser, palette-responsive logo/moodboard/landing components, mood board always 4 tiles (pad with CSS if AI returns fewer) | ✅ Complete |
 | **ST-12** | Radical name-invention prompt — 5 strategies (syllable forge, phonaesthetics, neologism splice, void-word, ancient root mutation) | ✅ Complete |
@@ -825,7 +870,7 @@ Hit **Regenerate** — the AI creates a fresh batch of coined names using sessio
 
 This is **expected behaviour** in production. The three-tier fallback chain means:
 
-1. **Imagen 3 returns `429 RESOURCE_EXHAUSTED`** — Google AI Studio free-tier prepaid credits are exhausted. Visual generation falls back to watsonx SVG.
+1. **Image generation returns `429 RESOURCE_EXHAUSTED`.** Google AI Studio prepaid credits are depleted. Visual generation falls back to watsonx SVG, then to the CSS brand system. The product still completes end to end.
 2. **watsonx SVG returns `403 token_quota_reached`** — the daily free-tier token budget has been consumed by name generation and/or prior visual calls. All SVG generation returns empty.
 3. **CSS/SVG art system renders** — `extractPalette()` in `VisualIdentityPanel.tsx` derives colour tokens from the user's `color_mood` field and renders fully branded CSS components.
 
@@ -838,10 +883,10 @@ Invoke-RestMethod http://localhost:8080/api/debug-visuals
 
 Expected responses:
 ```json
-// Imagen 3 working (credits available):
+// Image generation working:
 { "imagen_ok": true, "data_uri_len": 340000, "granite_ok": true }
 
-// Imagen 3 depleted, watsonx SVG working:
+// Image generation depleted, watsonx SVG working:
 { "imagen_ok": false, "imagen_error": "status 429: RESOURCE_EXHAUSTED", "granite_ok": true }
 
 // Both depleted — CSS art system active:
@@ -872,7 +917,7 @@ The base64 decoder fix (`RawURLEncoding`) is applied in `export.go`. If you stil
 
 1. Check that visuals actually generated (logos should be visible in Step 1 of the visual panel)
 2. The export reads directly from the data URIs passed by the frontend — if the image failed to generate server-side, there's nothing to export
-3. Run `/api/debug-visuals` to confirm Imagen 3 is working
+3. Run `/api/debug-visuals` to confirm image generation is reachable
 
 ---
 
