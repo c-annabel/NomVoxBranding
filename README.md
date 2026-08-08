@@ -193,10 +193,13 @@ cp .env.example .env
 # Optional: GOOGLE_AI_API_KEY (Gemini 2.5 Flash Image, for raster logos and mood board textures)
 
 # 2. Start the Go API (port 8080)
-go run ./cmd/server
+go build -o nomvox-server.exe ./cmd/server
+.\nomvox-server.exe
+
 
 # 3. Start the frontend (port 3000)
-cd frontend && npm install && npm run dev
+cd frontend && (npm install && npm run dev)
+npm run build    
 ```
 
 Open `http://localhost:3000`.
@@ -207,6 +210,14 @@ Open `http://localhost:3000`.
 
 - **Live app:** https://nomvox.vercel.app
 - **Demo video:** https://youtu.be/Q4dLLITmxH4
+
+---
+
+## Total Cost
+ - **IBM Bob:** 40 Bobcoins (trial) + 235.843 units (160 unit: USD 60.8 + Overage: 0.72 + ?) = 275.843 units 
+ - **Google AI Studio:** CA$25 prepaid data usage for image generation. 
+
+ - **Total:** 25 + 97.16 ($85.98+Tax) + Overage Usage =  CA$122.16 + ?
 
 ---
 
